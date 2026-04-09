@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-export default function HomeScreen() {
+export default function HistoryScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.subtitle}>Workout dashboard will go here.</Text>
+      <Text style={styles.title}>History</Text>
+      <Text style={styles.subtitle}>Past workouts will go here.</Text>
     </View>
   );
 }
