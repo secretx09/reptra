@@ -1,3 +1,5 @@
+import { Exercise } from './exercise';
+
 export interface Routine {
   id: string;
   name: string;
@@ -12,4 +14,11 @@ export interface RoutineExercise {
   targetSets: number;
   targetRepMin: number;
   targetRepMax: number;
+}
+
+export interface RoutineWithExercises {
+  id: string;
+  name: string;
+  createdAt: string;
+  exercises: Exercise[];
 }

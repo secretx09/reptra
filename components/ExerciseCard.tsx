@@ -1,14 +1,27 @@
+import { Pressable, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
 import { Exercise } from '../types/exercise';
 
 type ExerciseCardProps = {
   exercise: Exercise;
+  onPress?: (exercise: Exercise) => void;
+  disableNavigation?: boolean;
 };
 
-export default function ExerciseCard({ exercise }: ExerciseCardProps) {
+export default function ExerciseCard({
+  exercise,
+  onPress,
+  disableNavigation = false,
+}: ExerciseCardProps) {
   const handlePress = () => {
-    router.push(`/exercise/${exercise.id}`);
+    if (onPress) {
+      onPress(exercise);
+      return;
+    }
+
+    if (!disableNavigation) {
+      router.push(`/exercise/${exercise.id}`);
+    }
   };
 
   return (
@@ -34,7 +47,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
   },
   meta: {
     color: '#aaaaaa',

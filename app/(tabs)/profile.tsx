@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function HomeScreen() {
+export default function ProfileScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.text}>Your friends&apos; workout feed will go here later.</Text>
+      <Text style={styles.title}>Profile</Text>
+      <Text style={styles.text}>
+        Your stats, PRs, progress photos, and settings will go here later.
+      </Text>
     </View>
   );
 }
