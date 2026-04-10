@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { Exercise } from '../types/exercise';
 
 type ExerciseCardProps = {
@@ -6,13 +7,17 @@ type ExerciseCardProps = {
 };
 
 export default function ExerciseCard({ exercise }: ExerciseCardProps) {
+  const handlePress = () => {
+    router.push(`/exercise/${exercise.id}`);
+  };
+
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={handlePress}>
       <Text style={styles.name}>{exercise.name}</Text>
       <Text style={styles.meta}>
         {exercise.muscleGroup} • {exercise.equipment}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
