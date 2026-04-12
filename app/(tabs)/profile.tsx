@@ -1,13 +1,14 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
       <Text style={styles.text}>
         Your stats, PRs, progress photos, and settings will go here later.
       </Text>
-    </View>
+    </SafeAreaView>
   );
 }
 

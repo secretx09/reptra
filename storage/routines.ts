@@ -20,3 +20,13 @@ export async function loadRoutines(): Promise<RoutineWithExercises[]> {
     return [];
   }
 }
+
+export async function deleteRoutineById(routineId: string) {
+  try {
+    const routines = await loadRoutines();
+    const updatedRoutines = routines.filter((routine) => routine.id !== routineId);
+    await saveRoutines(updatedRoutines);
+  } catch (error) {
+    console.error('Failed to delete routine:', error);
+  }
+}

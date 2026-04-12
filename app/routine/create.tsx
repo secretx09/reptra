@@ -1,13 +1,6 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  Pressable,
-  Alert,
-} from 'react-native';
+import { Text, StyleSheet, FlatList, TextInput, Pressable, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { exercises } from '../../data/exercises';
 import { Exercise } from '../../types/exercise';
@@ -70,7 +63,7 @@ export default function CreateRoutineScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Create Routine</Text>
 
       <TextInput
@@ -94,7 +87,7 @@ export default function CreateRoutineScreen() {
       <Pressable style={styles.saveButton} onPress={handleSaveRoutine}>
         <Text style={styles.saveButtonText}>Save Routine</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 

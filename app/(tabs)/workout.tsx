@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, Alert } from 'react-native';
+import { Text, StyleSheet, Pressable, FlatList, Alert } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { RoutineWithExercises } from '../../types/routine';
 import { loadRoutines } from '../../storage/routines';
 import RoutineCard from '../../components/RoutineCard';
 import { useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkoutScreen() {
   const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
@@ -25,7 +26,7 @@ export default function WorkoutScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Workout</Text>
 
       <Pressable
@@ -50,6 +51,7 @@ export default function WorkoutScreen() {
         renderItem={({ item }) => (
           <RoutineCard
             routine={item}
+            onPress={() => router.push(`/routine/${item.id}`)}
             onStart={() =>
               Alert.alert('Coming soon', `Starting ${item.name} will be added later.`)
             }
@@ -61,7 +63,7 @@ export default function WorkoutScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
