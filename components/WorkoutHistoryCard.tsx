@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { SavedWorkoutSession } from '../types/workout';
 
 type WorkoutHistoryCardProps = {
   workout: SavedWorkoutSession;
+  onPress?: () => void;
 };
 
 export default function WorkoutHistoryCard({
   workout,
+  onPress,
 }: WorkoutHistoryCardProps) {
   const totalSets = workout.exercises.reduce(
     (sum, exercise) => sum + exercise.sets.length,
@@ -20,7 +22,7 @@ export default function WorkoutHistoryCard({
   });
 
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       <Text style={styles.routineName}>{workout.routineName}</Text>
       <Text style={styles.meta}>
         {formattedDate} at {formattedTime}
@@ -30,7 +32,7 @@ export default function WorkoutHistoryCard({
         {workout.exercises.length === 1 ? '' : 's'} • {totalSets} set
         {totalSets === 1 ? '' : 's'}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 

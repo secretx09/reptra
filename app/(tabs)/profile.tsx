@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
@@ -28,7 +28,12 @@ export default function ProfileScreen() {
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <WorkoutHistoryCard workout={item} />}
+        renderItem={({ item }) => (
+          <WorkoutHistoryCard
+            workout={item}
+            onPress={() => router.push(`/workout/history/${item.id}`)}
+          />
+        )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             No workouts yet. Finish a workout to see it here.
