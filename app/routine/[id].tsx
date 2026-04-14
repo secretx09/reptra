@@ -82,9 +82,7 @@ export default function RoutineDetailScreen() {
 
         <Pressable
           style={styles.startButton}
-          onPress={() =>
-            Alert.alert('Coming soon', `Starting ${routine.name} will be added later.`)
-          }
+          onPress={() => router.push(`/workout/session/${routine.id}`)}
         >
           <Text style={styles.startButtonText}>Start Routine</Text>
         </Pressable>
