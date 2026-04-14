@@ -6,13 +6,19 @@ import {
   FlatList,
   Pressable,
   TextInput,
+  Alert,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadRoutines } from '../../../storage/routines';
+import { saveWorkouts, loadWorkouts } from '../../../storage/workouts';
 import { RoutineWithExercises } from '../../../types/routine';
 import { Exercise } from '../../../types/exercise';
-import { WorkoutSet } from '../../../types/workout';
+import {
+  WorkoutSet,
+  SavedWorkoutSession,
+  SavedExerciseLog,
+} from '../../../types/workout';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -65,6 +71,53 @@ export default function WorkoutSessionScreen() {
         [exerciseId]: updatedSets,
       };
     });
+  };
+
+  const handleFinishWorkout = async () => {
+    if (!routine) return;
+
+    const completedExercises: SavedExerciseLog[] = routine.exercises
+      .map((exercise) => {
+        const sets = exerciseSets[exercise.id] || [];
+
+        const nonEmptySets = sets.filter(
+          (set) => set.weight.trim() !== '' || set.reps.trim() !== ''
+        );
+
+        return {
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          sets: nonEmptySets,
+        };
+      })
+      .filter((exerciseLog) => exerciseLog.sets.length > 0);
+
+    if (completedExercises.length === 0) {
+      Alert.alert(
+        'No workout data',
+        'Add at least one set with weight or reps before finishing.'
+      );
+      return;
+    }
+
+    const newWorkout: SavedWorkoutSession = {
+      id: new Date().toISOString(),
+      routineId: routine.id,
+      routineName: routine.name,
+      completedAt: new Date().toISOString(),
+      exercises: completedExercises,
+    };
+
+    const existingWorkouts = await loadWorkouts();
+    const updatedWorkouts = [newWorkout, ...existingWorkouts];
+    await saveWorkouts(updatedWorkouts);
+
+    Alert.alert('Workout saved', 'Your workout has been saved.', [
+      {
+        text: 'OK',
+        onPress: () => router.back(),
+      },
+    ]);
   };
 
   if (!routine) {
@@ -140,6 +193,11 @@ export default function WorkoutSessionScreen() {
             );
           }}
           contentContainerStyle={styles.listContent}
+          ListFooterComponent={
+            <Pressable style={styles.finishButton} onPress={handleFinishWorkout}>
+              <Text style={styles.finishButtonText}>Finish Workout</Text>
+            </Pressable>
+          }
         />
       </SafeAreaView>
     </>
@@ -218,6 +276,19 @@ const styles = StyleSheet.create({
   addSetText: {
     color: '#4da6ff',
     fontWeight: '600',
+  },
+  finishButton: {
+    backgroundColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  finishButtonText: {
+    color: '#111111',
+    fontSize: 16,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 20,

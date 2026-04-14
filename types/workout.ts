@@ -32,3 +32,17 @@ export interface WorkoutSet {
   weight: string;
   reps: string;
 }
+
+export interface SavedExerciseLog {
+  exerciseId: string;
+  exerciseName: string;
+  sets: WorkoutSet[];
+}
+
+export interface SavedWorkoutSession {
+  id: string;
+  routineId: string | null;
+  routineName: string;
+  completedAt: string;
+  exercises: SavedExerciseLog[];
+}
