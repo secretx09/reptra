@@ -25,3 +25,10 @@ export interface PersonalRecord {
   bestEstimatedOneRepMax: number;
   updatedAt: string;
 }
+
+export interface WorkoutSet {
+  id: string;
+  setNumber: number;
+  weight: string;
+  reps: string;
+}

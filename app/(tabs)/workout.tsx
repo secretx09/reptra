@@ -52,9 +52,7 @@ export default function WorkoutScreen() {
           <RoutineCard
             routine={item}
             onPress={() => router.push(`/routine/${item.id}`)}
-            onStart={() =>
-              Alert.alert('Coming soon', `Starting ${item.name} will be added later.`)
-            }
+            onStart={() => router.push(`/workout/session/${item.id}`)}
           />
         )}
         ListEmptyComponent={
