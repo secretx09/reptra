@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Text, StyleSheet, FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
+import StatCard from '../../components/StatCard';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -20,10 +21,35 @@ export default function ProfileScreen() {
     }, [])
   );
 
+  const totalWorkouts = workouts.length;
+
+  const totalSets = useMemo(() => {
+    return workouts.reduce((workoutSum, workout) => {
+      return (
+        workoutSum +
+        workout.exercises.reduce((exerciseSum, exercise) => {
+          return exerciseSum + exercise.sets.length;
+        }, 0)
+      );
+    }, 0);
+  }, [workouts]);
+
+  const totalExercisesLogged = useMemo(() => {
+    return workouts.reduce((sum, workout) => {
+      return sum + workout.exercises.length;
+    }, 0);
+  }, [workouts]);
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
       <Text style={styles.subtitle}>Your recent workouts</Text>
+
+      <View style={styles.statsRow}>
+        <StatCard label="Total Workouts" value={totalWorkouts} />
+        <StatCard label="Total Sets" value={totalSets} />
+        <StatCard label="Exercises Logged" value={totalExercisesLogged} />
+      </View>
 
       <FlatList
         data={workouts}
@@ -62,6 +88,11 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 15,
     marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
   },
   emptyText: {
     color: '#aaaaaa',
