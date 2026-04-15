@@ -46,3 +46,9 @@ export interface SavedWorkoutSession {
   completedAt: string;
   exercises: SavedExerciseLog[];
 }
+
+export interface ExercisePR {
+  exerciseId: string;
+  exerciseName: string;
+  heaviestWeight: number;
+}

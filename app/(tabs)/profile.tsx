@@ -3,9 +3,11 @@ import { Text, StyleSheet, FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
-import { SavedWorkoutSession } from '../../types/workout';
+import { SavedWorkoutSession, ExercisePR } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import StatCard from '../../components/StatCard';
+import PRCard from '../../components/PRCard';
+import { calculateExercisePRs } from '../../utils/calculatePRs';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -40,6 +42,10 @@ export default function ProfileScreen() {
     }, 0);
   }, [workouts]);
 
+  const exercisePRs = useMemo(() => {
+    return calculateExercisePRs(workouts);
+  }, [workouts]);
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
@@ -50,6 +56,20 @@ export default function ProfileScreen() {
         <StatCard label="Total Sets" value={totalSets} />
         <StatCard label="Exercises Logged" value={totalExercisesLogged} />
       </View>
+
+      <Text style={styles.sectionTitle}>Personal Records</Text>
+
+      {exercisePRs.length === 0 ? (
+        <Text style={styles.emptyPRText}>
+          No PRs yet. Finish a workout with weight entered to see them here.
+        </Text>
+      ) : (
+        <View style={styles.prList}>
+          {exercisePRs.slice(0, 5).map((pr) => (
+            <PRCard key={pr.exerciseId} pr={pr} />
+          ))}
+        </View>
+      )}
 
       <FlatList
         data={workouts}
@@ -92,6 +112,20 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 10,
+    marginBottom: 18,
+  },
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  prList: {
+    marginBottom: 18,
+  },
+  emptyPRText: {
+    color: '#aaaaaa',
+    fontSize: 14,
     marginBottom: 18,
   },
   emptyText: {
