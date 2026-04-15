@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { loadWorkouts } from '../../../storage/workouts';
+import { loadWorkouts, deleteWorkoutById } from '../../../storage/workouts';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 
 export default function WorkoutHistoryDetailScreen() {
@@ -18,6 +18,26 @@ export default function WorkoutHistoryDetailScreen() {
 
     fetchWorkout();
   }, [id]);
+
+  const handleDeleteWorkout = () => {
+    if (!workout) return;
+
+    Alert.alert(
+      'Delete workout',
+      `Are you sure you want to delete this ${workout.routineName} workout?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteWorkoutById(workout.id);
+            router.back();
+          },
+        },
+      ]
+    );
+  };
 
   if (!workout) {
     return (
@@ -77,6 +97,11 @@ export default function WorkoutHistoryDetailScreen() {
               ))}
             </View>
           )}
+          ListFooterComponent={
+            <Pressable style={styles.deleteButton} onPress={handleDeleteWorkout}>
+              <Text style={styles.deleteButtonText}>Delete Workout</Text>
+            </Pressable>
+          }
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -142,6 +167,21 @@ const styles = StyleSheet.create({
   setValue: {
     color: '#aaaaaa',
     fontSize: 14,
+  },
+  deleteButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  deleteButtonText: {
+    color: '#ff8a8a',
+    fontSize: 16,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 24,

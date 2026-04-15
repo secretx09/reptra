@@ -20,3 +20,13 @@ export async function loadWorkouts(): Promise<SavedWorkoutSession[]> {
     return [];
   }
 }
+
+export async function deleteWorkoutById(workoutId: string) {
+  try {
+    const workouts = await loadWorkouts();
+    const updatedWorkouts = workouts.filter((workout) => workout.id !== workoutId);
+    await saveWorkouts(updatedWorkouts);
+  } catch (error) {
+    console.error('Failed to delete workout:', error);
+  }
+}
