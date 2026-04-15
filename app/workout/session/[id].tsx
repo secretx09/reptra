@@ -40,12 +40,13 @@ export default function WorkoutSessionScreen() {
   const handleAddSet = (exerciseId: string) => {
     setExerciseSets((prev) => {
       const currentSets = prev[exerciseId] || [];
+      const previousSet = currentSets[currentSets.length - 1];
 
       const newSet: WorkoutSet = {
         id: new Date().toISOString(),
         setNumber: currentSets.length + 1,
-        weight: '',
-        reps: '',
+        weight: previousSet ? previousSet.weight : '',
+        reps: previousSet ? previousSet.reps : '',
       };
 
       return {
