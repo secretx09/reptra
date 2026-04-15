@@ -51,4 +51,5 @@ export interface ExercisePR {
   exerciseId: string;
   exerciseName: string;
   heaviestWeight: number;
+  bestEstimatedOneRepMax: number;
 }

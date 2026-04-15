@@ -9,7 +9,14 @@ export default function PRCard({ pr }: PRCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.exerciseName}>{pr.exerciseName}</Text>
-      <Text style={styles.weight}>{pr.heaviestWeight} lb</Text>
+
+      <Text style={styles.weight}>
+        Max: {pr.heaviestWeight} lb
+      </Text>
+
+      <Text style={styles.oneRepMax}>
+        1RM: {Math.round(pr.bestEstimatedOneRepMax)} lb
+      </Text>
     </View>
   );
 }
@@ -27,11 +34,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   weight: {
+    color: '#aaaaaa',
+    fontSize: 14,
+  },
+  oneRepMax: {
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',
+    marginTop: 4,
   },
 });
