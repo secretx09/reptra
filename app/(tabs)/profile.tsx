@@ -57,20 +57,6 @@ export default function ProfileScreen() {
         <StatCard label="Exercises Logged" value={totalExercisesLogged} />
       </View>
 
-      <Text style={styles.sectionTitle}>Personal Records</Text>
-
-      {exercisePRs.length === 0 ? (
-        <Text style={styles.emptyPRText}>
-          No PRs yet. Finish a workout with weight entered to see them here.
-        </Text>
-      ) : (
-        <View style={styles.prList}>
-          {exercisePRs.slice(0, 5).map((pr) => (
-            <PRCard key={pr.exerciseId} pr={pr} />
-          ))}
-        </View>
-      )}
-
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id}
@@ -80,6 +66,23 @@ export default function ProfileScreen() {
             onPress={() => router.push(`/workout/history/${item.id}`)}
           />
         )}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.sectionTitle}>Personal Records</Text>
+
+            {exercisePRs.length === 0 ? (
+              <Text style={styles.emptyPRText}>
+                No PRs yet. Finish a workout with weight entered to see them here.
+              </Text>
+            ) : (
+              <View style={styles.prList}>
+                {exercisePRs.slice(0, 5).map((pr) => (
+                  <PRCard key={pr.exerciseId} pr={pr} />
+                ))}
+              </View>
+            )}
+          </>
+        }
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             No workouts yet. Finish a workout to see it here.
