@@ -3,7 +3,7 @@ import { Text, StyleSheet, FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
-import { SavedWorkoutSession, ExercisePR } from '../../types/workout';
+import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import StatCard from '../../components/StatCard';
 import PRCard from '../../components/PRCard';
@@ -75,11 +75,22 @@ export default function ProfileScreen() {
                 No PRs yet. Finish a workout with weight entered to see them here.
               </Text>
             ) : (
-              <View style={styles.prList}>
-                {exercisePRs.slice(0, 5).map((pr) => (
-                  <PRCard key={pr.exerciseId} pr={pr} />
-                ))}
-              </View>
+              <>
+                <View style={styles.prList}>
+                  {exercisePRs.slice(0, 3).map((pr) => (
+                    <PRCard key={pr.exerciseId} pr={pr} />
+                  ))}
+                </View>
+
+                {exercisePRs.length > 3 && (
+                  <Text
+                    style={styles.viewAllLink}
+                    onPress={() => router.push('/profile/prs')}
+                  >
+                    View All PRs
+                  </Text>
+                )}
+              </>
             )}
           </>
         }
@@ -129,6 +140,12 @@ const styles = StyleSheet.create({
   emptyPRText: {
     color: '#aaaaaa',
     fontSize: 14,
+    marginBottom: 18,
+  },
+  viewAllLink: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
     marginBottom: 18,
   },
   emptyText: {
