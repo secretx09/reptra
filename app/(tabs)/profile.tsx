@@ -8,6 +8,7 @@ import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import StatCard from '../../components/StatCard';
 import PRCard from '../../components/PRCard';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
+import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -46,17 +47,12 @@ export default function ProfileScreen() {
     return calculateExercisePRs(workouts);
   }, [workouts]);
 
+  const weeklyStats = useMemo(() => {
+    return calculateWeeklyStats(workouts);
+  }, [workouts]);
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <Text style={styles.subtitle}>Your recent workouts</Text>
-
-      <View style={styles.statsRow}>
-        <StatCard label="Total Workouts" value={totalWorkouts} />
-        <StatCard label="Total Sets" value={totalSets} />
-        <StatCard label="Exercises Logged" value={totalExercisesLogged} />
-      </View>
-
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id}
@@ -68,6 +64,23 @@ export default function ProfileScreen() {
         )}
         ListHeaderComponent={
           <>
+            <Text style={styles.title}>Profile</Text>
+            <Text style={styles.subtitle}>Your recent workouts</Text>
+
+            <View style={styles.statsRow}>
+              <StatCard label="Total Workouts" value={totalWorkouts} />
+              <StatCard label="Total Sets" value={totalSets} />
+              <StatCard label="Exercises Logged" value={totalExercisesLogged} />
+            </View>
+
+            <Text style={styles.sectionTitle}>This Week</Text>
+
+            <View style={styles.statsRow}>
+              <StatCard label="Workouts" value={weeklyStats.workoutsThisWeek} />
+              <StatCard label="Sets" value={weeklyStats.setsThisWeek} />
+              <StatCard label="Exercises" value={weeklyStats.exercisesThisWeek} />
+            </View>
+
             <Text style={styles.sectionTitle}>Personal Records</Text>
 
             {exercisePRs.length === 0 ? (
@@ -135,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   prList: {
-    marginBottom: 18,
+    marginBottom: 10,
   },
   emptyPRText: {
     color: '#aaaaaa',
