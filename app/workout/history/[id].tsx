@@ -88,6 +88,13 @@ export default function WorkoutHistoryDetailScreen() {
                 {index + 1}. {item.exerciseName}
               </Text>
 
+              {item.note ? (
+                <View style={styles.noteBox}>
+                  <Text style={styles.noteTitle}>Exercise Note</Text>
+                  <Text style={styles.noteText}>{item.note}</Text>
+                </View>
+              ) : null}
+
               {item.sets.map((set: WorkoutSet) => (
                 <View key={set.id} style={styles.setRow}>
                   <Text style={styles.setLabel}>Set {set.setNumber}</Text>
@@ -148,6 +155,23 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  noteBox: {
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  noteTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  noteText: {
+    color: '#dddddd',
+    fontSize: 14,
+    lineHeight: 20,
   },
   setRow: {
     backgroundColor: '#161616',

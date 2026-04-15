@@ -31,11 +31,13 @@ export interface WorkoutSet {
   setNumber: number;
   weight: string;
   reps: string;
+  completed: boolean;
 }
 
 export interface SavedExerciseLog {
   exerciseId: string;
   exerciseName: string;
+  note: string;
   sets: WorkoutSet[];
 }
 

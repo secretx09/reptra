@@ -26,6 +26,9 @@ export default function WorkoutSessionScreen() {
   const [exerciseSets, setExerciseSets] = useState<{
     [exerciseId: string]: WorkoutSet[];
   }>({});
+  const [exerciseNotes, setExerciseNotes] = useState<{
+    [exerciseId: string]: string;
+  }>({});
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -47,6 +50,7 @@ export default function WorkoutSessionScreen() {
         setNumber: currentSets.length + 1,
         weight: previousSet ? previousSet.weight : '',
         reps: previousSet ? previousSet.reps : '',
+        completed: false,
       };
 
       return {
@@ -74,12 +78,50 @@ export default function WorkoutSessionScreen() {
     });
   };
 
+  const handleToggleSetCompleted = (exerciseId: string, setId: string) => {
+    setExerciseSets((prev) => {
+      const updatedSets = (prev[exerciseId] || []).map((set) =>
+        set.id === setId ? { ...set, completed: !set.completed } : set
+      );
+
+      return {
+        ...prev,
+        [exerciseId]: updatedSets,
+      };
+    });
+  };
+
+  const handleDeleteSet = (exerciseId: string, setId: string) => {
+    setExerciseSets((prev) => {
+      const currentSets = prev[exerciseId] || [];
+      const filteredSets = currentSets.filter((set) => set.id !== setId);
+
+      const renumberedSets = filteredSets.map((set, index) => ({
+        ...set,
+        setNumber: index + 1,
+      }));
+
+      return {
+        ...prev,
+        [exerciseId]: renumberedSets,
+      };
+    });
+  };
+
+  const handleUpdateExerciseNote = (exerciseId: string, value: string) => {
+    setExerciseNotes((prev) => ({
+      ...prev,
+      [exerciseId]: value,
+    }));
+  };
+
   const handleFinishWorkout = async () => {
     if (!routine) return;
 
     const completedExercises: SavedExerciseLog[] = routine.exercises
       .map((exercise) => {
         const sets = exerciseSets[exercise.id] || [];
+        const note = exerciseNotes[exercise.id] || '';
 
         const nonEmptySets = sets.filter(
           (set) => set.weight.trim() !== '' || set.reps.trim() !== ''
@@ -88,15 +130,19 @@ export default function WorkoutSessionScreen() {
         return {
           exerciseId: exercise.id,
           exerciseName: exercise.name,
+          note: note.trim(),
           sets: nonEmptySets,
         };
       })
-      .filter((exerciseLog) => exerciseLog.sets.length > 0);
+      .filter(
+        (exerciseLog) =>
+          exerciseLog.sets.length > 0 || exerciseLog.note.trim() !== ''
+      );
 
     if (completedExercises.length === 0) {
       Alert.alert(
         'No workout data',
-        'Add at least one set with weight or reps before finishing.'
+        'Add at least one set or exercise note before finishing.'
       );
       return;
     }
@@ -134,17 +180,21 @@ export default function WorkoutSessionScreen() {
       <Stack.Screen options={{ title: 'Workout Session' }} />
 
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>{routine.name}</Text>
-        <Text style={styles.subtitle}>
-          {routine.exercises.length} exercise
-          {routine.exercises.length === 1 ? '' : 's'}
-        </Text>
-
         <FlatList
           data={routine.exercises}
           keyExtractor={(item: Exercise) => item.id}
+          ListHeaderComponent={
+            <>
+              <Text style={styles.title}>{routine.name}</Text>
+              <Text style={styles.subtitle}>
+                {routine.exercises.length} exercise
+                {routine.exercises.length === 1 ? '' : 's'}
+              </Text>
+            </>
+          }
           renderItem={({ item, index }) => {
             const sets = exerciseSets[item.id] || [];
+            const exerciseNote = exerciseNotes[item.id] || '';
 
             return (
               <View style={styles.exerciseCard}>
@@ -156,12 +206,57 @@ export default function WorkoutSessionScreen() {
                   {item.muscleGroup} • {item.equipment}
                 </Text>
 
+                <Text style={styles.exerciseNoteLabel}>Exercise Note</Text>
+                <TextInput
+                  style={styles.exerciseNoteInput}
+                  placeholder="Add a note for this exercise..."
+                  placeholderTextColor="#777777"
+                  value={exerciseNote}
+                  onChangeText={(value) =>
+                    handleUpdateExerciseNote(item.id, value)
+                  }
+                  multiline
+                />
+
                 {sets.map((set) => (
-                  <View key={set.id} style={styles.setRow}>
-                    <Text style={styles.setLabel}>Set {set.setNumber}</Text>
+                  <View
+                    key={set.id}
+                    style={[
+                      styles.setRow,
+                      set.completed && styles.setRowCompleted,
+                    ]}
+                  >
+                    <Pressable
+                      style={[
+                        styles.checkButton,
+                        set.completed && styles.checkButtonCompleted,
+                      ]}
+                      onPress={() => handleToggleSetCompleted(item.id, set.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.checkButtonText,
+                          set.completed && styles.checkButtonTextCompleted,
+                        ]}
+                      >
+                        ✓
+                      </Text>
+                    </Pressable>
+
+                    <Text
+                      style={[
+                        styles.setLabel,
+                        set.completed && styles.completedText,
+                      ]}
+                    >
+                      Set {set.setNumber}
+                    </Text>
 
                     <TextInput
-                      style={styles.input}
+                      style={[
+                        styles.input,
+                        set.completed && styles.inputCompleted,
+                      ]}
                       placeholder="Weight"
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
@@ -172,7 +267,10 @@ export default function WorkoutSessionScreen() {
                     />
 
                     <TextInput
-                      style={styles.input}
+                      style={[
+                        styles.input,
+                        set.completed && styles.inputCompleted,
+                      ]}
                       placeholder="Reps"
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
@@ -181,6 +279,13 @@ export default function WorkoutSessionScreen() {
                         handleUpdateSet(item.id, set.id, 'reps', value)
                       }
                     />
+
+                    <Pressable
+                      style={styles.deleteSetButton}
+                      onPress={() => handleDeleteSet(item.id, set.id)}
+                    >
+                      <Text style={styles.deleteSetButtonText}>✕</Text>
+                    </Pressable>
                   </View>
                 ))}
 
@@ -199,6 +304,7 @@ export default function WorkoutSessionScreen() {
               <Text style={styles.finishButtonText}>Finish Workout</Text>
             </Pressable>
           }
+          showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
     </>
@@ -239,6 +345,25 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#aaaaaa',
     fontSize: 14,
+    marginBottom: 12,
+  },
+  exerciseNoteLabel: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  exerciseNoteInput: {
+    backgroundColor: '#161616',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 14,
+    minHeight: 70,
+    textAlignVertical: 'top',
+    marginBottom: 10,
   },
   setRow: {
     backgroundColor: '#161616',
@@ -249,11 +374,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  setRowCompleted: {
+    backgroundColor: '#132417',
+    borderWidth: 1,
+    borderColor: '#2d6a3a',
+  },
+  checkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#222222',
+    borderWidth: 1,
+    borderColor: '#333333',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkButtonCompleted: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  checkButtonText: {
+    color: '#888888',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  checkButtonTextCompleted: {
+    color: '#111111',
+  },
   setLabel: {
     color: '#ffffff',
     fontSize: 14,
     width: 48,
     fontWeight: '600',
+  },
+  completedText: {
+    color: '#b8e6c1',
   },
   input: {
     flex: 1,
@@ -265,6 +420,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     fontSize: 14,
+  },
+  inputCompleted: {
+    borderColor: '#2d6a3a',
+  },
+  deleteSetButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteSetButtonText: {
+    color: '#ff8a8a',
+    fontSize: 16,
+    fontWeight: '700',
   },
   addSetButton: {
     marginTop: 10,
