@@ -123,15 +123,17 @@ export default function WorkoutSessionScreen() {
         const sets = exerciseSets[exercise.id] || [];
         const note = exerciseNotes[exercise.id] || '';
 
-        const nonEmptySets = sets.filter(
-          (set) => set.weight.trim() !== '' || set.reps.trim() !== ''
+        const checkedAndFilledSets = sets.filter(
+          (set) =>
+            set.completed &&
+            (set.weight.trim() !== '' || set.reps.trim() !== '')
         );
 
         return {
           exerciseId: exercise.id,
           exerciseName: exercise.name,
           note: note.trim(),
-          sets: nonEmptySets,
+          sets: checkedAndFilledSets,
         };
       })
       .filter(
@@ -141,8 +143,8 @@ export default function WorkoutSessionScreen() {
 
     if (completedExercises.length === 0) {
       Alert.alert(
-        'No workout data',
-        'Add at least one set or exercise note before finishing.'
+        'Nothing to save',
+        'Check off at least one set or add an exercise note before finishing.'
       );
       return;
     }

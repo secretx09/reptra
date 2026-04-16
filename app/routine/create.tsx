@@ -1,15 +1,41 @@
-import { useState } from 'react';
-import { Text, StyleSheet, FlatList, TextInput, Pressable, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  Pressable,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
 import { exercises } from '../../data/exercises';
 import { Exercise } from '../../types/exercise';
 import { RoutineWithExercises } from '../../types/routine';
 import { loadRoutines, saveRoutines } from '../../storage/routines';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
 
 export default function CreateRoutineScreen() {
   const [routineName, setRoutineName] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
+
+  const filteredExercises = useMemo(() => {
+    return exercises.filter((exercise) => {
+      const matchesSearch = exercise.name
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
+
+      const matchesMuscleGroup =
+        selectedMuscleGroup === 'All' ||
+        exercise.muscleGroup === selectedMuscleGroup;
+
+      return matchesSearch && matchesMuscleGroup;
+    });
+  }, [searchText, selectedMuscleGroup]);
 
   const handleToggleExercise = (exercise: Exercise) => {
     const alreadySelected = selectedExercises.some((item) => item.id === exercise.id);
@@ -63,31 +89,72 @@ export default function CreateRoutineScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Create Routine</Text>
+    <>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Create Routine</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Routine name"
-        placeholderTextColor="#888888"
-        value={routineName}
-        onChangeText={setRoutineName}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Routine name"
+          placeholderTextColor="#888888"
+          value={routineName}
+          onChangeText={setRoutineName}
+        />
 
-      <Text style={styles.sectionTitle}>Select Exercises</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Search exercises..."
+          placeholderTextColor="#888888"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
 
-      <FlatList
-        data={exercises}
-        keyExtractor={(item) => item.id}
-        renderItem={renderExercise}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-      />
+        <View style={styles.filterRow}>
+          {muscleGroups.map((group) => {
+            const isSelected = selectedMuscleGroup === group;
 
-      <Pressable style={styles.saveButton} onPress={handleSaveRoutine}>
-        <Text style={styles.saveButtonText}>Save Routine</Text>
-      </Pressable>
-    </SafeAreaView>
+            return (
+              <Pressable
+                key={group}
+                style={[
+                  styles.filterButton,
+                  isSelected && styles.filterButtonSelected,
+                ]}
+                onPress={() => setSelectedMuscleGroup(group)}
+              >
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    isSelected && styles.filterButtonTextSelected,
+                  ]}
+                >
+                  {group}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          Select Exercises ({selectedExercises.length})
+        </Text>
+
+        <FlatList
+          data={filteredExercises}
+          keyExtractor={(item) => item.id}
+          renderItem={renderExercise}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No exercises found.</Text>
+          }
+        />
+
+        <Pressable style={styles.saveButton} onPress={handleSaveRoutine}>
+          <Text style={styles.saveButtonText}>Save Routine</Text>
+        </Pressable>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -111,8 +178,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     fontSize: 16,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  filterButton: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterButtonSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  filterButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterButtonTextSelected: {
+    color: '#111111',
   },
   sectionTitle: {
     color: '#ffffff',
@@ -144,6 +237,12 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#aaaaaa',
     fontSize: 14,
+  },
+  emptyText: {
+    color: '#aaaaaa',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 30,
   },
   saveButton: {
     backgroundColor: '#4da6ff',
