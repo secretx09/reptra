@@ -30,3 +30,18 @@ export async function deleteRoutineById(routineId: string) {
     console.error('Failed to delete routine:', error);
   }
 }
+
+export async function updateRoutineById(
+  routineId: string,
+  updatedRoutine: RoutineWithExercises
+) {
+  try {
+    const routines = await loadRoutines();
+    const updatedRoutines = routines.map((routine) =>
+      routine.id === routineId ? updatedRoutine : routine
+    );
+    await saveRoutines(updatedRoutines);
+  } catch (error) {
+    console.error('Failed to update routine:', error);
+  }
+}

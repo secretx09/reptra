@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  Alert,
+} from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Exercise } from '../../types/exercise';
 import { RoutineWithExercises } from '../../types/routine';
 import { deleteRoutineById, loadRoutines } from '../../storage/routines';
@@ -67,29 +74,39 @@ export default function RoutineDetailScreen() {
           data={routine.exercises}
           keyExtractor={(item: Exercise) => item.id}
           renderItem={({ item, index }) => (
-            <SafeAreaView style={styles.exerciseCard}>
+            <View style={styles.exerciseCard}>
               <Text style={styles.exerciseName}>
                 {index + 1}. {item.name}
               </Text>
               <Text style={styles.exerciseMeta}>
                 {item.muscleGroup} • {item.equipment}
               </Text>
-            </SafeAreaView>
+            </View>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            <>
+              <Pressable
+                style={styles.editButton}
+                onPress={() => router.push(`/routine/edit/${routine.id}`)}
+              >
+                <Text style={styles.editButtonText}>Edit Routine</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.startButton}
+                onPress={() => router.push(`/workout/session/${routine.id}`)}
+              >
+                <Text style={styles.startButtonText}>Start Routine</Text>
+              </Pressable>
+
+              <Pressable style={styles.deleteButton} onPress={handleDeleteRoutine}>
+                <Text style={styles.deleteButtonText}>Delete Routine</Text>
+              </Pressable>
+            </>
+          }
         />
-
-        <Pressable
-          style={styles.startButton}
-          onPress={() => router.push(`/workout/session/${routine.id}`)}
-        >
-          <Text style={styles.startButtonText}>Start Routine</Text>
-        </Pressable>
-
-        <Pressable style={styles.deleteButton} onPress={handleDeleteRoutine}>
-          <Text style={styles.deleteButtonText}>Delete Routine</Text>
-        </Pressable>
       </SafeAreaView>
     </>
   );
@@ -139,12 +156,26 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 14,
   },
+  editButton: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  editButtonText: {
+    color: '#4da6ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   startButton: {
     backgroundColor: '#4da6ff',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
     marginBottom: 12,
   },
   startButtonText: {
