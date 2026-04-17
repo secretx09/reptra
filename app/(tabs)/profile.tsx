@@ -5,8 +5,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
-import StatCard from '../../components/StatCard';
-import PRCard from '../../components/PRCard';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 
@@ -26,23 +24,6 @@ export default function ProfileScreen() {
 
   const totalWorkouts = workouts.length;
 
-  const totalSets = useMemo(() => {
-    return workouts.reduce((workoutSum, workout) => {
-      return (
-        workoutSum +
-        workout.exercises.reduce((exerciseSum, exercise) => {
-          return exerciseSum + exercise.sets.length;
-        }, 0)
-      );
-    }, 0);
-  }, [workouts]);
-
-  const totalExercisesLogged = useMemo(() => {
-    return workouts.reduce((sum, workout) => {
-      return sum + workout.exercises.length;
-    }, 0);
-  }, [workouts]);
-
   const exercisePRs = useMemo(() => {
     return calculateExercisePRs(workouts);
   }, [workouts]);
@@ -52,7 +33,7 @@ export default function ProfileScreen() {
   }, [workouts]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id}
@@ -64,58 +45,49 @@ export default function ProfileScreen() {
         )}
         ListHeaderComponent={
           <>
-            <View style={styles.headerRow}>
-              <View>
-                <Text style={styles.title}>Profile</Text>
-                <Text style={styles.subtitle}>Your recent workouts</Text>
-              </View>
-
-              <Pressable
-                style={styles.settingsButton}
-                onPress={() => router.push('/profile/settings')}
-              >
-                <Text style={styles.settingsButtonText}>Settings</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.statsRow}>
-              <StatCard label="Total Workouts" value={totalWorkouts} />
-              <StatCard label="Total Sets" value={totalSets} />
-              <StatCard label="Exercises Logged" value={totalExercisesLogged} />
-            </View>
-
-            <Text style={styles.sectionTitle}>This Week</Text>
-
-            <View style={styles.statsRow}>
-              <StatCard label="Workouts" value={weeklyStats.workoutsThisWeek} />
-              <StatCard label="Sets" value={weeklyStats.setsThisWeek} />
-              <StatCard label="Exercises" value={weeklyStats.exercisesThisWeek} />
-            </View>
-
-            <Text style={styles.sectionTitle}>Personal Records</Text>
-
-            {exercisePRs.length === 0 ? (
-              <Text style={styles.emptyPRText}>
-                No PRs yet. Finish a workout with weight entered to see them here.
-              </Text>
-            ) : (
-              <>
-                <View style={styles.prList}>
-                  {exercisePRs.slice(0, 3).map((pr) => (
-                    <PRCard key={pr.exerciseId} pr={pr} />
-                  ))}
+            <View style={styles.headerCard}>
+              <View style={styles.headerTopRow}>
+                <View style={styles.headerTextWrap}>
+                  <Text style={styles.title}>Profile</Text>
+                  <Text style={styles.subtitle}>Your training summary in Reptra</Text>
                 </View>
 
-                {exercisePRs.length > 3 && (
-                  <Text
-                    style={styles.viewAllLink}
-                    onPress={() => router.push('/profile/prs')}
-                  >
-                    View All PRs
+                <Pressable
+                  style={styles.settingsButton}
+                  onPress={() => router.push('/profile/settings')}
+                >
+                  <Text style={styles.settingsButtonText}>Settings</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryPill}>
+                  <Text style={styles.summaryPillValue}>{totalWorkouts}</Text>
+                  <Text style={styles.summaryPillLabel}>Workouts</Text>
+                </View>
+
+                <View style={styles.summaryPill}>
+                  <Text style={styles.summaryPillValue}>
+                    {weeklyStats.workoutsThisWeek}
                   </Text>
-                )}
-              </>
-            )}
+                  <Text style={styles.summaryPillLabel}>This Week</Text>
+                </View>
+
+                <View style={styles.summaryPill}>
+                  <Text style={styles.summaryPillValue}>{exercisePRs.length}</Text>
+                  <Text style={styles.summaryPillLabel}>PRs</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.quickActionsRow}>
+              <Pressable
+                style={styles.primaryActionButton}
+                onPress={() => router.push('/profile/prs')}
+              >
+                <Text style={styles.primaryActionButtonText}>View PRs</Text>
+              </Pressable>
+            </View>
 
             <Text style={styles.sectionTitle}>Workout History</Text>
           </>
@@ -127,6 +99,7 @@ export default function ProfileScreen() {
         }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
       />
     </SafeAreaView>
   );
@@ -136,27 +109,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    overflow: 'hidden',
   },
-  headerRow: {
+  headerCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
     gap: 12,
+    marginBottom: 14,
+  },
+  headerTextWrap: {
+    flex: 1,
   },
   title: {
     color: '#ffffff',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   subtitle: {
     color: '#aaaaaa',
-    fontSize: 15,
+    fontSize: 13,
   },
   settingsButton: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#1f1f1f',
     borderWidth: 1,
     borderColor: '#2e2e2e',
     borderRadius: 10,
@@ -165,33 +151,54 @@ const styles = StyleSheet.create({
   },
   settingsButtonText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
-  statsRow: {
+  summaryRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 18,
   },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 20,
+  summaryPill: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  summaryPillValue: {
+    color: '#4da6ff',
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 3,
   },
-  prList: {
-    marginBottom: 10,
-  },
-  emptyPRText: {
+  summaryPillLabel: {
     color: '#aaaaaa',
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  quickActionsRow: {
     marginBottom: 18,
   },
-  viewAllLink: {
+  primaryActionButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  primaryActionButtonText: {
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',
-    marginBottom: 18,
+  },
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 19,
+    fontWeight: '700',
+    marginBottom: 10,
   },
   emptyText: {
     color: '#aaaaaa',
