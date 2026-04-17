@@ -12,7 +12,10 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { exercises } from '../../../data/exercises';
 import { Exercise } from '../../../types/exercise';
-import { RoutineWithExercises } from '../../../types/routine';
+import {
+  RoutineExerciseWithDefaults,
+  RoutineWithExercises,
+} from '../../../types/routine';
 import { loadRoutines, updateRoutineById } from '../../../storage/routines';
 
 const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
@@ -21,7 +24,9 @@ export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [routineName, setRoutineName] = useState('');
-  const [editedExercises, setEditedExercises] = useState<Exercise[]>([]);
+  const [editedExercises, setEditedExercises] = useState<
+    RoutineExerciseWithDefaults[]
+  >([]);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
 
@@ -63,7 +68,16 @@ export default function EditRoutineScreen() {
   };
 
   const handleAddExercise = (exercise: Exercise) => {
-    setEditedExercises((prev) => [...prev, exercise]);
+    setEditedExercises((prev) => [
+      ...prev,
+      {
+        ...exercise,
+        defaultSets: '',
+        defaultWeight: '',
+        defaultReps: '',
+        defaultRestSeconds: '',
+      },
+    ]);
   };
 
   const handleMoveExerciseUp = (index: number) => {
@@ -84,6 +98,18 @@ export default function EditRoutineScreen() {
       [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
       return updated;
     });
+  };
+
+  const handleUpdateExerciseDefault = (
+    exerciseId: string,
+    field: 'defaultSets' | 'defaultWeight' | 'defaultReps' | 'defaultRestSeconds',
+    value: string
+  ) => {
+    setEditedExercises((prev) =>
+      prev.map((exercise) =>
+        exercise.id === exerciseId ? { ...exercise, [field]: value } : exercise
+      )
+    );
   };
 
   const handleSaveChanges = async () => {
@@ -178,6 +204,53 @@ export default function EditRoutineScreen() {
                       <Text style={styles.exerciseMeta}>
                         {item.muscleGroup} • {item.equipment}
                       </Text>
+
+                      <View style={styles.defaultsRow}>
+                        <TextInput
+                          style={styles.smallInput}
+                          placeholder="Sets"
+                          placeholderTextColor="#777777"
+                          keyboardType="numeric"
+                          value={item.defaultSets}
+                          onChangeText={(value) =>
+                            handleUpdateExerciseDefault(item.id, 'defaultSets', value)
+                          }
+                        />
+                        <TextInput
+                          style={styles.smallInput}
+                          placeholder="Weight"
+                          placeholderTextColor="#777777"
+                          keyboardType="numeric"
+                          value={item.defaultWeight}
+                          onChangeText={(value) =>
+                            handleUpdateExerciseDefault(item.id, 'defaultWeight', value)
+                          }
+                        />
+                        <TextInput
+                          style={styles.smallInput}
+                          placeholder="Reps"
+                          placeholderTextColor="#777777"
+                          keyboardType="numeric"
+                          value={item.defaultReps}
+                          onChangeText={(value) =>
+                            handleUpdateExerciseDefault(item.id, 'defaultReps', value)
+                          }
+                        />
+                        <TextInput
+                          style={styles.smallInput}
+                          placeholder="Rest"
+                          placeholderTextColor="#777777"
+                          keyboardType="numeric"
+                          value={item.defaultRestSeconds}
+                          onChangeText={(value) =>
+                            handleUpdateExerciseDefault(
+                              item.id,
+                              'defaultRestSeconds',
+                              value
+                            )
+                          }
+                        />
+                      </View>
                     </View>
 
                     <View style={styles.actionColumn}>
@@ -331,7 +404,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
   },
@@ -366,6 +439,24 @@ const styles = StyleSheet.create({
   },
   exerciseMeta: {
     color: '#aaaaaa',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  defaultsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  smallInput: {
+    flex: 1,
+    minWidth: 70,
+    backgroundColor: '#161616',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     fontSize: 14,
   },
   removeButton: {

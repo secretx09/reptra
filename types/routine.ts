@@ -16,9 +16,16 @@ export interface RoutineExercise {
   targetRepMax: number;
 }
 
+export interface RoutineExerciseWithDefaults extends Exercise {
+  defaultSets: string;
+  defaultWeight: string;
+  defaultReps: string;
+  defaultRestSeconds: string;
+}
+
 export interface RoutineWithExercises {
   id: string;
   name: string;
   createdAt: string;
-  exercises: Exercise[];
+  exercises: RoutineExerciseWithDefaults[];
 }

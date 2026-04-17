@@ -12,7 +12,7 @@ import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadRoutines } from '../../../storage/routines';
 import { saveWorkouts, loadWorkouts } from '../../../storage/workouts';
-import { RoutineWithExercises } from '../../../types/routine';
+import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
 import { Exercise } from '../../../types/exercise';
 import {
   WorkoutSet,
@@ -35,7 +35,35 @@ export default function WorkoutSessionScreen() {
     const fetchRoutine = async () => {
       const routines = await loadRoutines();
       const found = routines.find((r) => r.id === id) || null;
-      setRoutine(found);
+
+      if (found) {
+        setRoutine(found);
+
+        const initialExerciseSets: { [exerciseId: string]: WorkoutSet[] } = {};
+
+        found.exercises.forEach((exercise: RoutineExerciseWithDefaults) => {
+          const defaultSetCount = Number(exercise.defaultSets);
+
+          if (!Number.isNaN(defaultSetCount) && defaultSetCount > 0) {
+            initialExerciseSets[exercise.id] = Array.from(
+              { length: defaultSetCount },
+              (_, index) => ({
+                id: `${exercise.id}-${index}-${Date.now()}`,
+                setNumber: index + 1,
+                weight: exercise.defaultWeight || '',
+                reps: exercise.defaultReps || '',
+                completed: false,
+              })
+            );
+          } else {
+            initialExerciseSets[exercise.id] = [];
+          }
+        });
+
+        setExerciseSets(initialExerciseSets);
+      } else {
+        setRoutine(null);
+      }
     };
 
     fetchRoutine();
@@ -265,6 +293,12 @@ export default function WorkoutSessionScreen() {
                   {item.muscleGroup} • {item.equipment}
                 </Text>
 
+                {!!item.defaultRestSeconds && (
+                  <Text style={styles.defaultInfo}>
+                    Default Rest: {item.defaultRestSeconds}s
+                  </Text>
+                )}
+
                 <Text style={styles.exerciseNoteLabel}>Exercise Note</Text>
                 <TextInput
                   style={styles.exerciseNoteInput}
@@ -442,6 +476,12 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#aaaaaa',
     fontSize: 14,
+    marginBottom: 8,
+  },
+  defaultInfo: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '600',
     marginBottom: 12,
   },
   exerciseNoteLabel: {

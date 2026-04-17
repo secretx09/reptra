@@ -11,7 +11,10 @@ import {
 import { router } from 'expo-router';
 import { exercises } from '../../data/exercises';
 import { Exercise } from '../../types/exercise';
-import { RoutineWithExercises } from '../../types/routine';
+import {
+  RoutineExerciseWithDefaults,
+  RoutineWithExercises,
+} from '../../types/routine';
 import { loadRoutines, saveRoutines } from '../../storage/routines';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,7 +24,9 @@ export default function CreateRoutineScreen() {
   const [routineName, setRoutineName] = useState('');
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
+  const [selectedExercises, setSelectedExercises] = useState<
+    RoutineExerciseWithDefaults[]
+  >([]);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter((exercise) => {
@@ -43,8 +48,29 @@ export default function CreateRoutineScreen() {
     if (alreadySelected) {
       setSelectedExercises((prev) => prev.filter((item) => item.id !== exercise.id));
     } else {
-      setSelectedExercises((prev) => [...prev, exercise]);
+      setSelectedExercises((prev) => [
+        ...prev,
+        {
+          ...exercise,
+          defaultSets: '',
+          defaultWeight: '',
+          defaultReps: '',
+          defaultRestSeconds: '',
+        },
+      ]);
     }
+  };
+
+  const handleUpdateExerciseDefault = (
+    exerciseId: string,
+    field: 'defaultSets' | 'defaultWeight' | 'defaultReps' | 'defaultRestSeconds',
+    value: string
+  ) => {
+    setSelectedExercises((prev) =>
+      prev.map((exercise) =>
+        exercise.id === exerciseId ? { ...exercise, [field]: value } : exercise
+      )
+    );
   };
 
   const handleSaveRoutine = async () => {
@@ -89,72 +115,134 @@ export default function CreateRoutineScreen() {
   };
 
   return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Create Routine</Text>
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={filteredExercises}
+        keyExtractor={(item) => item.id}
+        renderItem={renderExercise}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.title}>Create Routine</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Routine name"
-          placeholderTextColor="#888888"
-          value={routineName}
-          onChangeText={setRoutineName}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Routine name"
+              placeholderTextColor="#888888"
+              value={routineName}
+              onChangeText={setRoutineName}
+            />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Search exercises..."
-          placeholderTextColor="#888888"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Search exercises..."
+              placeholderTextColor="#888888"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
 
-        <View style={styles.filterRow}>
-          {muscleGroups.map((group) => {
-            const isSelected = selectedMuscleGroup === group;
+            <View style={styles.filterRow}>
+              {muscleGroups.map((group) => {
+                const isSelected = selectedMuscleGroup === group;
 
-            return (
-              <Pressable
-                key={group}
-                style={[
-                  styles.filterButton,
-                  isSelected && styles.filterButtonSelected,
-                ]}
-                onPress={() => setSelectedMuscleGroup(group)}
-              >
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    isSelected && styles.filterButtonTextSelected,
-                  ]}
-                >
-                  {group}
+                return (
+                  <Pressable
+                    key={group}
+                    style={[
+                      styles.filterButton,
+                      isSelected && styles.filterButtonSelected,
+                    ]}
+                    onPress={() => setSelectedMuscleGroup(group)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        isSelected && styles.filterButtonTextSelected,
+                      ]}
+                    >
+                      {group}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Selected Exercises ({selectedExercises.length})
+            </Text>
+
+            {selectedExercises.map((exercise, index) => (
+              <View key={exercise.id} style={styles.selectedExerciseCard}>
+                <Text style={styles.exerciseName}>
+                  {index + 1}. {exercise.name}
                 </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                <Text style={styles.exerciseMeta}>
+                  {exercise.muscleGroup} • {exercise.equipment}
+                </Text>
 
-        <Text style={styles.sectionTitle}>
-          Select Exercises ({selectedExercises.length})
-        </Text>
+                <View style={styles.defaultsRow}>
+                  <TextInput
+                    style={styles.smallInput}
+                    placeholder="Sets"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={exercise.defaultSets}
+                    onChangeText={(value) =>
+                      handleUpdateExerciseDefault(exercise.id, 'defaultSets', value)
+                    }
+                  />
+                  <TextInput
+                    style={styles.smallInput}
+                    placeholder="Weight"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={exercise.defaultWeight}
+                    onChangeText={(value) =>
+                      handleUpdateExerciseDefault(exercise.id, 'defaultWeight', value)
+                    }
+                  />
+                  <TextInput
+                    style={styles.smallInput}
+                    placeholder="Reps"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={exercise.defaultReps}
+                    onChangeText={(value) =>
+                      handleUpdateExerciseDefault(exercise.id, 'defaultReps', value)
+                    }
+                  />
+                  <TextInput
+                    style={styles.smallInput}
+                    placeholder="Rest"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={exercise.defaultRestSeconds}
+                    onChangeText={(value) =>
+                      handleUpdateExerciseDefault(
+                        exercise.id,
+                        'defaultRestSeconds',
+                        value
+                      )
+                    }
+                  />
+                </View>
+              </View>
+            ))}
 
-        <FlatList
-          data={filteredExercises}
-          keyExtractor={(item) => item.id}
-          renderItem={renderExercise}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No exercises found.</Text>
-          }
-        />
-
-        <Pressable style={styles.saveButton} onPress={handleSaveRoutine}>
-          <Text style={styles.saveButtonText}>Save Routine</Text>
-        </Pressable>
-      </SafeAreaView>
-    </>
+            <Text style={styles.sectionTitle}>Add Exercises</Text>
+          </>
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No exercises found.</Text>
+        }
+        ListFooterComponent={
+          <Pressable style={styles.saveButton} onPress={handleSaveRoutine}>
+            <Text style={styles.saveButtonText}>Save Routine</Text>
+          </Pressable>
+        }
+      />
+    </SafeAreaView>
   );
 }
 
@@ -212,9 +300,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
+    marginTop: 6,
   },
-  listContent: {
-    paddingBottom: 120,
+  selectedExerciseCard: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
   },
   exerciseCard: {
     backgroundColor: '#1c1c1c',
@@ -237,6 +331,24 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#aaaaaa',
     fontSize: 14,
+    marginBottom: 10,
+  },
+  defaultsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  smallInput: {
+    flex: 1,
+    minWidth: 70,
+    backgroundColor: '#161616',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    fontSize: 14,
   },
   emptyText: {
     color: '#aaaaaa',
@@ -250,10 +362,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 12,
+    marginBottom: 20,
   },
   saveButtonText: {
     color: '#111111',
     fontSize: 16,
     fontWeight: '700',
+  },
+  listContent: {
+    paddingBottom: 24,
   },
 });
