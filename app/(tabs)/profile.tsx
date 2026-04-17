@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Text, StyleSheet, FlatList, View } from 'react-native';
+import { Text, StyleSheet, FlatList, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
@@ -64,8 +64,19 @@ export default function ProfileScreen() {
         )}
         ListHeaderComponent={
           <>
-            <Text style={styles.title}>Profile</Text>
-            <Text style={styles.subtitle}>Your recent workouts</Text>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.title}>Profile</Text>
+                <Text style={styles.subtitle}>Your recent workouts</Text>
+              </View>
+
+              <Pressable
+                style={styles.settingsButton}
+                onPress={() => router.push('/profile/settings')}
+              >
+                <Text style={styles.settingsButtonText}>Settings</Text>
+              </Pressable>
+            </View>
 
             <View style={styles.statsRow}>
               <StatCard label="Total Workouts" value={totalWorkouts} />
@@ -105,6 +116,8 @@ export default function ProfileScreen() {
                 )}
               </>
             )}
+
+            <Text style={styles.sectionTitle}>Workout History</Text>
           </>
         }
         ListEmptyComponent={
@@ -125,6 +138,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#111111',
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 12,
+  },
   title: {
     color: '#ffffff',
     fontSize: 28,
@@ -134,7 +154,19 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#aaaaaa',
     fontSize: 15,
-    marginBottom: 16,
+  },
+  settingsButton: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  settingsButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   statsRow: {
     flexDirection: 'row',

@@ -29,6 +29,7 @@ export default function WorkoutSessionScreen() {
   const [exerciseNotes, setExerciseNotes] = useState<{
     [exerciseId: string]: string;
   }>({});
+  const [restTimeRemaining, setRestTimeRemaining] = useState(0);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -39,6 +40,32 @@ export default function WorkoutSessionScreen() {
 
     fetchRoutine();
   }, [id]);
+
+  useEffect(() => {
+    if (restTimeRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setRestTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [restTimeRemaining]);
+
+  const startRestTimer = (seconds: number) => {
+    setRestTimeRemaining(seconds);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleAddSet = (exerciseId: string) => {
     setExerciseSets((prev) => {
@@ -192,6 +219,36 @@ export default function WorkoutSessionScreen() {
                 {routine.exercises.length} exercise
                 {routine.exercises.length === 1 ? '' : 's'}
               </Text>
+
+              <View style={styles.timerCard}>
+                <Text style={styles.timerLabel}>Rest Timer</Text>
+                <Text style={styles.timerValue}>
+                  {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
+                </Text>
+
+                <View style={styles.timerButtonsRow}>
+                  <Pressable
+                    style={styles.timerButton}
+                    onPress={() => startRestTimer(60)}
+                  >
+                    <Text style={styles.timerButtonText}>60s</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.timerButton}
+                    onPress={() => startRestTimer(90)}
+                  >
+                    <Text style={styles.timerButtonText}>90s</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.timerButton}
+                    onPress={() => startRestTimer(120)}
+                  >
+                    <Text style={styles.timerButtonText}>120s</Text>
+                  </Pressable>
+                </View>
+              </View>
             </>
           }
           renderItem={({ item, index }) => {
@@ -329,6 +386,44 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 14,
     marginBottom: 16,
+  },
+  timerCard: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 18,
+  },
+  timerLabel: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  timerValue: {
+    color: '#4da6ff',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  timerButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  timerButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  timerButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   exerciseCard: {
     backgroundColor: '#1c1c1c',

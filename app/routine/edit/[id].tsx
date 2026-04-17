@@ -66,6 +66,26 @@ export default function EditRoutineScreen() {
     setEditedExercises((prev) => [...prev, exercise]);
   };
 
+  const handleMoveExerciseUp = (index: number) => {
+    if (index === 0) return;
+
+    setEditedExercises((prev) => {
+      const updated = [...prev];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      return updated;
+    });
+  };
+
+  const handleMoveExerciseDown = (index: number) => {
+    setEditedExercises((prev) => {
+      if (index === prev.length - 1) return prev;
+
+      const updated = [...prev];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      return updated;
+    });
+  };
+
   const handleSaveChanges = async () => {
     if (!routine) return;
 
@@ -160,12 +180,54 @@ export default function EditRoutineScreen() {
                       </Text>
                     </View>
 
-                    <Pressable
-                      style={styles.removeButton}
-                      onPress={() => handleRemoveExercise(item.id)}
-                    >
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </Pressable>
+                    <View style={styles.actionColumn}>
+                      <View style={styles.reorderRow}>
+                        <Pressable
+                          style={[
+                            styles.orderButton,
+                            index === 0 && styles.orderButtonDisabled,
+                          ]}
+                          onPress={() => handleMoveExerciseUp(index)}
+                          disabled={index === 0}
+                        >
+                          <Text
+                            style={[
+                              styles.orderButtonText,
+                              index === 0 && styles.orderButtonTextDisabled,
+                            ]}
+                          >
+                            ↑
+                          </Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={[
+                            styles.orderButton,
+                            index === editedExercises.length - 1 &&
+                              styles.orderButtonDisabled,
+                          ]}
+                          onPress={() => handleMoveExerciseDown(index)}
+                          disabled={index === editedExercises.length - 1}
+                        >
+                          <Text
+                            style={[
+                              styles.orderButtonText,
+                              index === editedExercises.length - 1 &&
+                                styles.orderButtonTextDisabled,
+                            ]}
+                          >
+                            ↓
+                          </Text>
+                        </Pressable>
+                      </View>
+
+                      <Pressable
+                        style={styles.removeButton}
+                        onPress={() => handleRemoveExercise(item.id)}
+                      >
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 ))
               )}
@@ -288,6 +350,14 @@ const styles = StyleSheet.create({
   exerciseInfo: {
     flex: 1,
   },
+  actionColumn: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  reorderRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   exerciseName: {
     color: '#ffffff',
     fontSize: 17,
@@ -323,6 +393,28 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  orderButton: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orderButtonDisabled: {
+    backgroundColor: '#1c1c1c',
+    borderColor: '#333333',
+  },
+  orderButtonText: {
+    color: '#4da6ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  orderButtonTextDisabled: {
+    color: '#666666',
   },
   filterRow: {
     flexDirection: 'row',
