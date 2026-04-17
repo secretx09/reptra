@@ -13,10 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadRoutines } from '../../../storage/routines';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
-import {
-  RoutineExerciseWithDefaults,
-  RoutineWithExercises,
-} from '../../../types/routine';
+import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
 import {
   SavedExerciseLog,
   SavedWorkoutSession,
@@ -245,13 +242,11 @@ export default function WorkoutSessionScreen() {
           keyExtractor={(item: Exercise) => item.id}
           ListHeaderComponent={
             <>
-              <View style={styles.topCard}>
-                <Text style={styles.title}>{routine.name}</Text>
-                <Text style={styles.subtitle}>
-                  {routine.exercises.length} exercise
-                  {routine.exercises.length === 1 ? '' : 's'}
-                </Text>
-              </View>
+              <Text style={styles.title}>{routine.name}</Text>
+              <Text style={styles.subtitle}>
+                {routine.exercises.length} exercise
+                {routine.exercises.length === 1 ? '' : 's'}
+              </Text>
 
               <View style={styles.timerCard}>
                 <View style={styles.timerHeaderRow}>
@@ -292,20 +287,24 @@ export default function WorkoutSessionScreen() {
 
             return (
               <View style={styles.exerciseCard}>
-                <View style={styles.exerciseHeader}>
+                <View style={styles.exerciseHeaderRow}>
                   <View style={styles.exerciseHeaderText}>
-                    <Text style={styles.exerciseName}>
-                      {index + 1}. {item.name}
-                    </Text>
-                    <Text style={styles.exerciseMeta}>
-                      {item.muscleGroup} • {item.equipment}
-                    </Text>
-                    {!!item.defaultRestSeconds && (
-                      <Text style={styles.defaultInfo}>
-                        Rest: {item.defaultRestSeconds}s
+                    <Text style={styles.exerciseIndex}>{index + 1}</Text>
+                    <View style={styles.exerciseTitleWrap}>
+                      <Text style={styles.exerciseName}>{item.name}</Text>
+                      <Text style={styles.exerciseMeta}>
+                        {item.muscleGroup} • {item.equipment}
                       </Text>
-                    )}
+                    </View>
                   </View>
+
+                  {!!item.defaultRestSeconds && (
+                    <View style={styles.restBadge}>
+                      <Text style={styles.restBadgeText}>
+                        {item.defaultRestSeconds}s rest
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TextInput
@@ -358,7 +357,7 @@ export default function WorkoutSessionScreen() {
                         styles.input,
                         set.completed && styles.inputCompleted,
                       ]}
-                      placeholder="Weight"
+                      placeholder="Wt"
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
                       value={set.weight}
@@ -417,15 +416,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111111',
     paddingHorizontal: 14,
-    paddingTop: 10,
-  },
-  topCard: {
-    backgroundColor: '#1c1c1c',
-    borderWidth: 1,
-    borderColor: '#2e2e2e',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
+    paddingTop: 12,
   },
   title: {
     color: '#ffffff',
@@ -436,13 +427,14 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#aaaaaa',
     fontSize: 13,
+    marginBottom: 14,
   },
   timerCard: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#171717',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
-    borderRadius: 14,
-    padding: 14,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 14,
   },
   timerHeaderRow: {
@@ -480,40 +472,64 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   exerciseCard: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#171717',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
-    borderRadius: 14,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 10,
   },
-  exerciseHeader: {
-    marginBottom: 8,
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 10,
   },
   exerciseHeaderText: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    flex: 1,
+  },
+  exerciseIndex: {
+    color: '#4da6ff',
+    fontSize: 16,
+    fontWeight: '700',
+    paddingTop: 1,
+    minWidth: 14,
+  },
+  exerciseTitleWrap: {
     flex: 1,
   },
   exerciseName: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   exerciseMeta: {
-    color: '#aaaaaa',
+    color: '#9a9a9a',
     fontSize: 13,
-    marginBottom: 4,
   },
-  defaultInfo: {
+  restBadge: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  restBadgeText: {
     color: '#4da6ff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   exerciseNoteInput: {
-    backgroundColor: '#161616',
+    backgroundColor: '#121212',
     color: '#ffffff',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
+    borderColor: '#252525',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 9,
@@ -523,10 +539,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   setRow: {
-    backgroundColor: '#161616',
+    backgroundColor: '#121212',
     borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    padding: 8,
     marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
@@ -541,7 +556,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: '#222222',
+    backgroundColor: '#202020',
     borderWidth: 1,
     borderColor: '#333333',
     alignItems: 'center',
@@ -563,21 +578,21 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
     width: 20,
-    fontWeight: '700',
     textAlign: 'center',
+    fontWeight: '700',
   },
   completedText: {
     color: '#b8e6c1',
   },
   input: {
     flex: 1,
-    backgroundColor: '#222222',
+    backgroundColor: '#1f1f1f',
     color: '#ffffff',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#313131',
     borderRadius: 8,
-    paddingVertical: 7,
-    paddingHorizontal: 9,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     fontSize: 13,
   },
   inputCompleted: {
@@ -595,12 +610,12 @@ const styles = StyleSheet.create({
   },
   deleteSetButtonText: {
     color: '#ff8a8a',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   addSetButton: {
     marginTop: 8,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#4da6ff',
@@ -608,7 +623,7 @@ const styles = StyleSheet.create({
   },
   addSetText: {
     color: '#4da6ff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 13,
   },
   finishButton: {
@@ -616,8 +631,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 14,
-    marginBottom: 22,
+    marginTop: 12,
+    marginBottom: 20,
   },
   finishButtonText: {
     color: '#111111',

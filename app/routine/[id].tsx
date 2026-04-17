@@ -1,31 +1,37 @@
-import { useEffect, useState } from 'react';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
   FlatList,
   Pressable,
-  Alert,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Exercise } from '../../types/exercise';
-import { RoutineWithExercises } from '../../types/routine';
 import { deleteRoutineById, loadRoutines } from '../../storage/routines';
+import { Exercise } from '../../types/exercise';
+import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
 
 export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
 
-  useEffect(() => {
-    const fetchRoutine = async () => {
-      const routines = await loadRoutines();
-      const foundRoutine = routines.find((item) => item.id === id) || null;
-      setRoutine(foundRoutine);
-    };
+  const fetchRoutine = async () => {
+    const routines = await loadRoutines();
+    const foundRoutine = routines.find((item) => item.id === id) || null;
+    setRoutine(foundRoutine);
+  };
 
+  useEffect(() => {
     fetchRoutine();
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchRoutine();
+    }, [id])
+  );
 
   const handleDeleteRoutine = () => {
     if (!routine) return;
@@ -63,49 +69,92 @@ export default function RoutineDetailScreen() {
       <Stack.Screen options={{ title: routine.name }} />
 
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>{routine.name}</Text>
-        <Text style={styles.subtitle}>
-          {routine.exercises.length} exercise{routine.exercises.length === 1 ? '' : 's'}
-        </Text>
-
-        <Text style={styles.sectionTitle}>Exercises</Text>
-
         <FlatList
           data={routine.exercises}
           keyExtractor={(item: Exercise) => item.id}
-          renderItem={({ item, index }) => (
-            <View style={styles.exerciseCard}>
-              <Text style={styles.exerciseName}>
-                {index + 1}. {item.name}
-              </Text>
-              <Text style={styles.exerciseMeta}>
-                {item.muscleGroup} • {item.equipment}
-              </Text>
-            </View>
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={
+          ListHeaderComponent={
             <>
-              <Pressable
-                style={styles.editButton}
-                onPress={() => router.push(`/routine/edit/${routine.id}`)}
-              >
-                <Text style={styles.editButtonText}>Edit Routine</Text>
-              </Pressable>
+              <Text style={styles.title}>{routine.name}</Text>
+              <Text style={styles.subtitle}>
+                {routine.exercises.length} exercise
+                {routine.exercises.length === 1 ? '' : 's'}
+              </Text>
 
-              <Pressable
-                style={styles.startButton}
-                onPress={() => router.push(`/workout/session/${routine.id}`)}
-              >
-                <Text style={styles.startButtonText}>Start Routine</Text>
-              </Pressable>
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={styles.editButton}
+                  onPress={() => router.push(`/routine/edit/${routine.id}`)}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </Pressable>
 
-              <Pressable style={styles.deleteButton} onPress={handleDeleteRoutine}>
-                <Text style={styles.deleteButtonText}>Delete Routine</Text>
-              </Pressable>
+                <Pressable
+                  style={styles.startButton}
+                  onPress={() => router.push(`/workout/session/${routine.id}`)}
+                >
+                  <Text style={styles.startButtonText}>Start Routine</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.sectionTitle}>Exercises</Text>
             </>
           }
+          renderItem={({ item, index }: { item: RoutineExerciseWithDefaults; index: number }) => (
+            <View style={styles.exerciseCard}>
+              <View style={styles.exerciseHeaderRow}>
+                <View style={styles.exerciseHeaderText}>
+                  <Text style={styles.exerciseIndex}>{index + 1}</Text>
+                  <View style={styles.exerciseTitleWrap}>
+                    <Text style={styles.exerciseName}>{item.name}</Text>
+                    <Text style={styles.exerciseMeta}>
+                      {item.muscleGroup} • {item.equipment}
+                    </Text>
+                  </View>
+                </View>
+
+                {!!item.defaultRestSeconds && (
+                  <View style={styles.restBadge}>
+                    <Text style={styles.restBadgeText}>
+                      {item.defaultRestSeconds}s rest
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.defaultsRow}>
+                {!!item.defaultSets && (
+                  <View style={styles.defaultChip}>
+                    <Text style={styles.defaultChipText}>
+                      {item.defaultSets} sets
+                    </Text>
+                  </View>
+                )}
+
+                {!!item.defaultWeight && (
+                  <View style={styles.defaultChip}>
+                    <Text style={styles.defaultChipText}>
+                      {item.defaultWeight} wt
+                    </Text>
+                  </View>
+                )}
+
+                {!!item.defaultReps && (
+                  <View style={styles.defaultChip}>
+                    <Text style={styles.defaultChipText}>
+                      {item.defaultReps} reps
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+          ListFooterComponent={
+            <Pressable style={styles.deleteButton} onPress={handleDeleteRoutine}>
+              <Text style={styles.deleteButtonText}>Delete Routine</Text>
+            </Pressable>
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>
     </>
@@ -116,72 +165,131 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 12,
   },
   title: {
     color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  subtitle: {
-    color: '#aaaaaa',
-    fontSize: 15,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  exerciseCard: {
-    backgroundColor: '#1c1c1c',
-    borderWidth: 1,
-    borderColor: '#2e2e2e',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-  },
-  exerciseName: {
-    color: '#ffffff',
-    fontSize: 17,
+    fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
   },
-  exerciseMeta: {
+  subtitle: {
     color: '#aaaaaa',
-    fontSize: 14,
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
   },
   editButton: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#171717',
     borderWidth: 1,
     borderColor: '#4da6ff',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
+    flex: 1,
   },
   editButtonText: {
     color: '#4da6ff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   startButton: {
     backgroundColor: '#4da6ff',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: 12,
+    flex: 1.4,
   },
   startButtonText: {
     color: '#111111',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 19,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  listContent: {
+    paddingBottom: 24,
+  },
+  exerciseCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 10,
+  },
+  exerciseHeaderText: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    flex: 1,
+  },
+  exerciseIndex: {
+    color: '#4da6ff',
     fontSize: 16,
     fontWeight: '700',
+    paddingTop: 1,
+    minWidth: 14,
+  },
+  exerciseTitleWrap: {
+    flex: 1,
+  },
+  exerciseName: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  exerciseMeta: {
+    color: '#9a9a9a',
+    fontSize: 13,
+  },
+  restBadge: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  restBadgeText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  defaultsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  defaultChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  defaultChipText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '600',
   },
   deleteButton: {
     backgroundColor: '#2a1111',
@@ -190,6 +298,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 20,
   },
   deleteButtonText: {
     color: '#ff8a8a',

@@ -1,22 +1,22 @@
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  Pressable,
   Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { exercises } from '../../../data/exercises';
+import { loadRoutines, updateRoutineById } from '../../../storage/routines';
 import { Exercise } from '../../../types/exercise';
 import {
   RoutineExerciseWithDefaults,
   RoutineWithExercises,
 } from '../../../types/routine';
-import { loadRoutines, updateRoutineById } from '../../../storage/routines';
 
 const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
 
@@ -180,6 +180,7 @@ export default function EditRoutineScreen() {
           ListHeaderComponent={
             <>
               <Text style={styles.title}>Edit Routine</Text>
+              <Text style={styles.subtitle}>Adjust exercise order and defaults</Text>
 
               <Text style={styles.label}>Routine Name</Text>
               <TextInput
@@ -197,18 +198,73 @@ export default function EditRoutineScreen() {
               ) : (
                 editedExercises.map((item, index) => (
                   <View key={item.id} style={styles.exerciseCard}>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>
-                        {index + 1}. {item.name}
-                      </Text>
-                      <Text style={styles.exerciseMeta}>
-                        {item.muscleGroup} • {item.equipment}
-                      </Text>
+                    <View style={styles.exerciseHeaderRow}>
+                      <View style={styles.exerciseHeaderText}>
+                        <Text style={styles.exerciseIndex}>{index + 1}</Text>
+                        <View style={styles.exerciseTitleWrap}>
+                          <Text style={styles.exerciseName}>{item.name}</Text>
+                          <Text style={styles.exerciseMeta}>
+                            {item.muscleGroup} • {item.equipment}
+                          </Text>
+                        </View>
+                      </View>
 
-                      <View style={styles.defaultsRow}>
+                      <View style={styles.actionColumn}>
+                        <View style={styles.reorderRow}>
+                          <Pressable
+                            style={[
+                              styles.orderButton,
+                              index === 0 && styles.orderButtonDisabled,
+                            ]}
+                            onPress={() => handleMoveExerciseUp(index)}
+                            disabled={index === 0}
+                          >
+                            <Text
+                              style={[
+                                styles.orderButtonText,
+                                index === 0 && styles.orderButtonTextDisabled,
+                              ]}
+                            >
+                              ↑
+                            </Text>
+                          </Pressable>
+
+                          <Pressable
+                            style={[
+                              styles.orderButton,
+                              index === editedExercises.length - 1 &&
+                                styles.orderButtonDisabled,
+                            ]}
+                            onPress={() => handleMoveExerciseDown(index)}
+                            disabled={index === editedExercises.length - 1}
+                          >
+                            <Text
+                              style={[
+                                styles.orderButtonText,
+                                index === editedExercises.length - 1 &&
+                                  styles.orderButtonTextDisabled,
+                              ]}
+                            >
+                              ↓
+                            </Text>
+                          </Pressable>
+                        </View>
+
+                        <Pressable
+                          style={styles.removeButton}
+                          onPress={() => handleRemoveExercise(item.id)}
+                        >
+                          <Text style={styles.removeButtonText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+
+                    <View style={styles.defaultsGrid}>
+                      <View style={styles.defaultField}>
+                        <Text style={styles.defaultLabel}>Sets</Text>
                         <TextInput
                           style={styles.smallInput}
-                          placeholder="Sets"
+                          placeholder="0"
                           placeholderTextColor="#777777"
                           keyboardType="numeric"
                           value={item.defaultSets}
@@ -216,9 +272,13 @@ export default function EditRoutineScreen() {
                             handleUpdateExerciseDefault(item.id, 'defaultSets', value)
                           }
                         />
+                      </View>
+
+                      <View style={styles.defaultField}>
+                        <Text style={styles.defaultLabel}>Weight</Text>
                         <TextInput
                           style={styles.smallInput}
-                          placeholder="Weight"
+                          placeholder="0"
                           placeholderTextColor="#777777"
                           keyboardType="numeric"
                           value={item.defaultWeight}
@@ -226,9 +286,13 @@ export default function EditRoutineScreen() {
                             handleUpdateExerciseDefault(item.id, 'defaultWeight', value)
                           }
                         />
+                      </View>
+
+                      <View style={styles.defaultField}>
+                        <Text style={styles.defaultLabel}>Reps</Text>
                         <TextInput
                           style={styles.smallInput}
-                          placeholder="Reps"
+                          placeholder="0"
                           placeholderTextColor="#777777"
                           keyboardType="numeric"
                           value={item.defaultReps}
@@ -236,9 +300,13 @@ export default function EditRoutineScreen() {
                             handleUpdateExerciseDefault(item.id, 'defaultReps', value)
                           }
                         />
+                      </View>
+
+                      <View style={styles.defaultField}>
+                        <Text style={styles.defaultLabel}>Rest</Text>
                         <TextInput
                           style={styles.smallInput}
-                          placeholder="Rest"
+                          placeholder="sec"
                           placeholderTextColor="#777777"
                           keyboardType="numeric"
                           value={item.defaultRestSeconds}
@@ -251,55 +319,6 @@ export default function EditRoutineScreen() {
                           }
                         />
                       </View>
-                    </View>
-
-                    <View style={styles.actionColumn}>
-                      <View style={styles.reorderRow}>
-                        <Pressable
-                          style={[
-                            styles.orderButton,
-                            index === 0 && styles.orderButtonDisabled,
-                          ]}
-                          onPress={() => handleMoveExerciseUp(index)}
-                          disabled={index === 0}
-                        >
-                          <Text
-                            style={[
-                              styles.orderButtonText,
-                              index === 0 && styles.orderButtonTextDisabled,
-                            ]}
-                          >
-                            ↑
-                          </Text>
-                        </Pressable>
-
-                        <Pressable
-                          style={[
-                            styles.orderButton,
-                            index === editedExercises.length - 1 &&
-                              styles.orderButtonDisabled,
-                          ]}
-                          onPress={() => handleMoveExerciseDown(index)}
-                          disabled={index === editedExercises.length - 1}
-                        >
-                          <Text
-                            style={[
-                              styles.orderButtonText,
-                              index === editedExercises.length - 1 &&
-                                styles.orderButtonTextDisabled,
-                            ]}
-                          >
-                            ↓
-                          </Text>
-                        </Pressable>
-                      </View>
-
-                      <Pressable
-                        style={styles.removeButton}
-                        onPress={() => handleRemoveExercise(item.id)}
-                      >
-                        <Text style={styles.removeButtonText}>Remove</Text>
-                      </Pressable>
                     </View>
                   </View>
                 ))
@@ -362,13 +381,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 12,
   },
   title: {
     color: '#ffffff',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    marginBottom: 14,
   },
   label: {
     color: '#ffffff',
@@ -377,48 +402,67 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#171717',
     color: '#ffffff',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
+    borderColor: '#2a2a2a',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 16,
-    fontSize: 16,
+    fontSize: 15,
   },
   sectionTitle: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   listContent: {
     paddingBottom: 24,
   },
   exerciseCard: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: '#171717',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
+    borderColor: '#2a2a2a',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
+    padding: 12,
+    marginBottom: 10,
   },
   addExerciseCard: {
-    backgroundColor: '#161616',
+    backgroundColor: '#171717',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
+    borderColor: '#2a2a2a',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 12,
+  },
+  exerciseHeaderText: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    flex: 1,
+  },
+  exerciseIndex: {
+    color: '#4da6ff',
+    fontSize: 16,
+    fontWeight: '700',
+    paddingTop: 1,
+    minWidth: 14,
+  },
+  exerciseTitleWrap: {
+    flex: 1,
   },
   exerciseInfo: {
     flex: 1,
@@ -433,31 +477,38 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     color: '#ffffff',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   exerciseMeta: {
-    color: '#aaaaaa',
-    fontSize: 14,
-    marginBottom: 10,
+    color: '#9a9a9a',
+    fontSize: 13,
   },
-  defaultsRow: {
+  defaultsGrid: {
     flexDirection: 'row',
-    gap: 8,
     flexWrap: 'wrap',
+    gap: 8,
+  },
+  defaultField: {
+    flex: 1,
+    minWidth: 72,
+  },
+  defaultLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   smallInput: {
-    flex: 1,
-    minWidth: 70,
-    backgroundColor: '#161616',
+    backgroundColor: '#121212',
     color: '#ffffff',
     borderWidth: 1,
-    borderColor: '#2e2e2e',
+    borderColor: '#252525',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 13,
   },
   removeButton: {
     backgroundColor: '#2a1111',
@@ -469,7 +520,7 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     color: '#ff8a8a',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   addButton: {
@@ -482,12 +533,12 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#4da6ff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   orderButton: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     backgroundColor: '#16324d',
     borderWidth: 1,
     borderColor: '#4da6ff',
@@ -501,7 +552,7 @@ const styles = StyleSheet.create({
   },
   orderButtonText: {
     color: '#4da6ff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   orderButtonTextDisabled: {
@@ -527,7 +578,7 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   filterButtonTextSelected: {
@@ -535,7 +586,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#aaaaaa',
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 16,
