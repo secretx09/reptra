@@ -1,23 +1,26 @@
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
   FlatList,
   Pressable,
+  StyleSheet,
+  Text,
   TextInput,
-  Alert,
+  View,
 } from 'react-native';
-import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadRoutines } from '../../../storage/routines';
-import { saveWorkouts, loadWorkouts } from '../../../storage/workouts';
-import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
+import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
 import {
-  WorkoutSet,
-  SavedWorkoutSession,
+  RoutineExerciseWithDefaults,
+  RoutineWithExercises,
+} from '../../../types/routine';
+import {
   SavedExerciseLog,
+  SavedWorkoutSession,
+  WorkoutSet,
 } from '../../../types/workout';
 
 export default function WorkoutSessionScreen() {
@@ -242,17 +245,21 @@ export default function WorkoutSessionScreen() {
           keyExtractor={(item: Exercise) => item.id}
           ListHeaderComponent={
             <>
-              <Text style={styles.title}>{routine.name}</Text>
-              <Text style={styles.subtitle}>
-                {routine.exercises.length} exercise
-                {routine.exercises.length === 1 ? '' : 's'}
-              </Text>
+              <View style={styles.topCard}>
+                <Text style={styles.title}>{routine.name}</Text>
+                <Text style={styles.subtitle}>
+                  {routine.exercises.length} exercise
+                  {routine.exercises.length === 1 ? '' : 's'}
+                </Text>
+              </View>
 
               <View style={styles.timerCard}>
-                <Text style={styles.timerLabel}>Rest Timer</Text>
-                <Text style={styles.timerValue}>
-                  {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
-                </Text>
+                <View style={styles.timerHeaderRow}>
+                  <Text style={styles.timerLabel}>Rest Timer</Text>
+                  <Text style={styles.timerValue}>
+                    {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
+                  </Text>
+                </View>
 
                 <View style={styles.timerButtonsRow}>
                   <Pressable
@@ -285,24 +292,25 @@ export default function WorkoutSessionScreen() {
 
             return (
               <View style={styles.exerciseCard}>
-                <Text style={styles.exerciseName}>
-                  {index + 1}. {item.name}
-                </Text>
+                <View style={styles.exerciseHeader}>
+                  <View style={styles.exerciseHeaderText}>
+                    <Text style={styles.exerciseName}>
+                      {index + 1}. {item.name}
+                    </Text>
+                    <Text style={styles.exerciseMeta}>
+                      {item.muscleGroup} • {item.equipment}
+                    </Text>
+                    {!!item.defaultRestSeconds && (
+                      <Text style={styles.defaultInfo}>
+                        Rest: {item.defaultRestSeconds}s
+                      </Text>
+                    )}
+                  </View>
+                </View>
 
-                <Text style={styles.exerciseMeta}>
-                  {item.muscleGroup} • {item.equipment}
-                </Text>
-
-                {!!item.defaultRestSeconds && (
-                  <Text style={styles.defaultInfo}>
-                    Default Rest: {item.defaultRestSeconds}s
-                  </Text>
-                )}
-
-                <Text style={styles.exerciseNoteLabel}>Exercise Note</Text>
                 <TextInput
                   style={styles.exerciseNoteInput}
-                  placeholder="Add a note for this exercise..."
+                  placeholder="Exercise note..."
                   placeholderTextColor="#777777"
                   value={exerciseNote}
                   onChangeText={(value) =>
@@ -342,7 +350,7 @@ export default function WorkoutSessionScreen() {
                         set.completed && styles.completedText,
                       ]}
                     >
-                      Set {set.setNumber}
+                      {set.setNumber}
                     </Text>
 
                     <TextInput
@@ -408,42 +416,54 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+  },
+  topCard: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
   },
   title: {
     color: '#ffffff',
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   subtitle: {
     color: '#aaaaaa',
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: 13,
   },
   timerCard: {
     backgroundColor: '#1c1c1c',
     borderWidth: 1,
     borderColor: '#2e2e2e',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
-    marginBottom: 18,
+    marginBottom: 14,
+  },
+  timerHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   timerLabel: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 6,
   },
   timerValue: {
     color: '#4da6ff',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 12,
   },
   timerButtonsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   timerButton: {
     flex: 1,
@@ -451,44 +471,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4da6ff',
     borderRadius: 10,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: 'center',
   },
   timerButtonText: {
     color: '#4da6ff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   exerciseCard: {
     backgroundColor: '#1c1c1c',
     borderWidth: 1,
     borderColor: '#2e2e2e',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  exerciseHeader: {
+    marginBottom: 8,
+  },
+  exerciseHeaderText: {
+    flex: 1,
   },
   exerciseName: {
     color: '#ffffff',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   exerciseMeta: {
     color: '#aaaaaa',
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: 13,
+    marginBottom: 4,
   },
   defaultInfo: {
     color: '#4da6ff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 12,
-  },
-  exerciseNoteLabel: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 6,
   },
   exerciseNoteInput: {
     backgroundColor: '#161616',
@@ -496,20 +515,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2e2e2e',
     borderRadius: 10,
-    padding: 10,
-    fontSize: 14,
-    minHeight: 70,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    fontSize: 13,
+    minHeight: 52,
     textAlignVertical: 'top',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   setRow: {
     backgroundColor: '#161616',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 8,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   setRowCompleted: {
     backgroundColor: '#132417',
@@ -517,8 +538,8 @@ const styles = StyleSheet.create({
     borderColor: '#2d6a3a',
   },
   checkButton: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: '#222222',
     borderWidth: 1,
@@ -532,7 +553,7 @@ const styles = StyleSheet.create({
   },
   checkButtonText: {
     color: '#888888',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   checkButtonTextCompleted: {
@@ -540,9 +561,10 @@ const styles = StyleSheet.create({
   },
   setLabel: {
     color: '#ffffff',
-    fontSize: 14,
-    width: 48,
-    fontWeight: '600',
+    fontSize: 13,
+    width: 20,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   completedText: {
     color: '#b8e6c1',
@@ -554,16 +576,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    fontSize: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 9,
+    fontSize: 13,
   },
   inputCompleted: {
     borderColor: '#2d6a3a',
   },
   deleteSetButton: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: '#2a1111',
     borderWidth: 1,
@@ -573,13 +595,13 @@ const styles = StyleSheet.create({
   },
   deleteSetButtonText: {
     color: '#ff8a8a',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   addSetButton: {
-    marginTop: 10,
-    paddingVertical: 10,
-    borderRadius: 8,
+    marginTop: 8,
+    paddingVertical: 9,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#4da6ff',
     alignItems: 'center',
@@ -587,14 +609,15 @@ const styles = StyleSheet.create({
   addSetText: {
     color: '#4da6ff',
     fontWeight: '600',
+    fontSize: 13,
   },
   finishButton: {
     backgroundColor: '#4da6ff',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 20,
+    marginTop: 14,
+    marginBottom: 22,
   },
   finishButtonText: {
     color: '#111111',
