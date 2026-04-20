@@ -9,6 +9,7 @@ import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
+import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -36,6 +37,10 @@ export default function ProfileScreen() {
 
   const profileStats = useMemo(() => {
     return calculateProfileStats(workouts);
+  }, [workouts]);
+
+  const weeklyChart = useMemo(() => {
+    return calculateWeeklyChart(workouts);
   }, [workouts]);
 
   const totalTrainingTime = formatWorkoutDuration(
@@ -134,6 +139,95 @@ export default function ProfileScreen() {
               >
                 <Text style={styles.primaryActionButtonText}>View PRs</Text>
               </Pressable>
+            </View>
+
+            <View style={styles.chartCard}>
+              <View style={styles.chartHeaderRow}>
+                <View>
+                  <Text style={styles.chartTitle}>Weekly Activity</Text>
+                  <Text style={styles.chartSubtitle}>
+                    Your workouts across this week
+                  </Text>
+                </View>
+
+                <View style={styles.chartBadge}>
+                  <Text style={styles.chartBadgeValue}>
+                    {weeklyStats.workoutsThisWeek}
+                  </Text>
+                  <Text style={styles.chartBadgeLabel}>Workouts</Text>
+                </View>
+              </View>
+
+              <View style={styles.chartBarsRow}>
+                {weeklyChart.days.map((day, index) => {
+                  const barHeight =
+                    weeklyChart.maxWorkouts > 0
+                      ? Math.max(
+                          18,
+                          Math.round(
+                            (day.workouts / weeklyChart.maxWorkouts) * 110
+                          )
+                        )
+                      : 10;
+
+                  const isToday = weeklyChart.todayIndex === index;
+                  const isActive = day.workouts > 0;
+
+                  return (
+                    <View key={`${day.label}-${index}`} style={styles.chartBarColumn}>
+                      <Text
+                        style={[
+                          styles.chartBarValue,
+                          isToday && styles.chartBarValueToday,
+                        ]}
+                      >
+                        {day.workouts}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.chartBarTrack,
+                          isToday && styles.chartBarTrackToday,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.chartBarFill,
+                            { height: barHeight },
+                            isActive && styles.chartBarFillActive,
+                            isToday && styles.chartBarFillToday,
+                          ]}
+                        />
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.chartBarLabel,
+                          isToday && styles.chartBarLabelToday,
+                        ]}
+                      >
+                        {day.label}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View style={styles.chartFooterRow}>
+                <View style={styles.chartFooterPill}>
+                  <Text style={styles.chartFooterValue}>
+                    {weeklyStats.setsThisWeek}
+                  </Text>
+                  <Text style={styles.chartFooterLabel}>Sets This Week</Text>
+                </View>
+
+                <View style={styles.chartFooterPill}>
+                  <Text style={styles.chartFooterValue}>
+                    {weeklyStats.exercisesThisWeek}
+                  </Text>
+                  <Text style={styles.chartFooterLabel}>Exercises This Week</Text>
+                </View>
+              </View>
             </View>
 
             <Text style={styles.sectionTitle}>Workout History</Text>
@@ -279,6 +373,128 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  chartCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  chartHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  chartTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+  },
+  chartBadge: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    minWidth: 76,
+  },
+  chartBadgeValue: {
+    color: '#4da6ff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  chartBadgeLabel: {
+    color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  chartBarsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 14,
+  },
+  chartBarColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  chartBarValue: {
+    color: '#7e7e7e',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  chartBarValueToday: {
+    color: '#ffffff',
+  },
+  chartBarTrack: {
+    width: 24,
+    height: 110,
+    borderRadius: 999,
+    backgroundColor: '#121212',
+    justifyContent: 'flex-end',
+    padding: 3,
+  },
+  chartBarTrackToday: {
+    borderWidth: 1,
+    borderColor: '#24496d',
+  },
+  chartBarFill: {
+    width: '100%',
+    minHeight: 10,
+    borderRadius: 999,
+    backgroundColor: '#2a2a2a',
+  },
+  chartBarFillActive: {
+    backgroundColor: '#4da6ff',
+  },
+  chartBarFillToday: {
+    backgroundColor: '#7fc0ff',
+  },
+  chartBarLabel: {
+    color: '#888888',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  chartBarLabelToday: {
+    color: '#ffffff',
+  },
+  chartFooterRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  chartFooterPill: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  chartFooterValue: {
+    color: '#4da6ff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  chartFooterLabel: {
+    color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '600',
   },
   sectionTitle: {
     color: '#ffffff',
