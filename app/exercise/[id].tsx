@@ -1,6 +1,8 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import { loadWorkouts } from '../../storage/workouts';
 import { Exercise } from '../../types/exercise';
 import { SavedWorkoutSession } from '../../types/workout';
@@ -41,9 +43,16 @@ export default function ExerciseDetailScreen() {
   }, []);
 
   const exercise = exerciseLibrary.find((item) => item.id === id);
+  const primaryMuscles = exercise?.primaryMuscles ?? [];
+  const secondaryMuscles = exercise?.secondaryMuscles ?? [];
+  const instructions = exercise?.instructions ?? [];
+  const commonMistakes = exercise?.commonMistakes ?? [];
+  const demoMedia = exercise?.demoMedia;
 
   const progressPoints = useMemo(() => {
-    if (!id) return [];
+    if (!id) {
+      return [];
+    }
 
     return workouts
       .map((workout) => {
@@ -106,14 +115,26 @@ export default function ExerciseDetailScreen() {
   const totalTrackedSessions = progressPoints.length;
   const latestSession = progressPoints[progressPoints.length - 1] || null;
 
+  const handleOpenDemoMedia = async () => {
+    if (!demoMedia?.url) {
+      return;
+    }
+
+    try {
+      await WebBrowser.openBrowserAsync(demoMedia.url);
+    } catch (error) {
+      Alert.alert('Unable to open demo', 'Please try again in a moment.');
+    }
+  };
+
   if (!exercise) {
     return (
-      <View style={styles.notFoundContainer}>
+      <SafeAreaView style={styles.notFoundContainer}>
         <Text style={styles.notFoundTitle}>Exercise not found</Text>
         <Text style={styles.notFoundText}>
           We could not find that exercise.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -121,184 +142,235 @@ export default function ExerciseDetailScreen() {
     <>
       <Stack.Screen options={{ title: exercise.name }} />
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{exercise.name}</Text>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>{exercise.name}</Text>
 
-        <Text style={styles.meta}>
-          {exercise.muscleGroup} • {exercise.equipment}
-        </Text>
+          <Text style={styles.meta}>
+            {exercise.muscleGroup} | {exercise.equipment}
+          </Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Muscle Targets</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Demo</Text>
 
-          <View style={styles.targetGroup}>
-            <Text style={styles.targetGroupLabel}>Primary</Text>
-            <View style={styles.targetChipRow}>
-              {exercise.primaryMuscles.map((muscle) => (
-                <View key={`primary-${muscle}`} style={styles.primaryTargetChip}>
-                  <Text style={styles.primaryTargetChipText}>{muscle}</Text>
+            {demoMedia ? (
+              <View style={styles.demoCard}>
+                <View style={styles.demoBadge}>
+                  <Text style={styles.demoBadgeText}>
+                    {demoMedia.type === 'gif' ? 'GIF' : 'VIDEO'}
+                  </Text>
                 </View>
-              ))}
-            </View>
+
+                <Text style={styles.demoTitle}>{demoMedia.title}</Text>
+                <Text style={styles.demoText}>
+                  Open a quick movement demo for form reference while reviewing this
+                  exercise.
+                </Text>
+
+                {demoMedia.sourceLabel ? (
+                  <Text style={styles.demoSource}>Source: {demoMedia.sourceLabel}</Text>
+                ) : null}
+
+                <Pressable style={styles.demoButton} onPress={handleOpenDemoMedia}>
+                  <Text style={styles.demoButtonText}>
+                    {demoMedia.type === 'gif' ? 'Open Demo GIF' : 'Watch Demo Video'}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={styles.emptySectionText}>
+                No demo media has been added for this exercise yet.
+              </Text>
+            )}
           </View>
 
-          {exercise.secondaryMuscles.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Muscle Targets</Text>
+
             <View style={styles.targetGroup}>
-              <Text style={styles.targetGroupLabel}>Secondary</Text>
+              <Text style={styles.targetGroupLabel}>Primary</Text>
               <View style={styles.targetChipRow}>
-                {exercise.secondaryMuscles.map((muscle) => (
-                  <View
-                    key={`secondary-${muscle}`}
-                    style={styles.secondaryTargetChip}
-                  >
-                    <Text style={styles.secondaryTargetChipText}>{muscle}</Text>
+                {primaryMuscles.map((muscle) => (
+                  <View key={`primary-${muscle}`} style={styles.primaryTargetChip}>
+                    <Text style={styles.primaryTargetChipText}>{muscle}</Text>
                   </View>
                 ))}
               </View>
             </View>
-          ) : null}
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PR Snapshot</Text>
-
-          {progressPoints.length === 0 ? (
-            <Text style={styles.emptyProgressText}>
-              No logged sessions for this exercise yet. Complete a workout with this
-              exercise to see your PRs and progress here.
-            </Text>
-          ) : (
-            <>
-              <View style={styles.progressSummaryGrid}>
-                <View style={styles.progressSummaryCard}>
-                  <Text style={styles.progressSummaryValue}>{bestWeight}</Text>
-                  <Text style={styles.progressSummaryLabel}>Heaviest Set</Text>
-                </View>
-
-                <View style={styles.progressSummaryCard}>
-                  <Text style={styles.progressSummaryValue}>
-                    {bestEstimatedOneRepMax}
-                  </Text>
-                  <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
-                </View>
-
-                <View style={styles.progressSummaryCard}>
-                  <Text style={styles.progressSummaryValue}>{totalTrackedSessions}</Text>
-                  <Text style={styles.progressSummaryLabel}>Tracked Sessions</Text>
-                </View>
-
-                <View style={styles.progressSummaryCard}>
-                  <Text style={styles.progressSummaryValue}>
-                    {latestSession ? latestSession.totalVolume : 0}
-                  </Text>
-                  <Text style={styles.progressSummaryLabel}>Latest Volume</Text>
-                </View>
-              </View>
-
-              <View style={styles.prInsightCard}>
-                <Text style={styles.prInsightTitle}>Current Bests</Text>
-                <Text style={styles.prInsightText}>
-                  Top logged weight: {bestWeight} lb
-                </Text>
-                <Text style={styles.prInsightText}>
-                  Best estimated 1RM: {bestEstimatedOneRepMax} lb
-                </Text>
-                <Text style={styles.prInsightText}>
-                  Last recorded session volume: {latestSession ? latestSession.totalVolume : 0}
-                </Text>
-              </View>
-
-              <View style={styles.chartCard}>
-                <View style={styles.chartHeaderRow}>
-                  <View>
-                    <Text style={styles.chartTitle}>Best Weight Trend</Text>
-                    <Text style={styles.chartSubtitle}>
-                      Recent workout performance
-                    </Text>
-                  </View>
-
-                  <View style={styles.chartBadge}>
-                    <Text style={styles.chartBadgeValue}>{latestPoints.length}</Text>
-                    <Text style={styles.chartBadgeLabel}>Sessions</Text>
-                  </View>
-                </View>
-
-                <View style={styles.chartBarsRow}>
-                  {latestPoints.map((point) => {
-                    const barHeight =
-                      maxChartValue > 0
-                        ? Math.max(
-                            16,
-                            Math.round((point.bestWeight / maxChartValue) * 120)
-                          )
-                        : 10;
-
-                    return (
-                      <View key={point.id} style={styles.chartBarColumn}>
-                        <Text style={styles.chartValue}>{point.bestWeight}</Text>
-
-                        <View style={styles.chartTrack}>
-                          <View
-                            style={[styles.chartFill, { height: barHeight }]}
-                          />
-                        </View>
-
-                        <Text style={styles.chartLabel}>{point.label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.recentSessionsCard}>
-                <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
-
-                {latestPoints
-                  .slice()
-                  .reverse()
-                  .map((point) => (
-                    <View key={`recent-${point.id}`} style={styles.recentSessionRow}>
-                      <View>
-                        <Text style={styles.recentSessionDate}>{point.label}</Text>
-                        <Text style={styles.recentSessionMeta}>
-                          {point.totalSets} set{point.totalSets === 1 ? '' : 's'} •{' '}
-                          {point.totalVolume} volume
-                        </Text>
-                      </View>
-
-                      <View style={styles.recentSessionStats}>
-                        <Text style={styles.recentSessionValue}>
-                          {point.bestWeight} lb
-                        </Text>
-                        <Text style={styles.recentSessionSubvalue}>
-                          1RM {point.bestEstimatedOneRepMax}
-                        </Text>
-                      </View>
+            {secondaryMuscles.length > 0 ? (
+              <View style={styles.targetGroup}>
+                <Text style={styles.targetGroupLabel}>Secondary</Text>
+                <View style={styles.targetChipRow}>
+                  {secondaryMuscles.map((muscle) => (
+                    <View
+                      key={`secondary-${muscle}`}
+                      style={styles.secondaryTargetChip}
+                    >
+                      <Text style={styles.secondaryTargetChipText}>{muscle}</Text>
                     </View>
                   ))}
+                </View>
               </View>
-            </>
-          )}
-        </View>
+            ) : null}
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Instructions</Text>
-          {exercise.instructions.map((step, index) => (
-            <Text key={index} style={styles.listItem}>
-              {index + 1}. {step}
-            </Text>
-          ))}
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PR Snapshot</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Common Mistakes</Text>
-          {exercise.commonMistakes.map((mistake, index) => (
-            <Text key={index} style={styles.listItem}>
-              • {mistake}
-            </Text>
-          ))}
-        </View>
-      </ScrollView>
+            {progressPoints.length === 0 ? (
+              <Text style={styles.emptyProgressText}>
+                No logged sessions for this exercise yet. Complete a workout with this
+                exercise to see your PRs and progress here.
+              </Text>
+            ) : (
+              <>
+                <View style={styles.progressSummaryGrid}>
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>{bestWeight}</Text>
+                    <Text style={styles.progressSummaryLabel}>Heaviest Set</Text>
+                  </View>
+
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>
+                      {bestEstimatedOneRepMax}
+                    </Text>
+                    <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
+                  </View>
+
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>{totalTrackedSessions}</Text>
+                    <Text style={styles.progressSummaryLabel}>Tracked Sessions</Text>
+                  </View>
+
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>
+                      {latestSession ? latestSession.totalVolume : 0}
+                    </Text>
+                    <Text style={styles.progressSummaryLabel}>Latest Volume</Text>
+                  </View>
+                </View>
+
+                <View style={styles.prInsightCard}>
+                  <Text style={styles.prInsightTitle}>Current Bests</Text>
+                  <Text style={styles.prInsightText}>
+                    Top logged weight: {bestWeight} lb
+                  </Text>
+                  <Text style={styles.prInsightText}>
+                    Best estimated 1RM: {bestEstimatedOneRepMax} lb
+                  </Text>
+                  <Text style={styles.prInsightText}>
+                    Last recorded session volume: {latestSession ? latestSession.totalVolume : 0}
+                  </Text>
+                </View>
+
+                <View style={styles.chartCard}>
+                  <View style={styles.chartHeaderRow}>
+                    <View>
+                      <Text style={styles.chartTitle}>Best Weight Trend</Text>
+                      <Text style={styles.chartSubtitle}>
+                        Recent workout performance
+                      </Text>
+                    </View>
+
+                    <View style={styles.chartBadge}>
+                      <Text style={styles.chartBadgeValue}>{latestPoints.length}</Text>
+                      <Text style={styles.chartBadgeLabel}>Sessions</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.chartBarsRow}>
+                    {latestPoints.map((point) => {
+                      const barHeight =
+                        maxChartValue > 0
+                          ? Math.max(
+                              16,
+                              Math.round((point.bestWeight / maxChartValue) * 120)
+                            )
+                          : 10;
+
+                      return (
+                        <View key={point.id} style={styles.chartBarColumn}>
+                          <Text style={styles.chartValue}>{point.bestWeight}</Text>
+
+                          <View style={styles.chartTrack}>
+                            <View
+                              style={[styles.chartFill, { height: barHeight }]}
+                            />
+                          </View>
+
+                          <Text style={styles.chartLabel}>{point.label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.recentSessionsCard}>
+                  <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
+
+                  {latestPoints
+                    .slice()
+                    .reverse()
+                    .map((point) => (
+                      <View key={`recent-${point.id}`} style={styles.recentSessionRow}>
+                        <View>
+                          <Text style={styles.recentSessionDate}>{point.label}</Text>
+                          <Text style={styles.recentSessionMeta}>
+                            {point.totalSets} set{point.totalSets === 1 ? '' : 's'} |{' '}
+                            {point.totalVolume} volume
+                          </Text>
+                        </View>
+
+                        <View style={styles.recentSessionStats}>
+                          <Text style={styles.recentSessionValue}>
+                            {point.bestWeight} lb
+                          </Text>
+                          <Text style={styles.recentSessionSubvalue}>
+                            1RM {point.bestEstimatedOneRepMax}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                </View>
+              </>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Instructions</Text>
+            {instructions.length > 0 ? (
+              instructions.map((step, index) => (
+                <Text key={index} style={styles.listItem}>
+                  {index + 1}. {step}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.emptySectionText}>
+                No instructions added for this exercise yet.
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Common Mistakes</Text>
+            {commonMistakes.length > 0 ? (
+              commonMistakes.map((mistake, index) => (
+                <Text key={index} style={styles.listItem}>
+                  - {mistake}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.emptySectionText}>
+                No common mistakes added for this exercise yet.
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </>
   );
 }
@@ -336,6 +408,57 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
+  },
+  demoCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+  },
+  demoBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+  demoBadgeText: {
+    color: '#4da6ff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  demoTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  demoText: {
+    color: '#dddddd',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 10,
+  },
+  demoSource: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  demoButton: {
+    backgroundColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  demoButtonText: {
+    color: '#111111',
+    fontSize: 14,
+    fontWeight: '700',
   },
   targetGroup: {
     marginBottom: 12,
@@ -552,6 +675,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   emptyProgressText: {
+    color: '#aaaaaa',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  emptySectionText: {
     color: '#aaaaaa',
     fontSize: 15,
     lineHeight: 22,

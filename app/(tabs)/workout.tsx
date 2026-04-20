@@ -24,8 +24,8 @@ export default function WorkoutScreen() {
     }, [])
   );
 
-  return (
-    <SafeAreaView style={styles.container}>
+  const renderHeader = () => (
+    <View style={styles.headerContent}>
       <Text style={styles.title}>Workout</Text>
 
       <Pressable
@@ -57,7 +57,11 @@ export default function WorkoutScreen() {
       </Pressable>
 
       <Text style={styles.sectionTitle}>Your Routines</Text>
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={routines}
         keyExtractor={(item) => item.id}
@@ -71,6 +75,7 @@ export default function WorkoutScreen() {
         ListEmptyComponent={
           <Text style={styles.emptyText}>No routines yet. Create your first one.</Text>
         }
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -82,7 +87,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 16,
+  },
+  headerContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   title: {
     color: '#ffffff',
@@ -109,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   secondaryButtonText: {
     color: '#ffffff',
@@ -120,13 +128,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
+    marginTop: 8,
     marginBottom: 12,
   },
   emptyText: {
     color: '#aaaaaa',
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 18,
+    paddingHorizontal: 16,
   },
   listContent: {
     paddingBottom: 24,

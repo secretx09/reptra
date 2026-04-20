@@ -8,6 +8,12 @@ export const exercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Barbell',
+    demoMedia: {
+      type: 'video',
+      url: 'https://www.youtube.com/results?search_query=bench+press+proper+form',
+      title: 'Bench Press Form Demo',
+      sourceLabel: 'YouTube',
+    },
     instructions: [
       'Lie flat on the bench.',
       'Grip the bar slightly wider than shoulder width.',
@@ -28,6 +34,12 @@ export const exercises: Exercise[] = [
     primaryMuscles: ['Quads', 'Glutes'],
     secondaryMuscles: ['Hamstrings', 'Core'],
     equipment: 'Barbell',
+    demoMedia: {
+      type: 'video',
+      url: 'https://www.youtube.com/results?search_query=barbell+squat+proper+form',
+      title: 'Squat Form Demo',
+      sourceLabel: 'YouTube',
+    },
     instructions: [
       'Place the bar across your upper back.',
       'Stand with feet about shoulder width apart.',
@@ -48,6 +60,12 @@ export const exercises: Exercise[] = [
     primaryMuscles: ['Posterior Chain', 'Glutes'],
     secondaryMuscles: ['Hamstrings', 'Upper Back', 'Forearms'],
     equipment: 'Barbell',
+    demoMedia: {
+      type: 'video',
+      url: 'https://www.youtube.com/results?search_query=barbell+deadlift+proper+form',
+      title: 'Deadlift Form Demo',
+      sourceLabel: 'YouTube',
+    },
     instructions: [
       'Stand with feet under the bar.',
       'Grip the bar just outside your legs.',
@@ -68,6 +86,12 @@ export const exercises: Exercise[] = [
     primaryMuscles: ['Shoulders'],
     secondaryMuscles: ['Triceps', 'Upper Chest', 'Core'],
     equipment: 'Barbell',
+    demoMedia: {
+      type: 'video',
+      url: 'https://www.youtube.com/results?search_query=overhead+press+proper+form',
+      title: 'Overhead Press Form Demo',
+      sourceLabel: 'YouTube',
+    },
     instructions: [
       'Hold the bar at shoulder height.',
       'Brace your core.',
@@ -88,6 +112,12 @@ export const exercises: Exercise[] = [
     primaryMuscles: ['Lats', 'Mid Back'],
     secondaryMuscles: ['Rear Delts', 'Biceps', 'Forearms'],
     equipment: 'Barbell',
+    demoMedia: {
+      type: 'video',
+      url: 'https://www.youtube.com/results?search_query=barbell+row+proper+form',
+      title: 'Barbell Row Form Demo',
+      sourceLabel: 'YouTube',
+    },
     instructions: [
       'Hinge at the hips with a flat back.',
       'Hold the bar with arms extended.',
