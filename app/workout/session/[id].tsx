@@ -220,6 +220,19 @@ export default function WorkoutSessionScreen() {
   };
 
   const handleToggleSetCompleted = (exerciseId: string, setId: string) => {
+    const currentSet = (exerciseSets[exerciseId] || []).find(
+      (set) => set.id === setId
+    );
+    const routineExercise = sessionExercises.find(
+      (exercise) => exercise.id === exerciseId
+    );
+    const parsedDefaultRest = Number(routineExercise?.defaultRestSeconds || '');
+    const shouldStartDefaultRest =
+      currentSet &&
+      !currentSet.completed &&
+      Number.isInteger(parsedDefaultRest) &&
+      parsedDefaultRest > 0;
+
     setExerciseSets((prev) => {
       const updatedSets = (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, completed: !set.completed } : set
@@ -230,6 +243,10 @@ export default function WorkoutSessionScreen() {
         [exerciseId]: updatedSets,
       };
     });
+
+    if (shouldStartDefaultRest) {
+      startRestTimer(exerciseId, parsedDefaultRest);
+    }
   };
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
