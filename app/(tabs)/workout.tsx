@@ -42,6 +42,13 @@ export default function WorkoutScreen() {
         <Text style={styles.secondaryButtonText}>Create New Routine</Text>
       </Pressable>
 
+      <Pressable
+        style={styles.secondaryButton}
+        onPress={() => router.push('/exercise/create')}
+      >
+        <Text style={styles.secondaryButtonText}>Create Custom Exercise</Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>Your Routines</Text>
 
       <FlatList

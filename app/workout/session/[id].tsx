@@ -1,5 +1,5 @@
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { exercises } from '../../../data/exercises';
 import { loadRoutines } from '../../../storage/routines';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
@@ -20,12 +19,12 @@ import {
   SavedWorkoutSession,
   WorkoutSet,
 } from '../../../types/workout';
-
-const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
+import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [startedAt] = useState(() => new Date().toISOString());
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [sessionExercises, setSessionExercises] = useState<
     RoutineExerciseWithDefaults[]
@@ -85,21 +84,39 @@ export default function WorkoutSessionScreen() {
     fetchRoutine();
   }, [id]);
 
-  const filteredExercises = exercises.filter((exercise) => {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchExerciseLibrary = async () => {
+        const loadedExercises = await loadExerciseLibrary();
+        setExerciseLibrary(loadedExercises);
+      };
+
+      fetchExerciseLibrary();
+    }, [])
+  );
+
+  const muscleGroups = useMemo(
+    () => getMuscleGroups(exerciseLibrary),
+    [exerciseLibrary]
+  );
+
+  const filteredExercises = useMemo(() => {
     const addedIds = new Set(sessionExercises.map((item) => item.id));
 
-    if (addedIds.has(exercise.id)) return false;
+    return exerciseLibrary.filter((exercise) => {
+      if (addedIds.has(exercise.id)) return false;
 
-    const matchesSearch = exercise.name
-      .toLowerCase()
-      .includes(searchText.toLowerCase());
+      const matchesSearch = exercise.name
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
 
-    const matchesMuscleGroup =
-      selectedMuscleGroup === 'All' ||
-      exercise.muscleGroup === selectedMuscleGroup;
+      const matchesMuscleGroup =
+        selectedMuscleGroup === 'All' ||
+        exercise.muscleGroup === selectedMuscleGroup;
 
-    return matchesSearch && matchesMuscleGroup;
-  });
+      return matchesSearch && matchesMuscleGroup;
+    });
+  }, [exerciseLibrary, searchText, selectedMuscleGroup, sessionExercises]);
 
   useEffect(() => {
     const hasActiveTimers = Object.values(exerciseRestTimes).some(
@@ -374,6 +391,15 @@ export default function WorkoutSessionScreen() {
                 {isExercisePickerOpen && (
                   <View style={styles.exercisePickerCard}>
                     <Text style={styles.exercisePickerTitle}>Add Exercise</Text>
+
+                    <Pressable
+                      style={styles.createCustomButton}
+                      onPress={() => router.push('/exercise/create')}
+                    >
+                      <Text style={styles.createCustomButtonText}>
+                        + Create Custom Exercise
+                      </Text>
+                    </Pressable>
 
                     <TextInput
                       style={styles.inputSearch}
@@ -654,6 +680,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  createCustomButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  createCustomButtonText: {
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',

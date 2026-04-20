@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
-import { exercises } from '../../data/exercises';
+import { router, useFocusEffect } from 'expo-router';
 import { Exercise } from '../../types/exercise';
 import {
   RoutineExerciseWithDefaults,
@@ -17,10 +16,10 @@ import {
 } from '../../types/routine';
 import { loadRoutines, saveRoutines } from '../../storage/routines';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
+import { getMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrary';
 
 export default function CreateRoutineScreen() {
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [routineName, setRoutineName] = useState('');
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
@@ -28,8 +27,24 @@ export default function CreateRoutineScreen() {
     RoutineExerciseWithDefaults[]
   >([]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const fetchExerciseLibrary = async () => {
+        const loadedExercises = await loadExerciseLibrary();
+        setExerciseLibrary(loadedExercises);
+      };
+
+      fetchExerciseLibrary();
+    }, [])
+  );
+
+  const muscleGroups = useMemo(
+    () => getMuscleGroups(exerciseLibrary),
+    [exerciseLibrary]
+  );
+
   const filteredExercises = useMemo(() => {
-    return exercises.filter((exercise) => {
+    return exerciseLibrary.filter((exercise) => {
       const matchesSearch = exercise.name
         .toLowerCase()
         .includes(searchText.toLowerCase());
@@ -40,7 +55,7 @@ export default function CreateRoutineScreen() {
 
       return matchesSearch && matchesMuscleGroup;
     });
-  }, [searchText, selectedMuscleGroup]);
+  }, [exerciseLibrary, searchText, selectedMuscleGroup]);
 
   const handleToggleExercise = (exercise: Exercise) => {
     const alreadySelected = selectedExercises.some((item) => item.id === exercise.id);
@@ -231,6 +246,15 @@ export default function CreateRoutineScreen() {
             ))}
 
             <Text style={styles.sectionTitle}>Add Exercises</Text>
+
+            <Pressable
+              style={styles.createCustomButton}
+              onPress={() => router.push('/exercise/create')}
+            >
+              <Text style={styles.createCustomButtonText}>
+                + Create Custom Exercise
+              </Text>
+            </Pressable>
           </>
         }
         ListEmptyComponent={
@@ -301,6 +325,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     marginTop: 6,
+  },
+  createCustomButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  createCustomButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   selectedExerciseCard: {
     backgroundColor: '#1c1c1c',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,8 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { exercises } from '../../../data/exercises';
 import { Exercise } from '../../../types/exercise';
 import {
   WorkoutSet,
@@ -18,11 +17,11 @@ import {
   SavedExerciseLog,
 } from '../../../types/workout';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
-
-const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
+import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 
 export default function EmptyWorkoutSessionScreen() {
   const [startedAt] = useState(() => new Date().toISOString());
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([]);
@@ -40,10 +39,26 @@ export default function EmptyWorkoutSessionScreen() {
   }>({});
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      const fetchExerciseLibrary = async () => {
+        const loadedExercises = await loadExerciseLibrary();
+        setExerciseLibrary(loadedExercises);
+      };
+
+      fetchExerciseLibrary();
+    }, [])
+  );
+
+  const muscleGroups = useMemo(
+    () => getMuscleGroups(exerciseLibrary),
+    [exerciseLibrary]
+  );
+
   const filteredExercises = useMemo(() => {
     const addedIds = new Set(addedExercises.map((exercise) => exercise.id));
 
-    return exercises.filter((exercise) => {
+    return exerciseLibrary.filter((exercise) => {
       if (addedIds.has(exercise.id)) return false;
 
       const matchesSearch = exercise.name
@@ -56,7 +71,7 @@ export default function EmptyWorkoutSessionScreen() {
 
       return matchesSearch && matchesMuscleGroup;
     });
-  }, [searchText, selectedMuscleGroup, addedExercises]);
+  }, [exerciseLibrary, searchText, selectedMuscleGroup, addedExercises]);
 
   useEffect(() => {
     const hasActiveTimers = Object.values(exerciseRestTimes).some(
@@ -519,6 +534,15 @@ export default function EmptyWorkoutSessionScreen() {
                   <View style={styles.exercisePickerCard}>
                     <Text style={styles.sectionTitle}>Add Exercises</Text>
 
+                    <Pressable
+                      style={styles.createCustomButton}
+                      onPress={() => router.push('/exercise/create')}
+                    >
+                      <Text style={styles.createCustomButtonText}>
+                        + Create Custom Exercise
+                      </Text>
+                    </Pressable>
+
                     <TextInput
                       style={styles.inputSearch}
                       placeholder="Search exercises..."
@@ -613,6 +637,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  createCustomButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  createCustomButtonText: {
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',

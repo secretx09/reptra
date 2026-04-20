@@ -1,9 +1,10 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { exercises } from '../../data/exercises';
 import { loadWorkouts } from '../../storage/workouts';
 import { SavedWorkoutSession } from '../../types/workout';
+import { Exercise } from '../../types/exercise';
+import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { calculateEstimatedOneRepMax } from '../../utils/oneRepMax';
 
 type ExerciseProgressPoint = {
@@ -26,17 +27,20 @@ function formatShortDate(dateString: string) {
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
 
   useEffect(() => {
-    const fetchWorkouts = async () => {
+    const fetchData = async () => {
       const savedWorkouts = await loadWorkouts();
+      const loadedExercises = await loadExerciseLibrary();
       setWorkouts(savedWorkouts);
+      setExerciseLibrary(loadedExercises);
     };
 
-    fetchWorkouts();
+    fetchData();
   }, []);
 
-  const exercise = exercises.find((item) => item.id === id);
+  const exercise = exerciseLibrary.find((item) => item.id === id);
 
   const progressPoints = useMemo(() => {
     if (!id) return [];

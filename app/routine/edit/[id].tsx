@@ -1,5 +1,5 @@
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -10,18 +10,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { exercises } from '../../../data/exercises';
 import { loadRoutines, updateRoutineById } from '../../../storage/routines';
 import { Exercise } from '../../../types/exercise';
 import {
   RoutineExerciseWithDefaults,
   RoutineWithExercises,
 } from '../../../types/routine';
-
-const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
+import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [routineName, setRoutineName] = useState('');
   const [editedExercises, setEditedExercises] = useState<
@@ -45,10 +44,26 @@ export default function EditRoutineScreen() {
     fetchRoutine();
   }, [id]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const fetchExerciseLibrary = async () => {
+        const loadedExercises = await loadExerciseLibrary();
+        setExerciseLibrary(loadedExercises);
+      };
+
+      fetchExerciseLibrary();
+    }, [])
+  );
+
+  const muscleGroups = useMemo(
+    () => getMuscleGroups(exerciseLibrary),
+    [exerciseLibrary]
+  );
+
   const filteredExercisesToAdd = useMemo(() => {
     const alreadyAddedIds = new Set(editedExercises.map((exercise) => exercise.id));
 
-    return exercises.filter((exercise) => {
+    return exerciseLibrary.filter((exercise) => {
       if (alreadyAddedIds.has(exercise.id)) return false;
 
       const matchesSearch = exercise.name
@@ -61,7 +76,7 @@ export default function EditRoutineScreen() {
 
       return matchesSearch && matchesMuscleGroup;
     });
-  }, [editedExercises, searchText, selectedMuscleGroup]);
+  }, [editedExercises, exerciseLibrary, searchText, selectedMuscleGroup]);
 
   const handleRemoveExercise = (exerciseId: string) => {
     setEditedExercises((prev) => prev.filter((exercise) => exercise.id !== exerciseId));
@@ -326,6 +341,15 @@ export default function EditRoutineScreen() {
 
               <Text style={styles.sectionTitle}>Add Exercises</Text>
 
+              <Pressable
+                style={styles.createCustomButton}
+                onPress={() => router.push('/exercise/create')}
+              >
+                <Text style={styles.createCustomButtonText}>
+                  + Create Custom Exercise
+                </Text>
+              </Pressable>
+
               <TextInput
                 style={styles.input}
                 placeholder="Search exercises..."
@@ -417,6 +441,20 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  createCustomButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  createCustomButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 24,
