@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Text, StyleSheet, FlatList, View, Pressable } from 'react-native';
+import { Text, StyleSheet, FlatList, View, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadWorkouts } from '../../storage/workouts';
+import { ProgressPhoto } from '../../types/progressPhoto';
 import { SavedWorkoutSession } from '../../types/workout';
-import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
@@ -13,15 +14,22 @@ import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
+  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
     setWorkouts(savedWorkouts);
   };
 
+  const fetchProgressPhotos = async () => {
+    const savedPhotos = await loadProgressPhotos();
+    setProgressPhotos(savedPhotos);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
+      fetchProgressPhotos();
     }, [])
   );
 
@@ -49,18 +57,14 @@ export default function ProfileScreen() {
   const averageWorkoutTime = formatWorkoutDuration(
     profileStats.averageDurationMinutes
   );
+  const recentProgressPhotos = progressPhotos.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <FlatList
-        data={workouts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <WorkoutHistoryCard
-            workout={item}
-            onPress={() => router.push(`/workout/history/${item.id}`)}
-          />
-        )}
+        data={[]}
+        keyExtractor={(_, index) => `profile-${index}`}
+        renderItem={() => null}
         ListHeaderComponent={
           <>
             <View style={styles.headerCard}>
@@ -139,6 +143,70 @@ export default function ProfileScreen() {
               >
                 <Text style={styles.primaryActionButtonText}>View PRs</Text>
               </Pressable>
+
+              <Pressable
+                style={styles.primaryActionButton}
+                onPress={() => router.push('/profile/progress-photos')}
+              >
+                <Text style={styles.primaryActionButtonText}>Progress Photos</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryActionButton}
+                onPress={() => router.push('/profile/history')}
+              >
+                <View style={styles.secondaryActionTextWrap}>
+                  <Text style={styles.secondaryActionTitle}>Workout History</Text>
+                  <Text style={styles.secondaryActionSubtitle}>
+                    Browse all saved workouts and open details
+                  </Text>
+                </View>
+
+                <Text style={styles.secondaryActionMeta}>{totalWorkouts}</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.progressPhotosCard}>
+              <View style={styles.progressPhotosHeader}>
+                <View>
+                  <Text style={styles.progressPhotosTitle}>Progress Photos</Text>
+                  <Text style={styles.progressPhotosSubtitle}>
+                    Track physique check-ins over time
+                  </Text>
+                </View>
+
+                <Pressable
+                  style={styles.progressPhotosHeaderButton}
+                  onPress={() => router.push('/profile/progress-photos')}
+                >
+                  <Text style={styles.progressPhotosHeaderButtonText}>Open</Text>
+                </Pressable>
+              </View>
+
+              {recentProgressPhotos.length === 0 ? (
+                <Text style={styles.progressPhotosEmptyText}>
+                  No progress photos saved yet. Add your first check-in to start
+                  building your timeline.
+                </Text>
+              ) : (
+                <>
+                  <View style={styles.progressPhotosPreviewRow}>
+                    {recentProgressPhotos.map((photo) => (
+                      <Image
+                        key={photo.id}
+                        source={{ uri: photo.imageUri }}
+                        style={styles.progressPhotoPreview}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </View>
+
+                  <Text style={styles.progressPhotosCountText}>
+                    {progressPhotos.length} photo
+                    {progressPhotos.length === 1 ? '' : 's'} saved
+                  </Text>
+                </>
+              )}
             </View>
 
             <View style={styles.chartCard}>
@@ -229,14 +297,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </View>
-
-            <Text style={styles.sectionTitle}>Workout History</Text>
           </>
-        }
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No workouts yet. Finish a workout to see it here.
-          </Text>
         }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -360,6 +421,7 @@ const styles = StyleSheet.create({
   },
   quickActionsRow: {
     marginBottom: 18,
+    gap: 12,
   },
   primaryActionButton: {
     backgroundColor: '#16324d',
@@ -373,6 +435,95 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  secondaryActionButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  secondaryActionTextWrap: {
+    flex: 1,
+  },
+  secondaryActionTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  secondaryActionSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  secondaryActionMeta: {
+    color: '#4da6ff',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  progressPhotosCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  progressPhotosHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  progressPhotosTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  progressPhotosSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+  },
+  progressPhotosHeaderButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  progressPhotosHeaderButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressPhotosPreviewRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  progressPhotoPreview: {
+    flex: 1,
+    aspectRatio: 0.8,
+    borderRadius: 12,
+    backgroundColor: '#121212',
+  },
+  progressPhotosCountText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressPhotosEmptyText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 20,
   },
   chartCard: {
     backgroundColor: '#171717',
@@ -495,18 +646,6 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 11,
     fontWeight: '600',
-  },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 19,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  emptyText: {
-    color: '#aaaaaa',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 30,
   },
   listContent: {
     paddingBottom: 24,
