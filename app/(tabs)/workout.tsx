@@ -1,13 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { loadSettings } from '../../storage/settings';
 import { RoutineWithExercises } from '../../types/routine';
+import { AppTheme } from '../../types/settings';
 import { loadRoutines } from '../../storage/routines';
 import RoutineCard from '../../components/RoutineCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getThemePalette } from '../../utils/appTheme';
 
 export default function WorkoutScreen() {
   const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
+  const [theme, setTheme] = useState<AppTheme>('graphite');
+  const palette = getThemePalette(theme);
 
   const fetchRoutines = async () => {
     const savedRoutines = await loadRoutines();
@@ -21,6 +26,12 @@ export default function WorkoutScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchRoutines();
+      const fetchSettings = async () => {
+        const settings = await loadSettings();
+        setTheme(settings.theme);
+      };
+
+      fetchSettings();
     }, [])
   );
 
@@ -61,7 +72,7 @@ export default function WorkoutScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       <FlatList
         data={routines}
         keyExtractor={(item) => item.id}

@@ -6,6 +6,7 @@ const SETTINGS_KEY = 'appSettings';
 export const defaultSettings: AppSettings = {
   weightUnit: 'lb',
   restTimerPresets: [60, 90, 120],
+  theme: 'graphite',
 };
 
 function normalizeRestTimerPresets(presets: unknown): number[] {
@@ -38,6 +39,7 @@ export async function loadSettings(): Promise<AppSettings> {
     return {
       weightUnit: parsed.weightUnit === 'kg' ? 'kg' : 'lb',
       restTimerPresets: normalizeRestTimerPresets(parsed.restTimerPresets),
+      theme: parsed.theme === 'midnight' ? 'midnight' : 'graphite',
     };
   } catch (error) {
     console.error('Failed to load settings:', error);

@@ -2,19 +2,24 @@ import { useCallback, useMemo, useState } from 'react';
 import { Text, StyleSheet, FlatList, View, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { loadSettings } from '../../storage/settings';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadWorkouts } from '../../storage/workouts';
 import { ProgressPhoto } from '../../types/progressPhoto';
+import { AppTheme } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
+import { getThemePalette } from '../../utils/appTheme';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
+  const [theme, setTheme] = useState<AppTheme>('graphite');
+  const palette = getThemePalette(theme);
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
@@ -30,6 +35,12 @@ export default function ProfileScreen() {
     useCallback(() => {
       fetchWorkouts();
       fetchProgressPhotos();
+      const fetchSettings = async () => {
+        const settings = await loadSettings();
+        setTheme(settings.theme);
+      };
+
+      fetchSettings();
     }, [])
   );
 
@@ -60,7 +71,10 @@ export default function ProfileScreen() {
   const recentProgressPhotos = progressPhotos.slice(0, 3);
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: palette.background }]}
+      edges={['left', 'right', 'bottom']}
+    >
       <FlatList
         data={[]}
         keyExtractor={(_, index) => `profile-${index}`}

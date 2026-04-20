@@ -1,22 +1,40 @@
-import { Tabs } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Tabs, useFocusEffect } from 'expo-router';
+import { loadSettings } from '../../storage/settings';
+import { AppTheme } from '../../types/settings';
+import { getThemePalette } from '../../utils/appTheme';
 
 export default function TabsLayout() {
+  const [theme, setTheme] = useState<AppTheme>('graphite');
+  const palette = getThemePalette(theme);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchSettings = async () => {
+        const settings = await loadSettings();
+        setTheme(settings.theme);
+      };
+
+      fetchSettings();
+    }, [])
+  );
+
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#111111',
+          backgroundColor: palette.background,
         },
-        headerTintColor: '#ffffff',
+        headerTintColor: palette.text,
         headerTitleStyle: {
           fontWeight: '700',
         },
         tabBarStyle: {
-          backgroundColor: '#111111',
-          borderTopColor: '#2e2e2e',
+          backgroundColor: palette.background,
+          borderTopColor: palette.border,
         },
-        tabBarActiveTintColor: '#4da6ff',
+        tabBarActiveTintColor: palette.accent,
         tabBarInactiveTintColor: '#888888',
       }}
     >

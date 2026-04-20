@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
 import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
-import { AppSettings, WeightUnit } from '../../types/settings';
+import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
@@ -37,6 +37,16 @@ export default function ProfileSettingsScreen() {
     const nextSettings = {
       ...settings,
       weightUnit,
+    };
+
+    setSettings(nextSettings);
+    await saveSettings(nextSettings);
+  };
+
+  const handleUpdateTheme = async (theme: AppTheme) => {
+    const nextSettings = {
+      ...settings,
+      theme,
     };
 
     setSettings(nextSettings);
@@ -159,6 +169,55 @@ export default function ProfileSettingsScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Appearance</Text>
+            <Text style={styles.sectionDescription}>
+              Pick the dark style you want across the app chrome and main screens.
+            </Text>
+
+            <View style={styles.optionsColumn}>
+              <Pressable
+                style={[
+                  styles.optionButton,
+                  settings.theme === 'graphite' && styles.optionButtonSelected,
+                ]}
+                onPress={() => handleUpdateTheme('graphite')}
+              >
+                <Text
+                  style={[
+                    styles.optionButtonText,
+                    settings.theme === 'graphite' && styles.optionButtonTextSelected,
+                  ]}
+                >
+                  Graphite
+                </Text>
+                <Text style={styles.optionHelperText}>
+                  The current Reptra look with a charcoal dark background.
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.optionButton,
+                  settings.theme === 'midnight' && styles.optionButtonSelected,
+                ]}
+                onPress={() => handleUpdateTheme('midnight')}
+              >
+                <Text
+                  style={[
+                    styles.optionButtonText,
+                    settings.theme === 'midnight' && styles.optionButtonTextSelected,
+                  ]}
+                >
+                  Midnight
+                </Text>
+                <Text style={styles.optionHelperText}>
+                  A darker black-based look with slightly icier blue accents.
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
           <Pressable
             style={styles.settingRow}
             onPress={() => showComingSoon('Theme and appearance')}
@@ -252,6 +311,12 @@ const styles = StyleSheet.create({
   },
   optionButtonTextSelected: {
     color: '#4da6ff',
+  },
+  optionHelperText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 6,
   },
   timerPresetRow: {
     flexDirection: 'row',
