@@ -2,8 +2,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { loadWorkouts } from '../../storage/workouts';
-import { SavedWorkoutSession } from '../../types/workout';
 import { Exercise } from '../../types/exercise';
+import { SavedWorkoutSession } from '../../types/workout';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { calculateEstimatedOneRepMax } from '../../utils/oneRepMax';
 
@@ -129,26 +129,57 @@ export default function ExerciseDetailScreen() {
         </Text>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Progress</Text>
+          <Text style={styles.sectionTitle}>Muscle Targets</Text>
+
+          <View style={styles.targetGroup}>
+            <Text style={styles.targetGroupLabel}>Primary</Text>
+            <View style={styles.targetChipRow}>
+              {exercise.primaryMuscles.map((muscle) => (
+                <View key={`primary-${muscle}`} style={styles.primaryTargetChip}>
+                  <Text style={styles.primaryTargetChipText}>{muscle}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {exercise.secondaryMuscles.length > 0 ? (
+            <View style={styles.targetGroup}>
+              <Text style={styles.targetGroupLabel}>Secondary</Text>
+              <View style={styles.targetChipRow}>
+                {exercise.secondaryMuscles.map((muscle) => (
+                  <View
+                    key={`secondary-${muscle}`}
+                    style={styles.secondaryTargetChip}
+                  >
+                    <Text style={styles.secondaryTargetChipText}>{muscle}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>PR Snapshot</Text>
 
           {progressPoints.length === 0 ? (
             <Text style={styles.emptyProgressText}>
               No logged sessions for this exercise yet. Complete a workout with this
-              exercise to see your progress chart here.
+              exercise to see your PRs and progress here.
             </Text>
           ) : (
             <>
               <View style={styles.progressSummaryGrid}>
                 <View style={styles.progressSummaryCard}>
                   <Text style={styles.progressSummaryValue}>{bestWeight}</Text>
-                  <Text style={styles.progressSummaryLabel}>Best Weight</Text>
+                  <Text style={styles.progressSummaryLabel}>Heaviest Set</Text>
                 </View>
 
                 <View style={styles.progressSummaryCard}>
                   <Text style={styles.progressSummaryValue}>
                     {bestEstimatedOneRepMax}
                   </Text>
-                  <Text style={styles.progressSummaryLabel}>Best 1RM</Text>
+                  <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
                 </View>
 
                 <View style={styles.progressSummaryCard}>
@@ -162,6 +193,19 @@ export default function ExerciseDetailScreen() {
                   </Text>
                   <Text style={styles.progressSummaryLabel}>Latest Volume</Text>
                 </View>
+              </View>
+
+              <View style={styles.prInsightCard}>
+                <Text style={styles.prInsightTitle}>Current Bests</Text>
+                <Text style={styles.prInsightText}>
+                  Top logged weight: {bestWeight} lb
+                </Text>
+                <Text style={styles.prInsightText}>
+                  Best estimated 1RM: {bestEstimatedOneRepMax} lb
+                </Text>
+                <Text style={styles.prInsightText}>
+                  Last recorded session volume: {latestSession ? latestSession.totalVolume : 0}
+                </Text>
               </View>
 
               <View style={styles.chartCard}>
@@ -293,6 +337,48 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
   },
+  targetGroup: {
+    marginBottom: 12,
+  },
+  targetGroupLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  targetChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  primaryTargetChip: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  primaryTargetChipText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  secondaryTargetChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  secondaryTargetChipText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   progressSummaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -318,6 +404,26 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '600',
+  },
+  prInsightCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+  },
+  prInsightTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  prInsightText: {
+    color: '#dddddd',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 4,
   },
   chartCard: {
     backgroundColor: '#161616',

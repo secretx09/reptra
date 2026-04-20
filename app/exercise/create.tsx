@@ -60,6 +60,8 @@ export default function CreateCustomExerciseScreen() {
       id: `custom-${new Date().toISOString()}`,
       name: name.trim(),
       muscleGroup: selectedMuscleGroup,
+      primaryMuscles: [selectedMuscleGroup],
+      secondaryMuscles: [],
       equipment: equipment.trim(),
       instructions: splitMultilineInput(instructionsInput),
       commonMistakes: splitMultilineInput(mistakesInput),

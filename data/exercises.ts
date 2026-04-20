@@ -5,6 +5,8 @@ export const exercises: Exercise[] = [
     id: 'bench-press',
     name: 'Bench Press',
     muscleGroup: 'Chest',
+    primaryMuscles: ['Chest'],
+    secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Barbell',
     instructions: [
       'Lie flat on the bench.',
@@ -23,6 +25,8 @@ export const exercises: Exercise[] = [
     id: 'squat',
     name: 'Squat',
     muscleGroup: 'Legs',
+    primaryMuscles: ['Quads', 'Glutes'],
+    secondaryMuscles: ['Hamstrings', 'Core'],
     equipment: 'Barbell',
     instructions: [
       'Place the bar across your upper back.',
@@ -41,6 +45,8 @@ export const exercises: Exercise[] = [
     id: 'deadlift',
     name: 'Deadlift',
     muscleGroup: 'Back',
+    primaryMuscles: ['Posterior Chain', 'Glutes'],
+    secondaryMuscles: ['Hamstrings', 'Upper Back', 'Forearms'],
     equipment: 'Barbell',
     instructions: [
       'Stand with feet under the bar.',
@@ -59,6 +65,8 @@ export const exercises: Exercise[] = [
     id: 'overhead-press',
     name: 'Overhead Press',
     muscleGroup: 'Shoulders',
+    primaryMuscles: ['Shoulders'],
+    secondaryMuscles: ['Triceps', 'Upper Chest', 'Core'],
     equipment: 'Barbell',
     instructions: [
       'Hold the bar at shoulder height.',
@@ -77,6 +85,8 @@ export const exercises: Exercise[] = [
     id: 'barbell-row',
     name: 'Barbell Row',
     muscleGroup: 'Back',
+    primaryMuscles: ['Lats', 'Mid Back'],
+    secondaryMuscles: ['Rear Delts', 'Biceps', 'Forearms'],
     equipment: 'Barbell',
     instructions: [
       'Hinge at the hips with a flat back.',
