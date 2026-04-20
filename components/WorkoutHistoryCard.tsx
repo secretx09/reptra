@@ -1,5 +1,6 @@
-import { Pressable, View, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 import { SavedWorkoutSession } from '../types/workout';
+import { formatWorkoutDuration } from '../utils/formatDuration';
 
 type WorkoutHistoryCardProps = {
   workout: SavedWorkoutSession;
@@ -20,6 +21,7 @@ export default function WorkoutHistoryCard({
     hour: 'numeric',
     minute: '2-digit',
   });
+  const formattedDuration = formatWorkoutDuration(workout.durationMinutes);
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -32,6 +34,9 @@ export default function WorkoutHistoryCard({
         {workout.exercises.length === 1 ? '' : 's'} • {totalSets} set
         {totalSets === 1 ? '' : 's'}
       </Text>
+      {formattedDuration ? (
+        <Text style={styles.meta}>Duration: {formattedDuration}</Text>
+      ) : null}
     </Pressable>
   );
 }

@@ -4,6 +4,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadWorkouts, deleteWorkoutById } from '../../../storage/workouts';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
+import { formatWorkoutDuration } from '../../../utils/formatDuration';
 
 export default function WorkoutHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,6 +56,7 @@ export default function WorkoutHistoryDetailScreen() {
     hour: 'numeric',
     minute: '2-digit',
   });
+  const formattedDuration = formatWorkoutDuration(workout.durationMinutes);
 
   const totalSets = workout.exercises.reduce(
     (sum, exercise) => sum + exercise.sets.length,
@@ -80,6 +82,9 @@ export default function WorkoutHistoryDetailScreen() {
                 {workout.exercises.length === 1 ? '' : 's'} • {totalSets} set
                 {totalSets === 1 ? '' : 's'}
               </Text>
+              {formattedDuration ? (
+                <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
+              ) : null}
             </View>
           }
           renderItem={({ item, index }: { item: SavedExerciseLog; index: number }) => (
