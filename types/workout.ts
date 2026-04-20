@@ -45,7 +45,9 @@ export interface SavedWorkoutSession {
   id: string;
   routineId: string | null;
   routineName: string;
+  startedAt?: string;
   completedAt: string;
+  durationMinutes?: number;
   exercises: SavedExerciseLog[];
 }
 

@@ -22,6 +22,7 @@ import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
 
 export default function EmptyWorkoutSessionScreen() {
+  const [startedAt] = useState(() => new Date().toISOString());
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([]);
@@ -255,11 +256,18 @@ export default function EmptyWorkoutSessionScreen() {
       return;
     }
 
+    const completedAt = new Date().toISOString();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMinutes = Math.max(1, Math.ceil(durationMs / 60000));
+
     const newWorkout: SavedWorkoutSession = {
       id: new Date().toISOString(),
       routineId: null,
       routineName: 'Empty Workout',
-      completedAt: new Date().toISOString(),
+      startedAt,
+      completedAt,
+      durationMinutes,
       exercises: completedExercises,
     };
 

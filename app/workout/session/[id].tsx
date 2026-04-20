@@ -25,6 +25,7 @@ const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [startedAt] = useState(() => new Date().toISOString());
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [sessionExercises, setSessionExercises] = useState<
     RoutineExerciseWithDefaults[]
@@ -307,11 +308,18 @@ export default function WorkoutSessionScreen() {
       return;
     }
 
+    const completedAt = new Date().toISOString();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMinutes = Math.max(1, Math.ceil(durationMs / 60000));
+
     const newWorkout: SavedWorkoutSession = {
       id: new Date().toISOString(),
       routineId: routine.id,
       routineName: routine.name,
-      completedAt: new Date().toISOString(),
+      startedAt,
+      completedAt,
+      durationMinutes,
       exercises: completedExercises,
     };
 
