@@ -35,8 +35,12 @@ export default function WorkoutSessionScreen() {
   const [exerciseNotes, setExerciseNotes] = useState<{
     [exerciseId: string]: string;
   }>({});
-  const [restTimeRemaining, setRestTimeRemaining] = useState(0);
-  const [customRestSeconds, setCustomRestSeconds] = useState('');
+  const [exerciseRestTimes, setExerciseRestTimes] = useState<{
+    [exerciseId: string]: number;
+  }>({});
+  const [customRestSeconds, setCustomRestSeconds] = useState<{
+    [exerciseId: string]: string;
+  }>({});
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
@@ -97,27 +101,36 @@ export default function WorkoutSessionScreen() {
   });
 
   useEffect(() => {
-    if (restTimeRemaining <= 0) return;
+    const hasActiveTimers = Object.values(exerciseRestTimes).some(
+      (seconds) => seconds > 0
+    );
+
+    if (!hasActiveTimers) return;
 
     const interval = setInterval(() => {
-      setRestTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
+      setExerciseRestTimes((prev) => {
+        const nextState: { [exerciseId: string]: number } = {};
+
+        Object.entries(prev).forEach(([exerciseId, seconds]) => {
+          nextState[exerciseId] = seconds > 1 ? seconds - 1 : 0;
+        });
+
+        return nextState;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [restTimeRemaining]);
+  }, [exerciseRestTimes]);
 
-  const startRestTimer = (seconds: number) => {
-    setRestTimeRemaining(seconds);
+  const startRestTimer = (exerciseId: string, seconds: number) => {
+    setExerciseRestTimes((prev) => ({
+      ...prev,
+      [exerciseId]: seconds,
+    }));
   };
 
-  const handleStartCustomRestTimer = () => {
-    const trimmedValue = customRestSeconds.trim();
+  const handleStartCustomRestTimer = (exerciseId: string) => {
+    const trimmedValue = (customRestSeconds[exerciseId] || '').trim();
     const parsedSeconds = Number(trimmedValue);
 
     if (
@@ -132,8 +145,11 @@ export default function WorkoutSessionScreen() {
       return;
     }
 
-    startRestTimer(parsedSeconds);
-    setCustomRestSeconds('');
+    startRestTimer(exerciseId, parsedSeconds);
+    setCustomRestSeconds((prev) => ({
+      ...prev,
+      [exerciseId]: '',
+    }));
   };
 
   const formatTime = (seconds: number) => {
@@ -155,6 +171,10 @@ export default function WorkoutSessionScreen() {
     setExerciseSets((prev) => ({
       ...prev,
       [exercise.id]: [],
+    }));
+    setExerciseRestTimes((prev) => ({
+      ...prev,
+      [exercise.id]: 0,
     }));
     setSearchText('');
     setSelectedMuscleGroup('All');
@@ -314,56 +334,6 @@ export default function WorkoutSessionScreen() {
                 {sessionExercises.length === 1 ? '' : 's'}
               </Text>
 
-              <View style={styles.timerCard}>
-                <View style={styles.timerHeaderRow}>
-                  <Text style={styles.timerLabel}>Rest Timer</Text>
-                  <Text style={styles.timerValue}>
-                    {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
-                  </Text>
-                </View>
-
-                <View style={styles.timerButtonsRow}>
-                  <Pressable
-                    style={styles.timerButton}
-                    onPress={() => startRestTimer(60)}
-                  >
-                    <Text style={styles.timerButtonText}>60s</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={styles.timerButton}
-                    onPress={() => startRestTimer(90)}
-                  >
-                    <Text style={styles.timerButtonText}>90s</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={styles.timerButton}
-                    onPress={() => startRestTimer(120)}
-                  >
-                    <Text style={styles.timerButtonText}>120s</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.customTimerRow}>
-                  <TextInput
-                    style={styles.customTimerInput}
-                    placeholder="Custom seconds"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={customRestSeconds}
-                    onChangeText={setCustomRestSeconds}
-                  />
-
-                  <Pressable
-                    style={styles.customTimerButton}
-                    onPress={handleStartCustomRestTimer}
-                  >
-                    <Text style={styles.customTimerButtonText}>Start</Text>
-                  </Pressable>
-                </View>
-              </View>
-
               <View style={styles.addExerciseSection}>
                 <Pressable
                   style={styles.addExerciseTrigger}
@@ -445,6 +415,8 @@ export default function WorkoutSessionScreen() {
           renderItem={({ item, index }) => {
             const sets = exerciseSets[item.id] || [];
             const exerciseNote = exerciseNotes[item.id] || '';
+            const restTimeRemaining = exerciseRestTimes[item.id] || 0;
+            const customRestValue = customRestSeconds[item.id] || '';
 
             return (
               <View style={styles.exerciseCard}>
@@ -478,6 +450,61 @@ export default function WorkoutSessionScreen() {
                   }
                   multiline
                 />
+
+                <View style={styles.timerCard}>
+                  <View style={styles.timerHeaderRow}>
+                    <Text style={styles.timerLabel}>Rest Timer</Text>
+                    <Text style={styles.timerValue}>
+                      {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.timerButtonsRow}>
+                    <Pressable
+                      style={styles.timerButton}
+                      onPress={() => startRestTimer(item.id, 60)}
+                    >
+                      <Text style={styles.timerButtonText}>60s</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.timerButton}
+                      onPress={() => startRestTimer(item.id, 90)}
+                    >
+                      <Text style={styles.timerButtonText}>90s</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.timerButton}
+                      onPress={() => startRestTimer(item.id, 120)}
+                    >
+                      <Text style={styles.timerButtonText}>120s</Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.customTimerRow}>
+                    <TextInput
+                      style={styles.customTimerInput}
+                      placeholder="Custom seconds"
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={customRestValue}
+                      onChangeText={(value) =>
+                        setCustomRestSeconds((prev) => ({
+                          ...prev,
+                          [item.id]: value,
+                        }))
+                      }
+                    />
+
+                    <Pressable
+                      style={styles.customTimerButton}
+                      onPress={() => handleStartCustomRestTimer(item.id)}
+                    >
+                      <Text style={styles.customTimerButtonText}>Start</Text>
+                    </Pressable>
+                  </View>
+                </View>
 
                 {sets.map((set) => (
                   <View
