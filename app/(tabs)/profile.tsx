@@ -7,6 +7,8 @@ import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
+import { calculateProfileStats } from '../../utils/calculateProfileStats';
+import { formatWorkoutDuration } from '../../utils/formatDuration';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -31,6 +33,17 @@ export default function ProfileScreen() {
   const weeklyStats = useMemo(() => {
     return calculateWeeklyStats(workouts);
   }, [workouts]);
+
+  const profileStats = useMemo(() => {
+    return calculateProfileStats(workouts);
+  }, [workouts]);
+
+  const totalTrainingTime = formatWorkoutDuration(
+    profileStats.totalDurationMinutes
+  );
+  const averageWorkoutTime = formatWorkoutDuration(
+    profileStats.averageDurationMinutes
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
@@ -76,6 +89,40 @@ export default function ProfileScreen() {
                 <View style={styles.summaryPill}>
                   <Text style={styles.summaryPillValue}>{exercisePRs.length}</Text>
                   <Text style={styles.summaryPillLabel}>PRs</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailStatsCard}>
+                <Text style={styles.detailStatsTitle}>Lifetime Stats</Text>
+
+                <View style={styles.detailStatsGrid}>
+                  <View style={styles.detailStatItem}>
+                    <Text style={styles.detailStatValue}>
+                      {profileStats.totalSets}
+                    </Text>
+                    <Text style={styles.detailStatLabel}>Sets Logged</Text>
+                  </View>
+
+                  <View style={styles.detailStatItem}>
+                    <Text style={styles.detailStatValue}>
+                      {profileStats.totalExercisesLogged}
+                    </Text>
+                    <Text style={styles.detailStatLabel}>Exercises Logged</Text>
+                  </View>
+
+                  <View style={styles.detailStatItem}>
+                    <Text style={styles.detailStatValue}>
+                      {totalTrainingTime || '--'}
+                    </Text>
+                    <Text style={styles.detailStatLabel}>Time Trained</Text>
+                  </View>
+
+                  <View style={styles.detailStatItem}>
+                    <Text style={styles.detailStatValue}>
+                      {averageWorkoutTime || '--'}
+                    </Text>
+                    <Text style={styles.detailStatLabel}>Avg Workout</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -174,6 +221,45 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   summaryPillLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailStatsCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+  },
+  detailStatsTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  detailStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  detailStatItem: {
+    width: '48%',
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  detailStatValue: {
+    color: '#4da6ff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  detailStatLabel: {
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '600',
