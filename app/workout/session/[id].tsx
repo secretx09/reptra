@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { exercises } from '../../../data/exercises';
 import { loadRoutines } from '../../../storage/routines';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
@@ -20,9 +21,14 @@ import {
   WorkoutSet,
 } from '../../../types/workout';
 
+const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'];
+
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
+  const [sessionExercises, setSessionExercises] = useState<
+    RoutineExerciseWithDefaults[]
+  >([]);
   const [exerciseSets, setExerciseSets] = useState<{
     [exerciseId: string]: WorkoutSet[];
   }>({});
@@ -30,6 +36,9 @@ export default function WorkoutSessionScreen() {
     [exerciseId: string]: string;
   }>({});
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+  const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -38,6 +47,7 @@ export default function WorkoutSessionScreen() {
 
       if (found) {
         setRoutine(found);
+        setSessionExercises(found.exercises);
 
         const initialExerciseSets: { [exerciseId: string]: WorkoutSet[] } = {};
 
@@ -69,6 +79,22 @@ export default function WorkoutSessionScreen() {
     fetchRoutine();
   }, [id]);
 
+  const filteredExercises = exercises.filter((exercise) => {
+    const addedIds = new Set(sessionExercises.map((item) => item.id));
+
+    if (addedIds.has(exercise.id)) return false;
+
+    const matchesSearch = exercise.name
+      .toLowerCase()
+      .includes(searchText.toLowerCase());
+
+    const matchesMuscleGroup =
+      selectedMuscleGroup === 'All' ||
+      exercise.muscleGroup === selectedMuscleGroup;
+
+    return matchesSearch && matchesMuscleGroup;
+  });
+
   useEffect(() => {
     if (restTimeRemaining <= 0) return;
 
@@ -93,6 +119,25 @@ export default function WorkoutSessionScreen() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleAddExercise = (exercise: Exercise) => {
+    const routineExercise: RoutineExerciseWithDefaults = {
+      ...exercise,
+      defaultSets: '',
+      defaultWeight: '',
+      defaultReps: '',
+      defaultRestSeconds: '',
+    };
+
+    setSessionExercises((prev) => [...prev, routineExercise]);
+    setExerciseSets((prev) => ({
+      ...prev,
+      [exercise.id]: [],
+    }));
+    setSearchText('');
+    setSelectedMuscleGroup('All');
+    setIsExercisePickerOpen(false);
   };
 
   const handleAddSet = (exerciseId: string) => {
@@ -173,7 +218,7 @@ export default function WorkoutSessionScreen() {
   const handleFinishWorkout = async () => {
     if (!routine) return;
 
-    const completedExercises: SavedExerciseLog[] = routine.exercises
+    const completedExercises: SavedExerciseLog[] = sessionExercises
       .map((exercise) => {
         const sets = exerciseSets[exercise.id] || [];
         const note = exerciseNotes[exercise.id] || '';
@@ -238,14 +283,14 @@ export default function WorkoutSessionScreen() {
 
       <SafeAreaView style={styles.container}>
         <FlatList
-          data={routine.exercises}
+          data={sessionExercises}
           keyExtractor={(item: Exercise) => item.id}
           ListHeaderComponent={
             <>
               <Text style={styles.title}>{routine.name}</Text>
               <Text style={styles.subtitle}>
-                {routine.exercises.length} exercise
-                {routine.exercises.length === 1 ? '' : 's'}
+                {sessionExercises.length} exercise
+                {sessionExercises.length === 1 ? '' : 's'}
               </Text>
 
               <View style={styles.timerCard}>
@@ -278,6 +323,83 @@ export default function WorkoutSessionScreen() {
                     <Text style={styles.timerButtonText}>120s</Text>
                   </Pressable>
                 </View>
+              </View>
+
+              <View style={styles.addExerciseSection}>
+                <Pressable
+                  style={styles.addExerciseTrigger}
+                  onPress={() =>
+                    setIsExercisePickerOpen((prev) => !prev)
+                  }
+                >
+                  <Text style={styles.addExerciseTriggerText}>
+                    {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+                  </Text>
+                </Pressable>
+
+                {isExercisePickerOpen && (
+                  <View style={styles.exercisePickerCard}>
+                    <Text style={styles.exercisePickerTitle}>Add Exercise</Text>
+
+                    <TextInput
+                      style={styles.inputSearch}
+                      placeholder="Search exercises..."
+                      placeholderTextColor="#888888"
+                      value={searchText}
+                      onChangeText={setSearchText}
+                    />
+
+                    <View style={styles.filterRow}>
+                      {muscleGroups.map((group) => {
+                        const isSelected = selectedMuscleGroup === group;
+
+                        return (
+                          <Pressable
+                            key={group}
+                            style={[
+                              styles.filterButton,
+                              isSelected && styles.filterButtonSelected,
+                            ]}
+                            onPress={() => setSelectedMuscleGroup(group)}
+                          >
+                            <Text
+                              style={[
+                                styles.filterButtonText,
+                                isSelected && styles.filterButtonTextSelected,
+                              ]}
+                            >
+                              {group}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {filteredExercises.length === 0 ? (
+                      <Text style={styles.emptyPickerText}>
+                        No matching exercises found.
+                      </Text>
+                    ) : (
+                      filteredExercises.map((exercise) => (
+                        <View key={exercise.id} style={styles.addExerciseCard}>
+                          <View style={styles.addExerciseInfo}>
+                            <Text style={styles.exerciseName}>{exercise.name}</Text>
+                            <Text style={styles.exerciseMeta}>
+                              {exercise.muscleGroup} • {exercise.equipment}
+                            </Text>
+                          </View>
+
+                          <Pressable
+                            style={styles.addExerciseButton}
+                            onPress={() => handleAddExercise(exercise)}
+                          >
+                            <Text style={styles.addExerciseButtonText}>Add</Text>
+                          </Pressable>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                )}
               </View>
             </>
           }
@@ -429,6 +551,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 14,
   },
+  addExerciseSection: {
+    marginBottom: 14,
+  },
+  addExerciseTrigger: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  exercisePickerCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  exercisePickerTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
   timerCard: {
     backgroundColor: '#171717',
     borderWidth: 1,
@@ -500,6 +652,21 @@ const styles = StyleSheet.create({
     minWidth: 14,
   },
   exerciseTitleWrap: {
+    flex: 1,
+  },
+  addExerciseCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  addExerciseInfo: {
     flex: 1,
   },
   exerciseName: {
@@ -625,6 +792,62 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontWeight: '700',
     fontSize: 13,
+  },
+  inputSearch: {
+    backgroundColor: '#121212',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    fontSize: 15,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  filterButton: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterButtonSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  filterButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterButtonTextSelected: {
+    color: '#111111',
+  },
+  emptyPickerText: {
+    color: '#aaaaaa',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  addExerciseButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  addExerciseButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   finishButton: {
     backgroundColor: '#4da6ff',

@@ -32,6 +32,7 @@ export default function EmptyWorkoutSessionScreen() {
     [exerciseId: string]: string;
   }>({});
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+  const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
   const filteredExercises = useMemo(() => {
     const addedIds = new Set(addedExercises.map((exercise) => exercise.id));
@@ -83,6 +84,9 @@ export default function EmptyWorkoutSessionScreen() {
       ...prev,
       [exercise.id]: [],
     }));
+    setSearchText('');
+    setSelectedMuscleGroup('All');
+    setIsExercisePickerOpen(false);
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
@@ -421,40 +425,57 @@ export default function EmptyWorkoutSessionScreen() {
                 })
               )}
 
-              <Text style={styles.sectionTitle}>Add Exercises</Text>
+              <View style={styles.addExerciseSection}>
+                <Pressable
+                  style={styles.addExerciseTrigger}
+                  onPress={() =>
+                    setIsExercisePickerOpen((prev) => !prev)
+                  }
+                >
+                  <Text style={styles.addExerciseTriggerText}>
+                    {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+                  </Text>
+                </Pressable>
 
-              <TextInput
-                style={styles.inputSearch}
-                placeholder="Search exercises..."
-                placeholderTextColor="#888888"
-                value={searchText}
-                onChangeText={setSearchText}
-              />
+                {isExercisePickerOpen && (
+                  <View style={styles.exercisePickerCard}>
+                    <Text style={styles.sectionTitle}>Add Exercises</Text>
 
-              <View style={styles.filterRow}>
-                {muscleGroups.map((group) => {
-                  const isSelected = selectedMuscleGroup === group;
+                    <TextInput
+                      style={styles.inputSearch}
+                      placeholder="Search exercises..."
+                      placeholderTextColor="#888888"
+                      value={searchText}
+                      onChangeText={setSearchText}
+                    />
 
-                  return (
-                    <Pressable
-                      key={group}
-                      style={[
-                        styles.filterButton,
-                        isSelected && styles.filterButtonSelected,
-                      ]}
-                      onPress={() => setSelectedMuscleGroup(group)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterButtonText,
-                          isSelected && styles.filterButtonTextSelected,
-                        ]}
-                      >
-                        {group}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                    <View style={styles.filterRow}>
+                      {muscleGroups.map((group) => {
+                        const isSelected = selectedMuscleGroup === group;
+
+                        return (
+                          <Pressable
+                            key={group}
+                            style={[
+                              styles.filterButton,
+                              isSelected && styles.filterButtonSelected,
+                            ]}
+                            onPress={() => setSelectedMuscleGroup(group)}
+                          >
+                            <Text
+                              style={[
+                                styles.filterButtonText,
+                                isSelected && styles.filterButtonTextSelected,
+                              ]}
+                            >
+                              {group}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
               </View>
             </>
           }
@@ -500,6 +521,31 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  addExerciseSection: {
+    marginBottom: 6,
+  },
+  addExerciseTrigger: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  exercisePickerCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 6,
   },
   timerCard: {
     backgroundColor: '#171717',
