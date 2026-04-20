@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadSettings } from '../../../storage/settings';
 import { Exercise } from '../../../types/exercise';
+import { WeightUnit } from '../../../types/settings';
 import {
   WorkoutSet,
   SavedWorkoutSession,
@@ -18,10 +20,13 @@ import {
 } from '../../../types/workout';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import { getWeightPlaceholder } from '../../../utils/weightUnits';
 
 export default function EmptyWorkoutSessionScreen() {
   const [startedAt] = useState(() => new Date().toISOString());
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [restTimerPresets, setRestTimerPresets] = useState<number[]>([60, 90, 120]);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([]);
@@ -43,7 +48,10 @@ export default function EmptyWorkoutSessionScreen() {
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setWeightUnit(savedSettings.weightUnit);
+        setRestTimerPresets(savedSettings.restTimerPresets);
       };
 
       fetchExerciseLibrary();
@@ -386,26 +394,15 @@ export default function EmptyWorkoutSessionScreen() {
                         </View>
 
                         <View style={styles.timerButtonsRow}>
-                          <Pressable
-                            style={styles.timerButton}
-                            onPress={() => startRestTimer(exercise.id, 60)}
-                          >
-                            <Text style={styles.timerButtonText}>60s</Text>
-                          </Pressable>
-
-                          <Pressable
-                            style={styles.timerButton}
-                            onPress={() => startRestTimer(exercise.id, 90)}
-                          >
-                            <Text style={styles.timerButtonText}>90s</Text>
-                          </Pressable>
-
-                          <Pressable
-                            style={styles.timerButton}
-                            onPress={() => startRestTimer(exercise.id, 120)}
-                          >
-                            <Text style={styles.timerButtonText}>120s</Text>
-                          </Pressable>
+                          {restTimerPresets.map((seconds) => (
+                            <Pressable
+                              key={`${exercise.id}-${seconds}`}
+                              style={styles.timerButton}
+                              onPress={() => startRestTimer(exercise.id, seconds)}
+                            >
+                              <Text style={styles.timerButtonText}>{seconds}s</Text>
+                            </Pressable>
+                          ))}
                         </View>
 
                         <View style={styles.customTimerRow}>
@@ -475,7 +472,7 @@ export default function EmptyWorkoutSessionScreen() {
                               styles.input,
                               set.completed && styles.inputCompleted,
                             ]}
-                            placeholder="Wt"
+                            placeholder={getWeightPlaceholder(weightUnit)}
                             placeholderTextColor="#777777"
                             keyboardType="numeric"
                             value={set.weight}

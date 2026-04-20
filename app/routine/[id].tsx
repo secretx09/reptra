@@ -9,13 +9,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadSettings } from '../../storage/settings';
 import { deleteRoutineById, loadRoutines } from '../../storage/routines';
 import { Exercise } from '../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
+import { WeightUnit } from '../../types/settings';
+import { formatWeightUnit } from '../../utils/weightUnits';
 
 export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
 
   const fetchRoutine = async () => {
     const routines = await loadRoutines();
@@ -29,7 +33,13 @@ export default function RoutineDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchRoutine();
+      const fetchData = async () => {
+        const savedSettings = await loadSettings();
+        setWeightUnit(savedSettings.weightUnit);
+        await fetchRoutine();
+      };
+
+      fetchData();
     }, [id])
   );
 
@@ -133,7 +143,7 @@ export default function RoutineDetailScreen() {
                 {!!item.defaultWeight && (
                   <View style={styles.defaultChip}>
                     <Text style={styles.defaultChipText}>
-                      {item.defaultWeight} wt
+                      {item.defaultWeight} {formatWeightUnit(weightUnit)}
                     </Text>
                   </View>
                 )}

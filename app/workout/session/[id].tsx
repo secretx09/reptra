@@ -10,21 +10,26 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadSettings } from '../../../storage/settings';
 import { loadRoutines } from '../../../storage/routines';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
+import { WeightUnit } from '../../../types/settings';
 import {
   SavedExerciseLog,
   SavedWorkoutSession,
   WorkoutSet,
 } from '../../../types/workout';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import { getWeightPlaceholder } from '../../../utils/weightUnits';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [startedAt] = useState(() => new Date().toISOString());
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [restTimerPresets, setRestTimerPresets] = useState<number[]>([60, 90, 120]);
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [sessionExercises, setSessionExercises] = useState<
     RoutineExerciseWithDefaults[]
@@ -88,7 +93,10 @@ export default function WorkoutSessionScreen() {
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setWeightUnit(savedSettings.weightUnit);
+        setRestTimerPresets(savedSettings.restTimerPresets);
       };
 
       fetchExerciseLibrary();
@@ -511,26 +519,15 @@ export default function WorkoutSessionScreen() {
                   </View>
 
                   <View style={styles.timerButtonsRow}>
-                    <Pressable
-                      style={styles.timerButton}
-                      onPress={() => startRestTimer(item.id, 60)}
-                    >
-                      <Text style={styles.timerButtonText}>60s</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.timerButton}
-                      onPress={() => startRestTimer(item.id, 90)}
-                    >
-                      <Text style={styles.timerButtonText}>90s</Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.timerButton}
-                      onPress={() => startRestTimer(item.id, 120)}
-                    >
-                      <Text style={styles.timerButtonText}>120s</Text>
-                    </Pressable>
+                    {restTimerPresets.map((seconds) => (
+                      <Pressable
+                        key={`${item.id}-${seconds}`}
+                        style={styles.timerButton}
+                        onPress={() => startRestTimer(item.id, seconds)}
+                      >
+                        <Text style={styles.timerButtonText}>{seconds}s</Text>
+                      </Pressable>
+                    ))}
                   </View>
 
                   <View style={styles.customTimerRow}>
@@ -596,7 +593,7 @@ export default function WorkoutSessionScreen() {
                         styles.input,
                         set.completed && styles.inputCompleted,
                       ]}
-                      placeholder="Wt"
+                      placeholder={getWeightPlaceholder(weightUnit)}
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
                       value={set.weight}

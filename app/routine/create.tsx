@@ -15,11 +15,15 @@ import {
   RoutineWithExercises,
 } from '../../types/routine';
 import { loadRoutines, saveRoutines } from '../../storage/routines';
+import { loadSettings } from '../../storage/settings';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WeightUnit } from '../../types/settings';
 import { getMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrary';
+import { getWeightFieldLabel } from '../../utils/weightUnits';
 
 export default function CreateRoutineScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [routineName, setRoutineName] = useState('');
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
@@ -31,7 +35,9 @@ export default function CreateRoutineScreen() {
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setWeightUnit(savedSettings.weightUnit);
       };
 
       fetchExerciseLibrary();
@@ -209,7 +215,7 @@ export default function CreateRoutineScreen() {
                   />
                   <TextInput
                     style={styles.smallInput}
-                    placeholder="Weight"
+                    placeholder={getWeightFieldLabel(weightUnit)}
                     placeholderTextColor="#777777"
                     keyboardType="numeric"
                     value={exercise.defaultWeight}

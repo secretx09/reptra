@@ -10,17 +10,21 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadSettings } from '../../../storage/settings';
 import { loadRoutines, updateRoutineById } from '../../../storage/routines';
 import { Exercise } from '../../../types/exercise';
 import {
   RoutineExerciseWithDefaults,
   RoutineWithExercises,
 } from '../../../types/routine';
+import { WeightUnit } from '../../../types/settings';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import { getWeightFieldLabel } from '../../../utils/weightUnits';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [routineName, setRoutineName] = useState('');
   const [editedExercises, setEditedExercises] = useState<
@@ -48,7 +52,9 @@ export default function EditRoutineScreen() {
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setWeightUnit(savedSettings.weightUnit);
       };
 
       fetchExerciseLibrary();
@@ -290,7 +296,9 @@ export default function EditRoutineScreen() {
                       </View>
 
                       <View style={styles.defaultField}>
-                        <Text style={styles.defaultLabel}>Weight</Text>
+                        <Text style={styles.defaultLabel}>
+                          {getWeightFieldLabel(weightUnit)}
+                        </Text>
                         <TextInput
                           style={styles.smallInput}
                           placeholder="0"

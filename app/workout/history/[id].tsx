@@ -1,24 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadSettings } from '../../../storage/settings';
+import { WeightUnit } from '../../../types/settings';
 import { loadWorkouts, deleteWorkoutById } from '../../../storage/workouts';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
+import { formatWeightWithUnit } from '../../../utils/weightUnits';
 
 export default function WorkoutHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [workout, setWorkout] = useState<SavedWorkoutSession | null>(null);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
 
-  useEffect(() => {
-    const fetchWorkout = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchWorkout = async () => {
       const workouts = await loadWorkouts();
+        const savedSettings = await loadSettings();
       const foundWorkout = workouts.find((item) => item.id === id) || null;
       setWorkout(foundWorkout);
-    };
+        setWeightUnit(savedSettings.weightUnit);
+      };
 
-    fetchWorkout();
-  }, [id]);
+      fetchWorkout();
+    }, [id])
+  );
 
   const handleDeleteWorkout = () => {
     if (!workout) return;
@@ -103,7 +111,9 @@ export default function WorkoutHistoryDetailScreen() {
               {item.sets.map((set: WorkoutSet) => (
                 <View key={set.id} style={styles.setRow}>
                   <Text style={styles.setLabel}>Set {set.setNumber}</Text>
-                  <Text style={styles.setValue}>{set.weight || '-'} lb</Text>
+                  <Text style={styles.setValue}>
+                    {formatWeightWithUnit(set.weight, weightUnit)}
+                  </Text>
                   <Text style={styles.setValue}>{set.reps || '-'} reps</Text>
                 </View>
               ))}

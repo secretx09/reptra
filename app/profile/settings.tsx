@@ -1,10 +1,74 @@
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+  ScrollView,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
+import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
+import { AppSettings, WeightUnit } from '../../types/settings';
 
 export default function ProfileSettingsScreen() {
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [restTimerInputs, setRestTimerInputs] = useState<string[]>(
+    defaultSettings.restTimerPresets.map((value) => value.toString())
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchSettings = async () => {
+        const savedSettings = await loadSettings();
+        setSettings(savedSettings);
+        setRestTimerInputs(
+          savedSettings.restTimerPresets.map((value) => value.toString())
+        );
+      };
+
+      fetchSettings();
+    }, [])
+  );
+
+  const handleUpdateWeightUnit = async (weightUnit: WeightUnit) => {
+    const nextSettings = {
+      ...settings,
+      weightUnit,
+    };
+
+    setSettings(nextSettings);
+    await saveSettings(nextSettings);
+  };
+
+  const handleSaveRestTimerPresets = async () => {
+    const parsedPresets = restTimerInputs.map((value) => Number(value.trim()));
+    const hasInvalidPreset = parsedPresets.some(
+      (value) => !Number.isInteger(value) || value <= 0
+    );
+
+    if (hasInvalidPreset) {
+      Alert.alert(
+        'Invalid presets',
+        'Enter 3 whole-number rest timers greater than 0.'
+      );
+      return;
+    }
+
+    const nextSettings = {
+      ...settings,
+      restTimerPresets: parsedPresets,
+    };
+
+    setSettings(nextSettings);
+    await saveSettings(nextSettings);
+    Alert.alert('Saved', 'Your rest timer presets have been updated.');
+  };
+
   const showComingSoon = (label: string) => {
-    Alert.alert('Coming soon', `${label} will be added later.`);
+    Alert.alert('Coming soon', `${label} will be added in the next settings sessions.`);
   };
 
   return (
@@ -12,73 +76,115 @@ export default function ProfileSettingsScreen() {
       <Stack.Screen options={{ title: 'Settings' }} />
 
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Customize Reptra later from here.</Text>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.subtitle}>Customize how Reptra feels as you train.</Text>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => showComingSoon('Units')}
-        >
-          <View>
-            <Text style={styles.settingTitle}>Units</Text>
-            <Text style={styles.settingDescription}>
-              Pounds / kilograms
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Units</Text>
+            <Text style={styles.sectionDescription}>
+              Choose how weight is labeled throughout workouts, routines, PRs, and history.
             </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => showComingSoon('Rest timer defaults')}
-        >
-          <View>
-            <Text style={styles.settingTitle}>Rest Timer Defaults</Text>
-            <Text style={styles.settingDescription}>
-              Set default rest times later
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
+            <View style={styles.optionsColumn}>
+              <Pressable
+                style={[
+                  styles.optionButton,
+                  settings.weightUnit === 'lb' && styles.optionButtonSelected,
+                ]}
+                onPress={() => handleUpdateWeightUnit('lb')}
+              >
+                <Text
+                  style={[
+                    styles.optionButtonText,
+                    settings.weightUnit === 'lb' && styles.optionButtonTextSelected,
+                  ]}
+                >
+                  Pounds (lb)
+                </Text>
+              </Pressable>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => showComingSoon('Autofill preferences')}
-        >
-          <View>
-            <Text style={styles.settingTitle}>Autofill Preferences</Text>
-            <Text style={styles.settingDescription}>
-              Control suggested weight/reps later
-            </Text>
+              <Pressable
+                style={[
+                  styles.optionButton,
+                  settings.weightUnit === 'kg' && styles.optionButtonSelected,
+                ]}
+                onPress={() => handleUpdateWeightUnit('kg')}
+              >
+                <Text
+                  style={[
+                    styles.optionButtonText,
+                    settings.weightUnit === 'kg' && styles.optionButtonTextSelected,
+                  ]}
+                >
+                  Kilograms (kg)
+                </Text>
+              </Pressable>
+            </View>
           </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => showComingSoon('Theme and appearance')}
-        >
-          <View>
-            <Text style={styles.settingTitle}>Appearance</Text>
-            <Text style={styles.settingDescription}>
-              Theme and display options later
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Rest Timer Presets</Text>
+            <Text style={styles.sectionDescription}>
+              Choose the 3 quick-start timer buttons shown during workouts.
             </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => showComingSoon('Account and sync')}
-        >
-          <View>
-            <Text style={styles.settingTitle}>Account & Sync</Text>
-            <Text style={styles.settingDescription}>
-              Cloud sync and login later
-            </Text>
+            <View style={styles.timerPresetRow}>
+              {restTimerInputs.map((value, index) => (
+                <View key={`preset-${index}`} style={styles.timerPresetField}>
+                  <Text style={styles.timerPresetLabel}>Preset {index + 1}</Text>
+                  <TextInput
+                    style={styles.timerPresetInput}
+                    placeholder="0"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) =>
+                      setRestTimerInputs((prev) =>
+                        prev.map((item, itemIndex) =>
+                          itemIndex === index ? text : item
+                        )
+                      )
+                    }
+                  />
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              style={styles.savePresetButton}
+              onPress={handleSaveRestTimerPresets}
+            >
+              <Text style={styles.savePresetButtonText}>Save Timer Presets</Text>
+            </Pressable>
           </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
+
+          <Pressable
+            style={styles.settingRow}
+            onPress={() => showComingSoon('Theme and appearance')}
+          >
+            <View style={styles.settingTextWrap}>
+              <Text style={styles.settingTitle}>Appearance</Text>
+              <Text style={styles.settingDescription}>
+                Theme and display options later
+              </Text>
+            </View>
+            <Text style={styles.chevron}>{'>'}</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.settingRow}
+            onPress={() => showComingSoon('Data reset and export')}
+          >
+            <View style={styles.settingTextWrap}>
+              <Text style={styles.settingTitle}>Data</Text>
+              <Text style={styles.settingDescription}>
+                Reset and export tools later
+              </Text>
+            </View>
+            <Text style={styles.chevron}>{'>'}</Text>
+          </Pressable>
+        </ScrollView>
       </SafeAreaView>
     </>
   );
@@ -88,7 +194,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
+  },
+  content: {
     padding: 16,
+    paddingBottom: 28,
   },
   title: {
     color: '#ffffff',
@@ -101,6 +210,87 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 20,
   },
+  sectionCard: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  sectionDescription: {
+    color: '#aaaaaa',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  optionsColumn: {
+    gap: 10,
+  },
+  optionButton: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  optionButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  optionButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  optionButtonTextSelected: {
+    color: '#4da6ff',
+  },
+  timerPresetRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  timerPresetField: {
+    flex: 1,
+  },
+  timerPresetLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  timerPresetInput: {
+    backgroundColor: '#121212',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  savePresetButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  savePresetButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   settingRow: {
     backgroundColor: '#1c1c1c',
     borderWidth: 1,
@@ -112,6 +302,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
+  },
+  settingTextWrap: {
+    flex: 1,
   },
   settingTitle: {
     color: '#ffffff',

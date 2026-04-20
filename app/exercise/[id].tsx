@@ -1,13 +1,16 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
 import { Exercise } from '../../types/exercise';
+import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { calculateEstimatedOneRepMax } from '../../utils/oneRepMax';
+import { formatWeightUnit } from '../../utils/weightUnits';
 
 type ExerciseProgressPoint = {
   id: string;
@@ -17,6 +20,7 @@ type ExerciseProgressPoint = {
   bestEstimatedOneRepMax: number;
   totalVolume: number;
   totalSets: number;
+  bestReps: number;
 };
 
 function formatShortDate(dateString: string) {
@@ -30,6 +34,7 @@ export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,6 +46,17 @@ export default function ExerciseDetailScreen() {
 
     fetchData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchSettings = async () => {
+        const savedSettings = await loadSettings();
+        setWeightUnit(savedSettings.weightUnit);
+      };
+
+      fetchSettings();
+    }, [])
+  );
 
   const exercise = exerciseLibrary.find((item) => item.id === id);
   const primaryMuscles = exercise?.primaryMuscles ?? [];
@@ -65,10 +81,15 @@ export default function ExerciseDetailScreen() {
         let bestWeight = 0;
         let bestEstimatedOneRepMax = 0;
         let totalVolume = 0;
+        let bestReps = 0;
 
         exerciseLog.sets.forEach((set) => {
           const weight = Number(set.weight);
           const reps = Number(set.reps);
+
+          if (!Number.isNaN(reps) && reps > 0) {
+            bestReps = Math.max(bestReps, reps);
+          }
 
           if (!Number.isNaN(weight) && weight > 0) {
             bestWeight = Math.max(bestWeight, weight);
@@ -93,6 +114,7 @@ export default function ExerciseDetailScreen() {
           bestEstimatedOneRepMax,
           totalVolume,
           totalSets: exerciseLog.sets.length,
+          bestReps,
         } satisfies ExerciseProgressPoint;
       })
       .filter((item): item is ExerciseProgressPoint => item !== null)
@@ -108,12 +130,28 @@ export default function ExerciseDetailScreen() {
     0
   );
   const bestWeight = Math.max(...progressPoints.map((point) => point.bestWeight), 0);
+  const bestVolume = Math.max(...progressPoints.map((point) => point.totalVolume), 0);
+  const bestReps = Math.max(...progressPoints.map((point) => point.bestReps), 0);
   const bestEstimatedOneRepMax = Math.max(
     ...progressPoints.map((point) => point.bestEstimatedOneRepMax),
     0
   );
   const totalTrackedSessions = progressPoints.length;
   const latestSession = progressPoints[progressPoints.length - 1] || null;
+  const previousSession =
+    progressPoints.length > 1 ? progressPoints[progressPoints.length - 2] : null;
+  const estimatedOneRepMaxChange =
+    latestSession && previousSession
+      ? latestSession.bestEstimatedOneRepMax - previousSession.bestEstimatedOneRepMax
+      : null;
+  const oneRepMaxTrendText =
+    estimatedOneRepMaxChange === null
+      ? 'Log another session to unlock session-to-session 1RM trend.'
+      : estimatedOneRepMaxChange > 0
+        ? `Your latest estimated 1RM is up ${estimatedOneRepMaxChange} ${formatWeightUnit(weightUnit)} from your previous logged session.`
+      : estimatedOneRepMaxChange < 0
+          ? `Your latest estimated 1RM is down ${Math.abs(estimatedOneRepMaxChange)} ${formatWeightUnit(weightUnit)} from your previous logged session.`
+          : 'Your estimated 1RM matched your previous logged session.';
 
   const handleOpenDemoMedia = async () => {
     if (!demoMedia?.url) {
@@ -228,6 +266,16 @@ export default function ExerciseDetailScreen() {
               </Text>
             ) : (
               <>
+                <View style={styles.oneRepMaxHero}>
+                  <Text style={styles.oneRepMaxEyebrow}>Estimated 1RM</Text>
+                  <Text style={styles.oneRepMaxValue}>
+                    {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                  </Text>
+                  <Text style={styles.oneRepMaxText}>
+                    Best projected single-rep strength based on your logged sets.
+                  </Text>
+                </View>
+
                 <View style={styles.progressSummaryGrid}>
                   <View style={styles.progressSummaryCard}>
                     <Text style={styles.progressSummaryValue}>{bestWeight}</Text>
@@ -239,6 +287,16 @@ export default function ExerciseDetailScreen() {
                       {bestEstimatedOneRepMax}
                     </Text>
                     <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
+                  </View>
+
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>{bestVolume}</Text>
+                    <Text style={styles.progressSummaryLabel}>Best Volume</Text>
+                  </View>
+
+                  <View style={styles.progressSummaryCard}>
+                    <Text style={styles.progressSummaryValue}>{bestReps}</Text>
+                    <Text style={styles.progressSummaryLabel}>Most Reps</Text>
                   </View>
 
                   <View style={styles.progressSummaryCard}>
@@ -255,12 +313,23 @@ export default function ExerciseDetailScreen() {
                 </View>
 
                 <View style={styles.prInsightCard}>
+                  <Text style={styles.prInsightTitle}>1RM Trend</Text>
+                  <Text style={styles.prInsightText}>{oneRepMaxTrendText}</Text>
+                  <Text style={styles.prInsightText}>
+                    Current all-time best estimate: {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                  </Text>
+                </View>
+
+                <View style={styles.prInsightCard}>
                   <Text style={styles.prInsightTitle}>Current Bests</Text>
                   <Text style={styles.prInsightText}>
-                    Top logged weight: {bestWeight} lb
+                    Top logged weight: {bestWeight} {formatWeightUnit(weightUnit)}
                   </Text>
                   <Text style={styles.prInsightText}>
-                    Best estimated 1RM: {bestEstimatedOneRepMax} lb
+                    Best estimated 1RM: {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                  </Text>
+                  <Text style={styles.prInsightText}>
+                    Highest logged volume: {bestVolume}
                   </Text>
                   <Text style={styles.prInsightText}>
                     Last recorded session volume: {latestSession ? latestSession.totalVolume : 0}
@@ -327,7 +396,7 @@ export default function ExerciseDetailScreen() {
 
                         <View style={styles.recentSessionStats}>
                           <Text style={styles.recentSessionValue}>
-                            {point.bestWeight} lb
+                            {point.bestWeight} {formatWeightUnit(weightUnit)}
                           </Text>
                           <Text style={styles.recentSessionSubvalue}>
                             1RM {point.bestEstimatedOneRepMax}
@@ -408,6 +477,33 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
+  },
+  oneRepMaxHero: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+  },
+  oneRepMaxEyebrow: {
+    color: '#9fd0ff',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 6,
+  },
+  oneRepMaxValue: {
+    color: '#ffffff',
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  oneRepMaxText: {
+    color: '#d8ebff',
+    fontSize: 14,
+    lineHeight: 21,
   },
   demoCard: {
     backgroundColor: '#161616',
