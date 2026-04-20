@@ -32,6 +32,7 @@ export default function EmptyWorkoutSessionScreen() {
     [exerciseId: string]: string;
   }>({});
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+  const [customRestSeconds, setCustomRestSeconds] = useState('');
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
   const filteredExercises = useMemo(() => {
@@ -70,6 +71,26 @@ export default function EmptyWorkoutSessionScreen() {
 
   const startRestTimer = (seconds: number) => {
     setRestTimeRemaining(seconds);
+  };
+
+  const handleStartCustomRestTimer = () => {
+    const trimmedValue = customRestSeconds.trim();
+    const parsedSeconds = Number(trimmedValue);
+
+    if (
+      trimmedValue === '' ||
+      !Number.isInteger(parsedSeconds) ||
+      parsedSeconds <= 0
+    ) {
+      Alert.alert(
+        'Invalid timer',
+        'Enter a whole number of seconds greater than 0.'
+      );
+      return;
+    }
+
+    startRestTimer(parsedSeconds);
+    setCustomRestSeconds('');
   };
 
   const formatTime = (seconds: number) => {
@@ -294,6 +315,24 @@ export default function EmptyWorkoutSessionScreen() {
                     onPress={() => startRestTimer(120)}
                   >
                     <Text style={styles.timerButtonText}>120s</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.customTimerRow}>
+                  <TextInput
+                    style={styles.customTimerInput}
+                    placeholder="Custom seconds"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={customRestSeconds}
+                    onChangeText={setCustomRestSeconds}
+                  />
+
+                  <Pressable
+                    style={styles.customTimerButton}
+                    onPress={handleStartCustomRestTimer}
+                  >
+                    <Text style={styles.customTimerButtonText}>Start</Text>
                   </Pressable>
                 </View>
               </View>
@@ -575,6 +614,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  customTimerRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
   timerButton: {
     flex: 1,
     backgroundColor: '#16324d',
@@ -587,6 +631,29 @@ const styles = StyleSheet.create({
   timerButtonText: {
     color: '#4da6ff',
     fontSize: 13,
+    fontWeight: '700',
+  },
+  customTimerInput: {
+    flex: 1,
+    backgroundColor: '#121212',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  customTimerButton: {
+    backgroundColor: '#4da6ff',
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customTimerButtonText: {
+    color: '#111111',
+    fontSize: 14,
     fontWeight: '700',
   },
   currentExerciseCard: {
