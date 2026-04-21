@@ -1,6 +1,7 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
@@ -39,5 +40,16 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
+  if (name === 'dumbbell.fill') {
+    return (
+      <MaterialCommunityIcons
+        color={color}
+        size={size}
+        name="dumbbell"
+        style={style}
+      />
+    );
+  }
+
   return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
 }

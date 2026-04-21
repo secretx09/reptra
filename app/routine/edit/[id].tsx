@@ -1,4 +1,4 @@
-import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -37,6 +37,7 @@ export default function EditRoutineScreen() {
   >([]);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
+  const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -46,7 +47,7 @@ export default function EditRoutineScreen() {
       if (foundRoutine) {
         setRoutine(foundRoutine);
         setRoutineName(foundRoutine.name);
-        setEditedExercises(foundRoutine.exercises);
+        setEditedExercises(normalizeSupersetExercises(foundRoutine.exercises));
       }
     };
 
@@ -193,271 +194,285 @@ export default function EditRoutineScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Edit Routine' }} />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.topBar}>
+        <View style={styles.topBarText}>
+          <Text style={styles.title}>Edit Routine</Text>
+          <Text style={styles.subtitle}>Adjust exercise order and defaults</Text>
+        </View>
 
-      <SafeAreaView style={styles.container}>
-        <FlatList
-          data={filteredExercisesToAdd}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.addExerciseCard}>
-              <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{item.name}</Text>
-                <Text style={styles.exerciseMeta}>
-                  {item.muscleGroup} • {item.equipment}
-                </Text>
-              </View>
+        <Pressable style={styles.topSaveButton} onPress={handleSaveChanges}>
+          <Text style={styles.topSaveButtonText}>Save</Text>
+        </Pressable>
+      </View>
 
-              <Pressable
-                style={styles.addButton}
-                onPress={() => handleAddExercise(item)}
-              >
-                <Text style={styles.addButtonText}>Add</Text>
-              </Pressable>
+      <FlatList
+        data={isExercisePickerOpen ? filteredExercisesToAdd : []}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.addExerciseCard}>
+            <View style={styles.exerciseInfo}>
+              <Text style={styles.exerciseName}>{item.name}</Text>
+              <Text style={styles.exerciseMeta}>
+                {item.muscleGroup} • {item.equipment}
+              </Text>
             </View>
-          )}
-          ListHeaderComponent={
-            <>
-              <Text style={styles.title}>Edit Routine</Text>
-              <Text style={styles.subtitle}>Adjust exercise order and defaults</Text>
 
-              <Text style={styles.label}>Routine Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Routine name"
-                placeholderTextColor="#888888"
-                value={routineName}
-                onChangeText={setRoutineName}
-              />
+            <Pressable
+              style={styles.addButton}
+              onPress={() => handleAddExercise(item)}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </Pressable>
+          </View>
+        )}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.label}>Routine Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Routine name"
+              placeholderTextColor="#888888"
+              value={routineName}
+              onChangeText={setRoutineName}
+            />
 
-              <Text style={styles.sectionTitle}>Current Exercises</Text>
+            <Text style={styles.sectionTitle}>Current Exercises</Text>
 
-              {editedExercises.length === 0 ? (
-                <Text style={styles.emptyText}>No exercises left in this routine.</Text>
-              ) : (
-                editedExercises.map((item, index) => (
-                  <View key={item.id} style={styles.exerciseCard}>
-                    <View style={styles.exerciseHeaderRow}>
-                      <View style={styles.exerciseHeaderText}>
-                        <Text style={styles.exerciseIndex}>{index + 1}</Text>
-                        <View style={styles.exerciseTitleWrap}>
-                          <View style={styles.exerciseTitleRow}>
-                            <Text style={styles.exerciseName}>{item.name}</Text>
+            {editedExercises.length === 0 ? (
+              <Text style={styles.emptyText}>No exercises left in this routine.</Text>
+            ) : (
+              editedExercises.map((item, index) => (
+                <View key={item.id} style={styles.exerciseCard}>
+                  <View style={styles.exerciseHeaderRow}>
+                    <View style={styles.exerciseHeaderText}>
+                      <Text style={styles.exerciseIndex}>{index + 1}</Text>
+                      <View style={styles.exerciseTitleWrap}>
+                        <View style={styles.exerciseTitleRow}>
+                          <Text style={styles.exerciseName}>{item.name}</Text>
 
-                            {supersetDisplayMap[item.id] && (
-                              <View style={styles.supersetBadge}>
-                                <Text style={styles.supersetBadgeText}>
-                                  {supersetDisplayMap[item.id].label}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={styles.exerciseMeta}>
-                            {item.muscleGroup} • {item.equipment}
-                          </Text>
+                          {supersetDisplayMap[item.id] && (
+                            <View style={styles.supersetBadge}>
+                              <Text style={styles.supersetBadgeText}>
+                                {supersetDisplayMap[item.id].label}
+                              </Text>
+                            </View>
+                          )}
                         </View>
+                        <Text style={styles.exerciseMeta}>
+                          {item.muscleGroup} • {item.equipment}
+                        </Text>
                       </View>
+                    </View>
 
-                      <View style={styles.actionColumn}>
-                        <View style={styles.reorderRow}>
-                          <Pressable
+                    <View style={styles.actionColumn}>
+                      <View style={styles.reorderRow}>
+                        <Pressable
+                          style={[
+                            styles.orderButton,
+                            index === 0 && styles.orderButtonDisabled,
+                          ]}
+                          onPress={() => handleMoveExerciseUp(index)}
+                          disabled={index === 0}
+                        >
+                          <Text
                             style={[
-                              styles.orderButton,
-                              index === 0 && styles.orderButtonDisabled,
+                              styles.orderButtonText,
+                              index === 0 && styles.orderButtonTextDisabled,
                             ]}
-                            onPress={() => handleMoveExerciseUp(index)}
-                            disabled={index === 0}
                           >
-                            <Text
-                              style={[
-                                styles.orderButtonText,
-                                index === 0 && styles.orderButtonTextDisabled,
-                              ]}
-                            >
-                              ↑
-                            </Text>
-                          </Pressable>
-
-                          <Pressable
-                            style={[
-                              styles.orderButton,
-                              index === editedExercises.length - 1 &&
-                                styles.orderButtonDisabled,
-                            ]}
-                            onPress={() => handleMoveExerciseDown(index)}
-                            disabled={index === editedExercises.length - 1}
-                          >
-                            <Text
-                              style={[
-                                styles.orderButtonText,
-                                index === editedExercises.length - 1 &&
-                                  styles.orderButtonTextDisabled,
-                              ]}
-                            >
-                              ↓
-                            </Text>
-                          </Pressable>
-                        </View>
+                            ↑
+                          </Text>
+                        </Pressable>
 
                         <Pressable
-                          style={styles.removeButton}
-                          onPress={() => handleRemoveExercise(item.id)}
+                          style={[
+                            styles.orderButton,
+                            index === editedExercises.length - 1 &&
+                              styles.orderButtonDisabled,
+                          ]}
+                          onPress={() => handleMoveExerciseDown(index)}
+                          disabled={index === editedExercises.length - 1}
                         >
-                          <Text style={styles.removeButtonText}>Remove</Text>
+                          <Text
+                            style={[
+                              styles.orderButtonText,
+                              index === editedExercises.length - 1 &&
+                                styles.orderButtonTextDisabled,
+                            ]}
+                          >
+                            ↓
+                          </Text>
                         </Pressable>
                       </View>
-                    </View>
 
-                    <View style={styles.defaultsGrid}>
-                      <View style={styles.defaultField}>
-                        <Text style={styles.defaultLabel}>Sets</Text>
-                        <TextInput
-                          style={styles.smallInput}
-                          placeholder="0"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={item.defaultSets}
-                          onChangeText={(value) =>
-                            handleUpdateExerciseDefault(item.id, 'defaultSets', value)
-                          }
-                        />
-                      </View>
-
-                      <View style={styles.defaultField}>
-                        <Text style={styles.defaultLabel}>
-                          {getWeightFieldLabel(weightUnit)}
-                        </Text>
-                        <TextInput
-                          style={styles.smallInput}
-                          placeholder="0"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={item.defaultWeight}
-                          onChangeText={(value) =>
-                            handleUpdateExerciseDefault(item.id, 'defaultWeight', value)
-                          }
-                        />
-                      </View>
-
-                      <View style={styles.defaultField}>
-                        <Text style={styles.defaultLabel}>Reps</Text>
-                        <TextInput
-                          style={styles.smallInput}
-                          placeholder="0"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={item.defaultReps}
-                          onChangeText={(value) =>
-                            handleUpdateExerciseDefault(item.id, 'defaultReps', value)
-                          }
-                        />
-                      </View>
-
-                      <View style={styles.defaultField}>
-                        <Text style={styles.defaultLabel}>Rest</Text>
-                        <TextInput
-                          style={styles.smallInput}
-                          placeholder="sec"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={item.defaultRestSeconds}
-                          onChangeText={(value) =>
-                            handleUpdateExerciseDefault(
-                              item.id,
-                              'defaultRestSeconds',
-                              value
-                            )
-                          }
-                        />
-                      </View>
-                    </View>
-
-                    {index > 0 && (
                       <Pressable
-                        style={[
-                          styles.supersetButton,
-                          supersetDisplayMap[item.id] &&
-                            styles.supersetButtonActive,
-                        ]}
-                        onPress={() => handleToggleSuperset(index)}
+                        style={styles.removeButton}
+                        onPress={() => handleRemoveExercise(item.id)}
                       >
-                        <Text
-                          style={[
-                            styles.supersetButtonText,
-                            supersetDisplayMap[item.id] &&
-                              styles.supersetButtonTextActive,
-                          ]}
-                        >
-                          {supersetDisplayMap[item.id]
-                            ? 'Remove Superset'
-                            : 'Superset With Previous'}
-                        </Text>
+                        <Text style={styles.removeButtonText}>Remove</Text>
                       </Pressable>
-                    )}
+                    </View>
                   </View>
-                ))
-              )}
 
-              <Text style={styles.sectionTitle}>Add Exercises</Text>
+                  <View style={styles.defaultsGrid}>
+                    <View style={styles.defaultField}>
+                      <Text style={styles.defaultLabel}>Sets</Text>
+                      <TextInput
+                        style={styles.smallInput}
+                        placeholder="0"
+                        placeholderTextColor="#777777"
+                        keyboardType="numeric"
+                        value={item.defaultSets}
+                        onChangeText={(value) =>
+                          handleUpdateExerciseDefault(item.id, 'defaultSets', value)
+                        }
+                      />
+                    </View>
 
-              <Pressable
-                style={styles.createCustomButton}
-                onPress={() => router.push('/exercise/create')}
-              >
-                <Text style={styles.createCustomButtonText}>
-                  + Create Custom Exercise
-                </Text>
-              </Pressable>
+                    <View style={styles.defaultField}>
+                      <Text style={styles.defaultLabel}>
+                        {getWeightFieldLabel(weightUnit)}
+                      </Text>
+                      <TextInput
+                        style={styles.smallInput}
+                        placeholder="0"
+                        placeholderTextColor="#777777"
+                        keyboardType="numeric"
+                        value={item.defaultWeight}
+                        onChangeText={(value) =>
+                          handleUpdateExerciseDefault(item.id, 'defaultWeight', value)
+                        }
+                      />
+                    </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Search exercises..."
-                placeholderTextColor="#888888"
-                value={searchText}
-                onChangeText={setSearchText}
-              />
+                    <View style={styles.defaultField}>
+                      <Text style={styles.defaultLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.smallInput}
+                        placeholder="0"
+                        placeholderTextColor="#777777"
+                        keyboardType="numeric"
+                        value={item.defaultReps}
+                        onChangeText={(value) =>
+                          handleUpdateExerciseDefault(item.id, 'defaultReps', value)
+                        }
+                      />
+                    </View>
 
-              <View style={styles.filterRow}>
-                {muscleGroups.map((group) => {
-                  const isSelected = selectedMuscleGroup === group;
+                    <View style={styles.defaultField}>
+                      <Text style={styles.defaultLabel}>Rest</Text>
+                      <TextInput
+                        style={styles.smallInput}
+                        placeholder="sec"
+                        placeholderTextColor="#777777"
+                        keyboardType="numeric"
+                        value={item.defaultRestSeconds}
+                        onChangeText={(value) =>
+                          handleUpdateExerciseDefault(
+                            item.id,
+                            'defaultRestSeconds',
+                            value
+                          )
+                        }
+                      />
+                    </View>
+                  </View>
 
-                  return (
+                  {index > 0 && (
                     <Pressable
-                      key={group}
                       style={[
-                        styles.filterButton,
-                        isSelected && styles.filterButtonSelected,
+                        styles.supersetButton,
+                        supersetDisplayMap[item.id] &&
+                          styles.supersetButtonActive,
                       ]}
-                      onPress={() => setSelectedMuscleGroup(group)}
+                      onPress={() => handleToggleSuperset(index)}
                     >
                       <Text
                         style={[
-                          styles.filterButtonText,
-                          isSelected && styles.filterButtonTextSelected,
+                          styles.supersetButtonText,
+                          supersetDisplayMap[item.id] &&
+                            styles.supersetButtonTextActive,
                         ]}
                       >
-                        {group}
+                        {supersetDisplayMap[item.id]
+                          ? 'Remove Superset'
+                          : 'Superset With Previous'}
                       </Text>
                     </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          }
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No matching exercises to add.</Text>
-          }
-          ListFooterComponent={
-            <Pressable style={styles.saveButton} onPress={handleSaveChanges}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+                  )}
+                </View>
+              ))
+            )}
+
+            <Pressable
+              style={styles.addExerciseTrigger}
+              onPress={() => setIsExercisePickerOpen((prev) => !prev)}
+            >
+              <Text style={styles.addExerciseTriggerText}>
+                {isExercisePickerOpen ? 'Close Exercise Picker' : 'Add Exercises'}
+              </Text>
             </Pressable>
-          }
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      </SafeAreaView>
-    </>
+
+            {isExercisePickerOpen && (
+              <>
+                <Text style={styles.sectionTitle}>Pick Exercises</Text>
+
+                <Pressable
+                  style={styles.createCustomButton}
+                  onPress={() => router.push('/exercise/create')}
+                >
+                  <Text style={styles.createCustomButtonText}>
+                    + Create Custom Exercise
+                  </Text>
+                </Pressable>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Search exercises..."
+                  placeholderTextColor="#888888"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+
+                <View style={styles.filterRow}>
+                  {muscleGroups.map((group) => {
+                    const isSelected = selectedMuscleGroup === group;
+
+                    return (
+                      <Pressable
+                        key={group}
+                        style={[
+                          styles.filterButton,
+                          isSelected && styles.filterButtonSelected,
+                        ]}
+                        onPress={() => setSelectedMuscleGroup(group)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterButtonText,
+                            isSelected && styles.filterButtonTextSelected,
+                          ]}
+                        >
+                          {group}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </>
+        }
+        ListEmptyComponent={
+          isExercisePickerOpen ? (
+            <Text style={styles.emptyText}>No matching exercises to add.</Text>
+          ) : null
+        }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -468,6 +483,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 16,
+  },
+  topBarText: {
+    flex: 1,
+  },
   title: {
     color: '#ffffff',
     fontSize: 24,
@@ -477,7 +502,17 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#aaaaaa',
     fontSize: 13,
-    marginBottom: 14,
+  },
+  topSaveButton: {
+    backgroundColor: '#4da6ff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  topSaveButtonText: {
+    color: '#111111',
+    fontSize: 15,
+    fontWeight: '700',
   },
   label: {
     color: '#ffffff',
@@ -501,6 +536,20 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  addExerciseTrigger: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   createCustomButton: {
     backgroundColor: '#16324d',
@@ -584,6 +633,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 2,
+    flex: 1,
   },
   exerciseMeta: {
     color: '#9a9a9a',
@@ -728,18 +778,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 16,
-  },
-  saveButton: {
-    backgroundColor: '#4da6ff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveButtonText: {
-    color: '#111111',
-    fontSize: 16,
-    fontWeight: '700',
   },
   notFoundContainer: {
     flex: 1,
