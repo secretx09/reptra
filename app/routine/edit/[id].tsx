@@ -24,6 +24,7 @@ import {
   normalizeSupersetExercises,
   toggleSupersetWithPrevious,
 } from '../../../utils/routineSupersets';
+import { parseRestTimerInput } from '../../../utils/restTimer';
 import { getWeightFieldLabel } from '../../../utils/weightUnits';
 
 export default function EditRoutineScreen() {
@@ -166,10 +167,19 @@ export default function EditRoutineScreen() {
       return;
     }
 
+    const normalizedExercises = editedExercises.map((exercise) => {
+      const parsedRestSeconds = parseRestTimerInput(exercise.defaultRestSeconds);
+
+      return {
+        ...exercise,
+        defaultRestSeconds: parsedRestSeconds ? parsedRestSeconds.toString() : '',
+      };
+    });
+
     const updatedRoutine: RoutineWithExercises = {
       ...routine,
       name: routineName.trim(),
-      exercises: editedExercises,
+      exercises: normalizedExercises,
     };
 
     await updateRoutineById(routine.id, updatedRoutine);
@@ -243,7 +253,7 @@ export default function EditRoutineScreen() {
                             )}
                         </View>
                         <Text style={styles.exerciseMeta}>
-                          {item.muscleGroup} • {item.equipment}
+                          {item.muscleGroup} {'\u2022'} {item.equipment}
                         </Text>
                       </View>
                     </View>
@@ -347,9 +357,8 @@ export default function EditRoutineScreen() {
                       <Text style={styles.defaultLabel}>Rest</Text>
                       <TextInput
                         style={styles.smallInput}
-                        placeholder="sec"
+                        placeholder="90 / 1:30"
                         placeholderTextColor="#777777"
-                        keyboardType="numeric"
                         value={item.defaultRestSeconds}
                         onChangeText={(value) =>
                           handleUpdateExerciseDefault(
@@ -452,7 +461,7 @@ export default function EditRoutineScreen() {
                       <View style={styles.exerciseInfo}>
                         <Text style={styles.exerciseName}>{item.name}</Text>
                         <Text style={styles.exerciseMeta}>
-                          {item.muscleGroup} • {item.equipment}
+                          {item.muscleGroup} {'\u2022'} {item.equipment}
                         </Text>
                       </View>
 

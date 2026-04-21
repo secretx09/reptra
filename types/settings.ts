@@ -3,6 +3,6 @@ export type AppTheme = 'graphite' | 'midnight';
 
 export interface AppSettings {
   weightUnit: WeightUnit;
-  restTimerPresets: number[];
+  defaultRestTimerSeconds: number;
   theme: AppTheme;
 }

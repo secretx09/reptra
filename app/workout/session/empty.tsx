@@ -20,20 +20,27 @@ import {
 } from '../../../types/workout';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import {
+  formatRestTimerCountdown,
+  formatRestTimerLabel,
+  parseRestTimerInput,
+} from '../../../utils/restTimer';
 import { getWeightPlaceholder } from '../../../utils/weightUnits';
 
 export default function EmptyWorkoutSessionScreen() {
   const [startedAt] = useState(() => new Date().toISOString());
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
-  const [restTimerPresets, setRestTimerPresets] = useState<number[]>([60, 90, 120]);
+  const [defaultRestTimerSeconds, setDefaultRestTimerSeconds] = useState(90);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([]);
   const [exerciseSets, setExerciseSets] = useState<Record<string, WorkoutSet[]>>({});
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseRestTimes, setExerciseRestTimes] = useState<Record<string, number>>({});
-  const [customRestSeconds, setCustomRestSeconds] = useState<Record<string, string>>({});
+  const [exerciseRestConfigs, setExerciseRestConfigs] = useState<Record<string, number>>({});
+  const [restEditorInputs, setRestEditorInputs] = useState<Record<string, string>>({});
+  const [openRestEditorId, setOpenRestEditorId] = useState<string | null>(null);
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
   useFocusEffect(
@@ -43,7 +50,7 @@ export default function EmptyWorkoutSessionScreen() {
         const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
         setWeightUnit(savedSettings.weightUnit);
-        setRestTimerPresets(savedSettings.restTimerPresets);
+        setDefaultRestTimerSeconds(savedSettings.defaultRestTimerSeconds);
       };
 
       fetchExerciseLibrary();
@@ -71,7 +78,7 @@ export default function EmptyWorkoutSessionScreen() {
 
       return matchesSearch && matchesMuscleGroup;
     });
-  }, [exerciseLibrary, searchText, selectedMuscleGroup, addedExercises]);
+  }, [addedExercises, exerciseLibrary, searchText, selectedMuscleGroup]);
 
   useEffect(() => {
     const hasActiveTimers = Object.values(exerciseRestTimes).some(
@@ -95,42 +102,6 @@ export default function EmptyWorkoutSessionScreen() {
     return () => clearInterval(interval);
   }, [exerciseRestTimes]);
 
-  const startRestTimer = (exerciseId: string, seconds: number) => {
-    setExerciseRestTimes((prev) => ({
-      ...prev,
-      [exerciseId]: seconds,
-    }));
-  };
-
-  const handleStartCustomRestTimer = (exerciseId: string) => {
-    const trimmedValue = (customRestSeconds[exerciseId] || '').trim();
-    const parsedSeconds = Number(trimmedValue);
-
-    if (
-      trimmedValue === '' ||
-      !Number.isInteger(parsedSeconds) ||
-      parsedSeconds <= 0
-    ) {
-      Alert.alert(
-        'Invalid timer',
-        'Enter a whole number of seconds greater than 0.'
-      );
-      return;
-    }
-
-    startRestTimer(exerciseId, parsedSeconds);
-    setCustomRestSeconds((prev) => ({
-      ...prev,
-      [exerciseId]: '',
-    }));
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleAddExercise = (exercise: Exercise) => {
     setAddedExercises((prev) => [...prev, exercise]);
     setExerciseSets((prev) => ({
@@ -140,6 +111,14 @@ export default function EmptyWorkoutSessionScreen() {
     setExerciseRestTimes((prev) => ({
       ...prev,
       [exercise.id]: 0,
+    }));
+    setExerciseRestConfigs((prev) => ({
+      ...prev,
+      [exercise.id]: 0,
+    }));
+    setRestEditorInputs((prev) => ({
+      ...prev,
+      [exercise.id]: '',
     }));
     setSearchText('');
     setSelectedMuscleGroup('All');
@@ -161,6 +140,28 @@ export default function EmptyWorkoutSessionScreen() {
       delete updated[exerciseId];
       return updated;
     });
+
+    setExerciseRestTimes((prev) => {
+      const updated = { ...prev };
+      delete updated[exerciseId];
+      return updated;
+    });
+
+    setExerciseRestConfigs((prev) => {
+      const updated = { ...prev };
+      delete updated[exerciseId];
+      return updated;
+    });
+
+    setRestEditorInputs((prev) => {
+      const updated = { ...prev };
+      delete updated[exerciseId];
+      return updated;
+    });
+
+    if (openRestEditorId === exerciseId) {
+      setOpenRestEditorId(null);
+    }
   };
 
   const handleAddSet = (exerciseId: string) => {
@@ -198,17 +199,33 @@ export default function EmptyWorkoutSessionScreen() {
   };
 
   const handleToggleSetCompleted = (exerciseId: string, setId: string) => {
+    const currentSet = (exerciseSets[exerciseId] || []).find(
+      (set) => set.id === setId
+    );
+    const configuredRestSeconds = exerciseRestConfigs[exerciseId] || 0;
+    const shouldStartRestTimer =
+      currentSet && !currentSet.completed && configuredRestSeconds > 0;
+
     setExerciseSets((prev) => ({
       ...prev,
       [exerciseId]: (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, completed: !set.completed } : set
       ),
     }));
+
+    if (shouldStartRestTimer) {
+      setExerciseRestTimes((prev) => ({
+        ...prev,
+        [exerciseId]: configuredRestSeconds,
+      }));
+    }
   };
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
     setExerciseSets((prev) => {
-      const filteredSets = (prev[exerciseId] || []).filter((set) => set.id !== setId);
+      const filteredSets = (prev[exerciseId] || []).filter(
+        (set) => set.id !== setId
+      );
 
       return {
         ...prev,
@@ -225,6 +242,73 @@ export default function EmptyWorkoutSessionScreen() {
       ...prev,
       [exerciseId]: value,
     }));
+  };
+
+  const handleOpenRestEditor = (exerciseId: string) => {
+    const configuredValue = exerciseRestConfigs[exerciseId] || 0;
+
+    setRestEditorInputs((prev) => ({
+      ...prev,
+      [exerciseId]: configuredValue > 0 ? configuredValue.toString() : '',
+    }));
+    setOpenRestEditorId((prev) => (prev === exerciseId ? null : exerciseId));
+  };
+
+  const handleUseDefaultRestTimer = (exerciseId: string) => {
+    setExerciseRestConfigs((prev) => ({
+      ...prev,
+      [exerciseId]: defaultRestTimerSeconds,
+    }));
+    setRestEditorInputs((prev) => ({
+      ...prev,
+      [exerciseId]: defaultRestTimerSeconds.toString(),
+    }));
+    setOpenRestEditorId(null);
+  };
+
+  const handleTurnOffRestTimer = (exerciseId: string) => {
+    setExerciseRestConfigs((prev) => ({
+      ...prev,
+      [exerciseId]: 0,
+    }));
+    setExerciseRestTimes((prev) => ({
+      ...prev,
+      [exerciseId]: 0,
+    }));
+    setRestEditorInputs((prev) => ({
+      ...prev,
+      [exerciseId]: '',
+    }));
+    setOpenRestEditorId(null);
+  };
+
+  const handleSaveRestTimerConfig = (exerciseId: string) => {
+    const parsedValue = parseRestTimerInput(restEditorInputs[exerciseId] || '');
+
+    if (!parsedValue) {
+      Alert.alert(
+        'Invalid rest timer',
+        'Enter a rest time like `45`, `90`, or `1:30`.'
+      );
+      return;
+    }
+
+    setExerciseRestConfigs((prev) => ({
+      ...prev,
+      [exerciseId]: parsedValue,
+    }));
+    setOpenRestEditorId(null);
+  };
+
+  const getRestTimerStatus = (exerciseId: string) => {
+    const remainingSeconds = exerciseRestTimes[exerciseId] || 0;
+    const configuredSeconds = exerciseRestConfigs[exerciseId] || 0;
+
+    if (remainingSeconds > 0) {
+      return formatRestTimerCountdown(remainingSeconds);
+    }
+
+    return formatRestTimerLabel(configuredSeconds);
   };
 
   const handleFinishWorkout = async () => {
@@ -314,8 +398,7 @@ export default function EmptyWorkoutSessionScreen() {
           addedExercises.map((exercise, index) => {
             const sets = exerciseSets[exercise.id] || [];
             const exerciseNote = exerciseNotes[exercise.id] || '';
-            const restTimeRemaining = exerciseRestTimes[exercise.id] || 0;
-            const customRestValue = customRestSeconds[exercise.id] || '';
+            const isEditorOpen = openRestEditorId === exercise.id;
 
             return (
               <View key={exercise.id} style={styles.currentExerciseCard}>
@@ -325,7 +408,7 @@ export default function EmptyWorkoutSessionScreen() {
                     <View style={styles.exerciseTitleWrap}>
                       <Text style={styles.exerciseName}>{exercise.name}</Text>
                       <Text style={styles.exerciseMeta}>
-                        {exercise.muscleGroup} • {exercise.equipment}
+                        {exercise.muscleGroup} {'\u2022'} {exercise.equipment}
                       </Text>
                     </View>
                   </View>
@@ -349,51 +432,57 @@ export default function EmptyWorkoutSessionScreen() {
                   multiline
                 />
 
-                <View style={styles.timerCard}>
-                  <View style={styles.timerHeaderRow}>
-                    <Text style={styles.timerLabel}>Rest Timer</Text>
-                    <Text style={styles.timerValue}>
-                      {restTimeRemaining > 0
-                        ? formatTime(restTimeRemaining)
-                        : 'Ready'}
-                    </Text>
-                  </View>
+                <Pressable
+                  style={styles.restTimerRow}
+                  onPress={() => handleOpenRestEditor(exercise.id)}
+                >
+                  <Text style={styles.restTimerLabel}>Rest timer:</Text>
+                  <Text style={styles.restTimerValue}>
+                    {getRestTimerStatus(exercise.id)}
+                  </Text>
+                </Pressable>
 
-                  <View style={styles.timerButtonsRow}>
-                    {restTimerPresets.map((seconds) => (
-                      <Pressable
-                        key={`${exercise.id}-${seconds}`}
-                        style={styles.timerButton}
-                        onPress={() => startRestTimer(exercise.id, seconds)}
-                      >
-                        <Text style={styles.timerButtonText}>{seconds}s</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <View style={styles.customTimerRow}>
+                {isEditorOpen && (
+                  <View style={styles.restEditorCard}>
                     <TextInput
-                      style={styles.customTimerInput}
-                      placeholder="Custom seconds"
+                      style={styles.restEditorInput}
+                      placeholder="e.g. 90 or 1:30"
                       placeholderTextColor="#777777"
-                      keyboardType="numeric"
-                      value={customRestValue}
+                      value={restEditorInputs[exercise.id] || ''}
                       onChangeText={(value) =>
-                        setCustomRestSeconds((prev) => ({
+                        setRestEditorInputs((prev) => ({
                           ...prev,
                           [exercise.id]: value,
                         }))
                       }
                     />
 
-                    <Pressable
-                      style={styles.customTimerButton}
-                      onPress={() => handleStartCustomRestTimer(exercise.id)}
-                    >
-                      <Text style={styles.customTimerButtonText}>Start</Text>
-                    </Pressable>
+                    <View style={styles.restEditorActions}>
+                      <Pressable
+                        style={styles.restEditorButton}
+                        onPress={() => handleUseDefaultRestTimer(exercise.id)}
+                      >
+                        <Text style={styles.restEditorButtonText}>
+                          Use Default ({formatRestTimerLabel(defaultRestTimerSeconds)})
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={styles.restEditorButton}
+                        onPress={() => handleSaveRestTimerConfig(exercise.id)}
+                      >
+                        <Text style={styles.restEditorButtonText}>Save Timer</Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={styles.restEditorOffButton}
+                        onPress={() => handleTurnOffRestTimer(exercise.id)}
+                      >
+                        <Text style={styles.restEditorOffButtonText}>Turn Off</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
+                )}
 
                 {sets.map((set) => (
                   <View
@@ -544,7 +633,7 @@ export default function EmptyWorkoutSessionScreen() {
                     <View style={styles.exerciseInfo}>
                       <Text style={styles.exerciseName}>{item.name}</Text>
                       <Text style={styles.exerciseMeta}>
-                        {item.muscleGroup} • {item.equipment}
+                        {item.muscleGroup} {'\u2022'} {item.equipment}
                       </Text>
                     </View>
 
@@ -648,76 +737,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 6,
   },
-  timerCard: {
-    backgroundColor: '#171717',
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  timerHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  timerLabel: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  timerValue: {
-    color: '#4da6ff',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  timerButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  customTimerRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  timerButton: {
-    flex: 1,
-    backgroundColor: '#16324d',
-    borderWidth: 1,
-    borderColor: '#4da6ff',
-    borderRadius: 10,
-    paddingVertical: 9,
-    alignItems: 'center',
-  },
-  timerButtonText: {
-    color: '#4da6ff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  customTimerInput: {
-    flex: 1,
-    backgroundColor: '#121212',
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#252525',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  customTimerButton: {
-    backgroundColor: '#4da6ff',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  customTimerButtonText: {
-    color: '#111111',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   currentExerciseCard: {
     backgroundColor: '#171717',
     borderWidth: 1,
@@ -787,6 +806,70 @@ const styles = StyleSheet.create({
     minHeight: 52,
     textAlignVertical: 'top',
     marginBottom: 8,
+  },
+  restTimerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  restTimerLabel: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  restTimerValue: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  restEditorCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+  },
+  restEditorInput: {
+    backgroundColor: '#171717',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  restEditorActions: {
+    gap: 8,
+  },
+  restEditorButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  restEditorButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  restEditorOffButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  restEditorOffButtonText: {
+    color: '#ff8a8a',
+    fontSize: 13,
+    fontWeight: '700',
   },
   setRow: {
     backgroundColor: '#121212',

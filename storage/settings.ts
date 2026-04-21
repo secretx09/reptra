@@ -5,25 +5,18 @@ const SETTINGS_KEY = 'appSettings';
 
 export const defaultSettings: AppSettings = {
   weightUnit: 'lb',
-  restTimerPresets: [60, 90, 120],
+  defaultRestTimerSeconds: 90,
   theme: 'graphite',
 };
 
-function normalizeRestTimerPresets(presets: unknown): number[] {
-  if (!Array.isArray(presets)) {
-    return defaultSettings.restTimerPresets;
+function normalizeDefaultRestTimerSeconds(value: unknown): number {
+  const parsedValue = Number(value);
+
+  if (Number.isInteger(parsedValue) && parsedValue > 0) {
+    return parsedValue;
   }
 
-  const normalizedPresets = presets
-    .map((value) => Number(value))
-    .filter((value) => Number.isInteger(value) && value > 0)
-    .slice(0, 3);
-
-  if (normalizedPresets.length !== 3) {
-    return defaultSettings.restTimerPresets;
-  }
-
-  return normalizedPresets;
+  return defaultSettings.defaultRestTimerSeconds;
 }
 
 export async function loadSettings(): Promise<AppSettings> {
@@ -34,11 +27,21 @@ export async function loadSettings(): Promise<AppSettings> {
       return defaultSettings;
     }
 
-    const parsed = JSON.parse(data) as Partial<AppSettings>;
+    const parsed = JSON.parse(data) as Partial<AppSettings> & {
+      restTimerPresets?: unknown;
+    };
+
+    const legacyDefaultRestTimerSeconds = Array.isArray(parsed.restTimerPresets)
+      ? parsed.restTimerPresets
+          .map((value) => Number(value))
+          .find((value) => Number.isInteger(value) && value > 0)
+      : undefined;
 
     return {
       weightUnit: parsed.weightUnit === 'kg' ? 'kg' : 'lb',
-      restTimerPresets: normalizeRestTimerPresets(parsed.restTimerPresets),
+      defaultRestTimerSeconds: normalizeDefaultRestTimerSeconds(
+        parsed.defaultRestTimerSeconds ?? legacyDefaultRestTimerSeconds
+      ),
       theme: parsed.theme === 'midnight' ? 'midnight' : 'graphite',
     };
   } catch (error) {

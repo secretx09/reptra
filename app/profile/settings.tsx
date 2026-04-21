@@ -15,11 +15,12 @@ import { defaultSettings, loadSettings, saveSettings } from '../../storage/setti
 import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 import { buildAppDataExport } from '../../utils/exportAppData';
 import { resetAppData } from '../../utils/resetAppData';
+import { formatRestTimerLabel, parseRestTimerInput } from '../../utils/restTimer';
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const [restTimerInputs, setRestTimerInputs] = useState<string[]>(
-    defaultSettings.restTimerPresets.map((value) => value.toString())
+  const [defaultRestTimerInput, setDefaultRestTimerInput] = useState(
+    defaultSettings.defaultRestTimerSeconds.toString()
   );
 
   useFocusEffect(
@@ -27,9 +28,7 @@ export default function ProfileSettingsScreen() {
       const fetchSettings = async () => {
         const savedSettings = await loadSettings();
         setSettings(savedSettings);
-        setRestTimerInputs(
-          savedSettings.restTimerPresets.map((value) => value.toString())
-        );
+        setDefaultRestTimerInput(savedSettings.defaultRestTimerSeconds.toString());
       };
 
       fetchSettings();
@@ -56,32 +55,26 @@ export default function ProfileSettingsScreen() {
     await saveSettings(nextSettings);
   };
 
-  const handleSaveRestTimerPresets = async () => {
-    const parsedPresets = restTimerInputs.map((value) => Number(value.trim()));
-    const hasInvalidPreset = parsedPresets.some(
-      (value) => !Number.isInteger(value) || value <= 0
-    );
+  const handleSaveDefaultRestTimer = async () => {
+    const parsedValue = parseRestTimerInput(defaultRestTimerInput);
 
-    if (hasInvalidPreset) {
+    if (!parsedValue) {
       Alert.alert(
-        'Invalid presets',
-        'Enter 3 whole-number rest timers greater than 0.'
+        'Invalid default timer',
+        'Enter a rest time like `90` or `1:30`.'
       );
       return;
     }
 
     const nextSettings = {
       ...settings,
-      restTimerPresets: parsedPresets,
+      defaultRestTimerSeconds: parsedValue,
     };
 
     setSettings(nextSettings);
+    setDefaultRestTimerInput(parsedValue.toString());
     await saveSettings(nextSettings);
-    Alert.alert('Saved', 'Your rest timer presets have been updated.');
-  };
-
-  const showComingSoon = (label: string) => {
-    Alert.alert('Coming soon', `${label} will be added in the next settings sessions.`);
+    Alert.alert('Saved', 'Your default rest timer has been updated.');
   };
 
   const handleExportData = async () => {
@@ -114,8 +107,8 @@ export default function ProfileSettingsScreen() {
             try {
               await resetAppData();
               setSettings(defaultSettings);
-              setRestTimerInputs(
-                defaultSettings.restTimerPresets.map((value) => value.toString())
+              setDefaultRestTimerInput(
+                defaultSettings.defaultRestTimerSeconds.toString()
               );
               Alert.alert(
                 'Data reset',
@@ -138,7 +131,10 @@ export default function ProfileSettingsScreen() {
       <Stack.Screen options={{ title: 'Settings' }} />
 
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.title}>Settings</Text>
           <Text style={styles.subtitle}>Customize how Reptra feels as you train.</Text>
 
@@ -186,38 +182,31 @@ export default function ProfileSettingsScreen() {
           </View>
 
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Rest Timer Presets</Text>
+            <Text style={styles.sectionTitle}>Default Rest Timer</Text>
             <Text style={styles.sectionDescription}>
-              Choose the 3 quick-start timer buttons shown during workouts.
+              This is the default rest time used when you turn a timer on for an exercise.
             </Text>
 
-            <View style={styles.timerPresetRow}>
-              {restTimerInputs.map((value, index) => (
-                <View key={`preset-${index}`} style={styles.timerPresetField}>
-                  <Text style={styles.timerPresetLabel}>Preset {index + 1}</Text>
-                  <TextInput
-                    style={styles.timerPresetInput}
-                    placeholder="0"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={(text) =>
-                      setRestTimerInputs((prev) =>
-                        prev.map((item, itemIndex) =>
-                          itemIndex === index ? text : item
-                        )
-                      )
-                    }
-                  />
-                </View>
-              ))}
+            <View style={styles.defaultTimerSummary}>
+              <Text style={styles.defaultTimerSummaryLabel}>Current default</Text>
+              <Text style={styles.defaultTimerSummaryValue}>
+                {formatRestTimerLabel(settings.defaultRestTimerSeconds)}
+              </Text>
             </View>
+
+            <TextInput
+              style={styles.defaultTimerInput}
+              placeholder="e.g. 90 or 1:30"
+              placeholderTextColor="#777777"
+              value={defaultRestTimerInput}
+              onChangeText={setDefaultRestTimerInput}
+            />
 
             <Pressable
               style={styles.savePresetButton}
-              onPress={handleSaveRestTimerPresets}
+              onPress={handleSaveDefaultRestTimer}
             >
-              <Text style={styles.savePresetButtonText}>Save Timer Presets</Text>
+              <Text style={styles.savePresetButtonText}>Save Default Timer</Text>
             </Pressable>
           </View>
 
@@ -287,10 +276,7 @@ export default function ProfileSettingsScreen() {
               <Text style={styles.importButtonText}>Import Data</Text>
             </Pressable>
 
-            <Pressable
-              style={styles.resetButton}
-              onPress={handleResetData}
-            >
+            <Pressable style={styles.resetButton} onPress={handleResetData}>
               <Text style={styles.resetButtonText}>Reset All Data</Text>
             </Pressable>
 
@@ -373,21 +359,26 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 6,
   },
-  timerPresetRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
+  defaultTimerSummary: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
   },
-  timerPresetField: {
-    flex: 1,
-  },
-  timerPresetLabel: {
+  defaultTimerSummaryLabel: {
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  timerPresetInput: {
+  defaultTimerSummaryValue: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  defaultTimerInput: {
     backgroundColor: '#121212',
     color: '#ffffff',
     borderWidth: 1,
@@ -396,7 +387,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     fontSize: 15,
-    textAlign: 'center',
+    marginBottom: 14,
   },
   savePresetButton: {
     backgroundColor: '#16324d',
@@ -457,35 +448,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 10,
-  },
-  settingRow: {
-    backgroundColor: '#1c1c1c',
-    borderWidth: 1,
-    borderColor: '#2e2e2e',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  settingTextWrap: {
-    flex: 1,
-  },
-  settingTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  settingDescription: {
-    color: '#aaaaaa',
-    fontSize: 14,
-  },
-  chevron: {
-    color: '#777777',
-    fontSize: 24,
-    fontWeight: '700',
   },
 });

@@ -13,7 +13,9 @@ type AppDataImportPayload = {
   app?: string;
   exportedAt?: string;
   version?: number;
-  settings?: Partial<AppSettings>;
+  settings?: Partial<AppSettings> & {
+    restTimerPresets?: unknown;
+  };
   workouts?: SavedWorkoutSession[];
   routines?: RoutineWithExercises[];
   customExercises?: Exercise[];
@@ -24,17 +26,22 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function normalizeSettings(settings: Partial<AppSettings> | undefined): AppSettings {
+function normalizeSettings(settings: AppDataImportPayload['settings']): AppSettings {
+  const legacyRestTimerSeconds = Array.isArray(settings?.restTimerPresets)
+    ? settings.restTimerPresets
+        .map((value) => Number(value))
+        .find((value) => Number.isInteger(value) && value > 0)
+    : undefined;
+
   return {
     weightUnit: settings?.weightUnit === 'kg' ? 'kg' : 'lb',
-    restTimerPresets:
-      Array.isArray(settings?.restTimerPresets) &&
-      settings.restTimerPresets.length === 3 &&
-      settings.restTimerPresets.every(
-        (value) => Number.isInteger(value) && Number(value) > 0
-      )
-        ? settings.restTimerPresets.map((value) => Number(value))
-        : defaultSettings.restTimerPresets,
+    defaultRestTimerSeconds:
+      Number.isInteger(settings?.defaultRestTimerSeconds) &&
+      Number(settings?.defaultRestTimerSeconds) > 0
+        ? Number(settings?.defaultRestTimerSeconds)
+        : Number.isInteger(legacyRestTimerSeconds)
+          ? Number(legacyRestTimerSeconds)
+          : defaultSettings.defaultRestTimerSeconds,
     theme: settings?.theme === 'midnight' ? 'midnight' : 'graphite',
   };
 }

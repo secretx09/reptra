@@ -24,6 +24,7 @@ import {
   normalizeSupersetExercises,
   toggleSupersetWithPrevious,
 } from '../../utils/routineSupersets';
+import { parseRestTimerInput } from '../../utils/restTimer';
 import { getWeightFieldLabel } from '../../utils/weightUnits';
 
 export default function CreateRoutineScreen() {
@@ -129,11 +130,20 @@ export default function CreateRoutineScreen() {
       return;
     }
 
+    const normalizedExercises = selectedExercises.map((exercise) => {
+      const parsedRestSeconds = parseRestTimerInput(exercise.defaultRestSeconds);
+
+      return {
+        ...exercise,
+        defaultRestSeconds: parsedRestSeconds ? parsedRestSeconds.toString() : '',
+      };
+    });
+
     const newRoutine: RoutineWithExercises = {
       id: new Date().toISOString(),
       name: routineName.trim(),
       createdAt: new Date().toISOString(),
-      exercises: selectedExercises,
+      exercises: normalizedExercises,
     };
 
     const existingRoutines = await loadRoutines();
@@ -151,7 +161,7 @@ export default function CreateRoutineScreen() {
       <View style={styles.exercisePickerInfo}>
         <Text style={styles.exerciseName}>{item.name}</Text>
         <Text style={styles.exerciseMeta}>
-          {item.muscleGroup} • {item.equipment}
+          {item.muscleGroup} {'\u2022'} {item.equipment}
         </Text>
       </View>
 
@@ -215,7 +225,7 @@ export default function CreateRoutineScreen() {
                     </View>
 
                     <Text style={styles.exerciseMeta}>
-                      {exercise.muscleGroup} • {exercise.equipment}
+                      {exercise.muscleGroup} {'\u2022'} {exercise.equipment}
                     </Text>
 
                     <View style={styles.defaultsRow}>
@@ -263,9 +273,8 @@ export default function CreateRoutineScreen() {
                       />
                       <TextInput
                         style={styles.smallInput}
-                        placeholder="Rest"
+                        placeholder="90 / 1:30"
                         placeholderTextColor="#777777"
-                        keyboardType="numeric"
                         value={exercise.defaultRestSeconds}
                         onChangeText={(value) =>
                           handleUpdateExerciseDefault(
