@@ -12,16 +12,64 @@ import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { calculateEstimatedOneRepMax } from '../../utils/oneRepMax';
 import { formatWeightUnit } from '../../utils/weightUnits';
 
-type ExerciseProgressPoint = {
+type ExerciseTab = 'summary' | 'history' | 'howto';
+type ChartMetricKey =
+  | 'bestWeight'
+  | 'bestEstimatedOneRepMax'
+  | 'bestSetVolume'
+  | 'sessionVolume'
+  | 'totalReps';
+
+type ExerciseHistoryPoint = {
   id: string;
   completedAt: string;
   label: string;
   bestWeight: number;
   bestEstimatedOneRepMax: number;
-  totalVolume: number;
+  bestSetVolume: number;
+  sessionVolume: number;
+  totalReps: number;
   totalSets: number;
-  bestReps: number;
+  note: string;
 };
+
+const tabOptions: { key: ExerciseTab; label: string }[] = [
+  { key: 'summary', label: 'Summary' },
+  { key: 'history', label: 'History' },
+  { key: 'howto', label: 'How To' },
+];
+
+const chartMetricOptions: {
+  key: ChartMetricKey;
+  label: string;
+  subtitle: string;
+}[] = [
+  {
+    key: 'bestWeight',
+    label: 'Heaviest Weight',
+    subtitle: 'Best logged weight each session',
+  },
+  {
+    key: 'bestEstimatedOneRepMax',
+    label: 'Estimated 1RM',
+    subtitle: 'Projected one-rep max over time',
+  },
+  {
+    key: 'bestSetVolume',
+    label: 'Best Set Volume',
+    subtitle: 'Highest single-set volume each session',
+  },
+  {
+    key: 'sessionVolume',
+    label: 'Session Volume',
+    subtitle: 'Total volume across the full session',
+  },
+  {
+    key: 'totalReps',
+    label: 'Total Reps',
+    subtitle: 'All reps logged for the session',
+  },
+];
 
 function formatShortDate(dateString: string) {
   return new Date(dateString).toLocaleDateString([], {
@@ -35,6 +83,8 @@ export default function ExerciseDetailScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [activeTab, setActiveTab] = useState<ExerciseTab>('summary');
+  const [chartMetric, setChartMetric] = useState<ChartMetricKey>('bestWeight');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +114,7 @@ export default function ExerciseDetailScreen() {
   const instructions = exercise?.instructions ?? [];
   const demoMedia = exercise?.demoMedia;
 
-  const progressPoints = useMemo(() => {
+  const historyPoints = useMemo(() => {
     if (!id) {
       return [];
     }
@@ -79,22 +129,25 @@ export default function ExerciseDetailScreen() {
 
         let bestWeight = 0;
         let bestEstimatedOneRepMax = 0;
-        let totalVolume = 0;
-        let bestReps = 0;
+        let bestSetVolume = 0;
+        let sessionVolume = 0;
+        let totalReps = 0;
 
         exerciseLog.sets.forEach((set) => {
           const weight = Number(set.weight);
           const reps = Number(set.reps);
 
           if (!Number.isNaN(reps) && reps > 0) {
-            bestReps = Math.max(bestReps, reps);
+            totalReps += reps;
           }
 
           if (!Number.isNaN(weight) && weight > 0) {
             bestWeight = Math.max(bestWeight, weight);
 
             if (!Number.isNaN(reps) && reps > 0) {
-              totalVolume += weight * reps;
+              const setVolume = weight * reps;
+              sessionVolume += setVolume;
+              bestSetVolume = Math.max(bestSetVolume, setVolume);
               bestEstimatedOneRepMax = Math.max(
                 bestEstimatedOneRepMax,
                 calculateEstimatedOneRepMax(weight, reps)
@@ -111,34 +164,40 @@ export default function ExerciseDetailScreen() {
           label: formatShortDate(workout.completedAt),
           bestWeight,
           bestEstimatedOneRepMax,
-          totalVolume,
+          bestSetVolume,
+          sessionVolume,
+          totalReps,
           totalSets: exerciseLog.sets.length,
-          bestReps,
-        } satisfies ExerciseProgressPoint;
+          note: exerciseLog.note,
+        } satisfies ExerciseHistoryPoint;
       })
-      .filter((item): item is ExerciseProgressPoint => item !== null)
+      .filter((item): item is ExerciseHistoryPoint => item !== null)
       .sort(
         (a, b) =>
           new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
       );
   }, [id, workouts]);
 
-  const latestPoints = progressPoints.slice(-6);
-  const maxChartValue = Math.max(
-    ...latestPoints.map((point) => point.bestWeight),
+  const summaryPoints = historyPoints.slice(-6);
+  const chartMetricConfig = chartMetricOptions.find((item) => item.key === chartMetric)!;
+  const chartMaxValue = Math.max(
+    ...summaryPoints.map((point) => point[chartMetric]),
     0
   );
-  const bestWeight = Math.max(...progressPoints.map((point) => point.bestWeight), 0);
-  const bestVolume = Math.max(...progressPoints.map((point) => point.totalVolume), 0);
-  const bestReps = Math.max(...progressPoints.map((point) => point.bestReps), 0);
-  const bestEstimatedOneRepMax = Math.max(
-    ...progressPoints.map((point) => point.bestEstimatedOneRepMax),
-    0
-  );
-  const totalTrackedSessions = progressPoints.length;
-  const latestSession = progressPoints[progressPoints.length - 1] || null;
+  const latestSession = historyPoints[historyPoints.length - 1] || null;
   const previousSession =
-    progressPoints.length > 1 ? progressPoints[progressPoints.length - 2] : null;
+    historyPoints.length > 1 ? historyPoints[historyPoints.length - 2] : null;
+  const bestWeight = Math.max(...historyPoints.map((point) => point.bestWeight), 0);
+  const bestEstimatedOneRepMax = Math.max(
+    ...historyPoints.map((point) => point.bestEstimatedOneRepMax),
+    0
+  );
+  const bestSetVolume = Math.max(...historyPoints.map((point) => point.bestSetVolume), 0);
+  const bestSessionVolume = Math.max(
+    ...historyPoints.map((point) => point.sessionVolume),
+    0
+  );
+  const totalTrackedSessions = historyPoints.length;
   const estimatedOneRepMaxChange =
     latestSession && previousSession
       ? latestSession.bestEstimatedOneRepMax - previousSession.bestEstimatedOneRepMax
@@ -148,9 +207,20 @@ export default function ExerciseDetailScreen() {
       ? 'Log another session to unlock session-to-session 1RM trend.'
       : estimatedOneRepMaxChange > 0
         ? `Your latest estimated 1RM is up ${estimatedOneRepMaxChange} ${formatWeightUnit(weightUnit)} from your previous logged session.`
-      : estimatedOneRepMaxChange < 0
+        : estimatedOneRepMaxChange < 0
           ? `Your latest estimated 1RM is down ${Math.abs(estimatedOneRepMaxChange)} ${formatWeightUnit(weightUnit)} from your previous logged session.`
           : 'Your estimated 1RM matched your previous logged session.';
+
+  const formatMetricValue = useCallback(
+    (value: number, metric: ChartMetricKey) => {
+      if (metric === 'bestWeight' || metric === 'bestEstimatedOneRepMax') {
+        return `${value} ${formatWeightUnit(weightUnit)}`;
+      }
+
+      return `${value}`;
+    },
+    [weightUnit]
+  );
 
   const handleOpenDemoMedia = async () => {
     if (!demoMedia?.url) {
@@ -163,6 +233,303 @@ export default function ExerciseDetailScreen() {
       Alert.alert('Unable to open demo', 'Please try again in a moment.');
     }
   };
+
+  const renderDemoCard = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Demo</Text>
+
+      {demoMedia ? (
+        <View style={styles.demoCard}>
+          <View style={styles.demoBadge}>
+            <Text style={styles.demoBadgeText}>
+              {demoMedia.type === 'gif' ? 'GIF' : 'VIDEO'}
+            </Text>
+          </View>
+
+          <Text style={styles.demoTitle}>{demoMedia.title}</Text>
+          <Text style={styles.demoText}>
+            Open a quick movement demo for form reference while reviewing this
+            exercise.
+          </Text>
+
+          {demoMedia.sourceLabel ? (
+            <Text style={styles.demoSource}>Source: {demoMedia.sourceLabel}</Text>
+          ) : null}
+
+          <Pressable style={styles.demoButton} onPress={handleOpenDemoMedia}>
+            <Text style={styles.demoButtonText}>
+              {demoMedia.type === 'gif' ? 'Open Demo GIF' : 'Watch Demo Video'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={styles.emptySectionText}>
+          No demo media has been added for this exercise yet.
+        </Text>
+      )}
+    </View>
+  );
+
+  const renderSummaryTab = () => (
+    <>
+      {renderDemoCard()}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>PR Summary</Text>
+
+        {historyPoints.length === 0 ? (
+          <Text style={styles.emptySectionText}>
+            No logged sessions for this exercise yet. Complete a workout with this
+            exercise to see your progress here.
+          </Text>
+        ) : (
+          <>
+            <View style={styles.oneRepMaxHero}>
+              <Text style={styles.oneRepMaxEyebrow}>Estimated 1RM</Text>
+              <Text style={styles.oneRepMaxValue}>
+                {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+              </Text>
+              <Text style={styles.oneRepMaxText}>
+                Best projected single-rep strength based on your logged sets.
+              </Text>
+            </View>
+
+            <View style={styles.progressSummaryGrid}>
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>
+                  {bestWeight} {formatWeightUnit(weightUnit)}
+                </Text>
+                <Text style={styles.progressSummaryLabel}>Heaviest Weight</Text>
+              </View>
+
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>
+                  {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                </Text>
+                <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
+              </View>
+
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>{bestSetVolume}</Text>
+                <Text style={styles.progressSummaryLabel}>Best Set Volume</Text>
+              </View>
+
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>{bestSessionVolume}</Text>
+                <Text style={styles.progressSummaryLabel}>Best Session Volume</Text>
+              </View>
+
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>{totalTrackedSessions}</Text>
+                <Text style={styles.progressSummaryLabel}>Tracked Sessions</Text>
+              </View>
+
+              <View style={styles.progressSummaryCard}>
+                <Text style={styles.progressSummaryValue}>
+                  {latestSession ? latestSession.totalReps : 0}
+                </Text>
+                <Text style={styles.progressSummaryLabel}>Latest Total Reps</Text>
+              </View>
+            </View>
+
+            <View style={styles.prInsightCard}>
+              <Text style={styles.prInsightTitle}>1RM Trend</Text>
+              <Text style={styles.prInsightText}>{oneRepMaxTrendText}</Text>
+            </View>
+          </>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Chart</Text>
+
+        {historyPoints.length === 0 ? (
+          <Text style={styles.emptySectionText}>
+            Log this exercise to unlock chart history.
+          </Text>
+        ) : (
+          <>
+            <View style={styles.metricSelectorRow}>
+              {chartMetricOptions.map((option) => {
+                const isSelected = option.key === chartMetric;
+
+                return (
+                  <Pressable
+                    key={option.key}
+                    style={[
+                      styles.metricChip,
+                      isSelected && styles.metricChipSelected,
+                    ]}
+                    onPress={() => setChartMetric(option.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.metricChipText,
+                        isSelected && styles.metricChipTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.chartCard}>
+              <View style={styles.chartHeaderRow}>
+                <View style={styles.chartHeaderTextWrap}>
+                  <Text style={styles.chartTitle}>{chartMetricConfig.label}</Text>
+                  <Text style={styles.chartSubtitle}>
+                    {chartMetricConfig.subtitle}
+                  </Text>
+                </View>
+
+                <View style={styles.chartBadge}>
+                  <Text style={styles.chartBadgeValue}>{summaryPoints.length}</Text>
+                  <Text style={styles.chartBadgeLabel}>Sessions</Text>
+                </View>
+              </View>
+
+              <View style={styles.chartBarsRow}>
+                {summaryPoints.map((point) => {
+                  const metricValue = point[chartMetric];
+                  const barHeight =
+                    chartMaxValue > 0
+                      ? Math.max(16, Math.round((metricValue / chartMaxValue) * 120))
+                      : 10;
+
+                  return (
+                    <View key={point.id} style={styles.chartBarColumn}>
+                      <Text style={styles.chartValue}>
+                        {formatMetricValue(metricValue, chartMetric)}
+                      </Text>
+
+                      <View style={styles.chartTrack}>
+                        <View style={[styles.chartFill, { height: barHeight }]} />
+                      </View>
+
+                      <Text style={styles.chartLabel}>{point.label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        )}
+      </View>
+    </>
+  );
+
+  const renderHistoryTab = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Exercise History</Text>
+
+      {historyPoints.length === 0 ? (
+        <Text style={styles.emptySectionText}>
+          No session history for this exercise yet.
+        </Text>
+      ) : (
+        historyPoints
+          .slice()
+          .reverse()
+          .map((point) => (
+            <View key={`history-${point.id}`} style={styles.historyCard}>
+              <View style={styles.historyHeaderRow}>
+                <View>
+                  <Text style={styles.historyDate}>
+                    {new Date(point.completedAt).toLocaleDateString()}
+                  </Text>
+                  <Text style={styles.historySubtitle}>
+                    {point.totalSets} set{point.totalSets === 1 ? '' : 's'} |{' '}
+                    {point.totalReps} reps
+                  </Text>
+                </View>
+
+                <Text style={styles.historyWeight}>
+                  {point.bestWeight} {formatWeightUnit(weightUnit)}
+                </Text>
+              </View>
+
+              <View style={styles.historyStatsRow}>
+                <View style={styles.historyStatPill}>
+                  <Text style={styles.historyStatValue}>
+                    {point.bestEstimatedOneRepMax}
+                  </Text>
+                  <Text style={styles.historyStatLabel}>Est. 1RM</Text>
+                </View>
+
+                <View style={styles.historyStatPill}>
+                  <Text style={styles.historyStatValue}>{point.bestSetVolume}</Text>
+                  <Text style={styles.historyStatLabel}>Best Set Vol</Text>
+                </View>
+
+                <View style={styles.historyStatPill}>
+                  <Text style={styles.historyStatValue}>{point.sessionVolume}</Text>
+                  <Text style={styles.historyStatLabel}>Session Vol</Text>
+                </View>
+              </View>
+
+              {point.note ? (
+                <View style={styles.historyNoteBox}>
+                  <Text style={styles.historyNoteLabel}>Note</Text>
+                  <Text style={styles.historyNoteText}>{point.note}</Text>
+                </View>
+              ) : null}
+            </View>
+          ))
+      )}
+    </View>
+  );
+
+  const renderHowToTab = () => (
+    <>
+      {renderDemoCard()}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Target Muscles</Text>
+
+        <View style={styles.targetGroup}>
+          <Text style={styles.targetGroupLabel}>Primary</Text>
+          <View style={styles.targetChipRow}>
+            {primaryMuscles.map((muscle) => (
+              <View key={`primary-${muscle}`} style={styles.primaryTargetChip}>
+                <Text style={styles.primaryTargetChipText}>{muscle}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {secondaryMuscles.length > 0 ? (
+          <View style={styles.targetGroup}>
+            <Text style={styles.targetGroupLabel}>Secondary</Text>
+            <View style={styles.targetChipRow}>
+              {secondaryMuscles.map((muscle) => (
+                <View key={`secondary-${muscle}`} style={styles.secondaryTargetChip}>
+                  <Text style={styles.secondaryTargetChipText}>{muscle}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Instructions</Text>
+
+        {instructions.length > 0 ? (
+          instructions.map((step, index) => (
+            <Text key={index} style={styles.listItem}>
+              {index + 1}. {step}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.emptySectionText}>
+            No instructions added for this exercise yet.
+          </Text>
+        )}
+      </View>
+    </>
+  );
 
   if (!exercise) {
     return (
@@ -180,249 +547,38 @@ export default function ExerciseDetailScreen() {
       <Stack.Screen options={{ title: exercise.name }} />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>{exercise.name}</Text>
-
           <Text style={styles.meta}>
             {exercise.muscleGroup} | {exercise.equipment}
           </Text>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Demo</Text>
+          <View style={styles.tabRow}>
+            {tabOptions.map((tab) => {
+              const isSelected = tab.key === activeTab;
 
-            {demoMedia ? (
-              <View style={styles.demoCard}>
-                <View style={styles.demoBadge}>
-                  <Text style={styles.demoBadgeText}>
-                    {demoMedia.type === 'gif' ? 'GIF' : 'VIDEO'}
-                  </Text>
-                </View>
-
-                <Text style={styles.demoTitle}>{demoMedia.title}</Text>
-                <Text style={styles.demoText}>
-                  Open a quick movement demo for form reference while reviewing this
-                  exercise.
-                </Text>
-
-                {demoMedia.sourceLabel ? (
-                  <Text style={styles.demoSource}>Source: {demoMedia.sourceLabel}</Text>
-                ) : null}
-
-                <Pressable style={styles.demoButton} onPress={handleOpenDemoMedia}>
-                  <Text style={styles.demoButtonText}>
-                    {demoMedia.type === 'gif' ? 'Open Demo GIF' : 'Watch Demo Video'}
+              return (
+                <Pressable
+                  key={tab.key}
+                  style={[styles.tabButton, isSelected && styles.tabButtonSelected]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      isSelected && styles.tabButtonTextSelected,
+                    ]}
+                  >
+                    {tab.label}
                   </Text>
                 </Pressable>
-              </View>
-            ) : (
-              <Text style={styles.emptySectionText}>
-                No demo media has been added for this exercise yet.
-              </Text>
-            )}
+              );
+            })}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Muscle Targets</Text>
-
-            <View style={styles.targetGroup}>
-              <Text style={styles.targetGroupLabel}>Primary</Text>
-              <View style={styles.targetChipRow}>
-                {primaryMuscles.map((muscle) => (
-                  <View key={`primary-${muscle}`} style={styles.primaryTargetChip}>
-                    <Text style={styles.primaryTargetChipText}>{muscle}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {secondaryMuscles.length > 0 ? (
-              <View style={styles.targetGroup}>
-                <Text style={styles.targetGroupLabel}>Secondary</Text>
-                <View style={styles.targetChipRow}>
-                  {secondaryMuscles.map((muscle) => (
-                    <View
-                      key={`secondary-${muscle}`}
-                      style={styles.secondaryTargetChip}
-                    >
-                      <Text style={styles.secondaryTargetChipText}>{muscle}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>PR Snapshot</Text>
-
-            {progressPoints.length === 0 ? (
-              <Text style={styles.emptyProgressText}>
-                No logged sessions for this exercise yet. Complete a workout with this
-                exercise to see your PRs and progress here.
-              </Text>
-            ) : (
-              <>
-                <View style={styles.oneRepMaxHero}>
-                  <Text style={styles.oneRepMaxEyebrow}>Estimated 1RM</Text>
-                  <Text style={styles.oneRepMaxValue}>
-                    {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
-                  </Text>
-                  <Text style={styles.oneRepMaxText}>
-                    Best projected single-rep strength based on your logged sets.
-                  </Text>
-                </View>
-
-                <View style={styles.progressSummaryGrid}>
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>{bestWeight}</Text>
-                    <Text style={styles.progressSummaryLabel}>Heaviest Set</Text>
-                  </View>
-
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>
-                      {bestEstimatedOneRepMax}
-                    </Text>
-                    <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
-                  </View>
-
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>{bestVolume}</Text>
-                    <Text style={styles.progressSummaryLabel}>Best Volume</Text>
-                  </View>
-
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>{bestReps}</Text>
-                    <Text style={styles.progressSummaryLabel}>Most Reps</Text>
-                  </View>
-
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>{totalTrackedSessions}</Text>
-                    <Text style={styles.progressSummaryLabel}>Tracked Sessions</Text>
-                  </View>
-
-                  <View style={styles.progressSummaryCard}>
-                    <Text style={styles.progressSummaryValue}>
-                      {latestSession ? latestSession.totalVolume : 0}
-                    </Text>
-                    <Text style={styles.progressSummaryLabel}>Latest Volume</Text>
-                  </View>
-                </View>
-
-                <View style={styles.prInsightCard}>
-                  <Text style={styles.prInsightTitle}>1RM Trend</Text>
-                  <Text style={styles.prInsightText}>{oneRepMaxTrendText}</Text>
-                  <Text style={styles.prInsightText}>
-                    Current all-time best estimate: {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
-                  </Text>
-                </View>
-
-                <View style={styles.prInsightCard}>
-                  <Text style={styles.prInsightTitle}>Current Bests</Text>
-                  <Text style={styles.prInsightText}>
-                    Top logged weight: {bestWeight} {formatWeightUnit(weightUnit)}
-                  </Text>
-                  <Text style={styles.prInsightText}>
-                    Best estimated 1RM: {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
-                  </Text>
-                  <Text style={styles.prInsightText}>
-                    Highest logged volume: {bestVolume}
-                  </Text>
-                  <Text style={styles.prInsightText}>
-                    Last recorded session volume: {latestSession ? latestSession.totalVolume : 0}
-                  </Text>
-                </View>
-
-                <View style={styles.chartCard}>
-                  <View style={styles.chartHeaderRow}>
-                    <View>
-                      <Text style={styles.chartTitle}>Best Weight Trend</Text>
-                      <Text style={styles.chartSubtitle}>
-                        Recent workout performance
-                      </Text>
-                    </View>
-
-                    <View style={styles.chartBadge}>
-                      <Text style={styles.chartBadgeValue}>{latestPoints.length}</Text>
-                      <Text style={styles.chartBadgeLabel}>Sessions</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.chartBarsRow}>
-                    {latestPoints.map((point) => {
-                      const barHeight =
-                        maxChartValue > 0
-                          ? Math.max(
-                              16,
-                              Math.round((point.bestWeight / maxChartValue) * 120)
-                            )
-                          : 10;
-
-                      return (
-                        <View key={point.id} style={styles.chartBarColumn}>
-                          <Text style={styles.chartValue}>{point.bestWeight}</Text>
-
-                          <View style={styles.chartTrack}>
-                            <View
-                              style={[styles.chartFill, { height: barHeight }]}
-                            />
-                          </View>
-
-                          <Text style={styles.chartLabel}>{point.label}</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                <View style={styles.recentSessionsCard}>
-                  <Text style={styles.recentSessionsTitle}>Recent Sessions</Text>
-
-                  {latestPoints
-                    .slice()
-                    .reverse()
-                    .map((point) => (
-                      <View key={`recent-${point.id}`} style={styles.recentSessionRow}>
-                        <View>
-                          <Text style={styles.recentSessionDate}>{point.label}</Text>
-                          <Text style={styles.recentSessionMeta}>
-                            {point.totalSets} set{point.totalSets === 1 ? '' : 's'} |{' '}
-                            {point.totalVolume} volume
-                          </Text>
-                        </View>
-
-                        <View style={styles.recentSessionStats}>
-                          <Text style={styles.recentSessionValue}>
-                            {point.bestWeight} {formatWeightUnit(weightUnit)}
-                          </Text>
-                          <Text style={styles.recentSessionSubvalue}>
-                            1RM {point.bestEstimatedOneRepMax}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                </View>
-              </>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Instructions</Text>
-            {instructions.length > 0 ? (
-              instructions.map((step, index) => (
-                <Text key={index} style={styles.listItem}>
-                  {index + 1}. {step}
-                </Text>
-              ))
-            ) : (
-              <Text style={styles.emptySectionText}>
-                No instructions added for this exercise yet.
-              </Text>
-            )}
-          </View>
-
+          {activeTab === 'summary' && renderSummaryTab()}
+          {activeTab === 'history' && renderHistoryTab()}
+          {activeTab === 'howto' && renderHowToTab()}
         </ScrollView>
       </SafeAreaView>
     </>
@@ -447,7 +603,33 @@ const styles = StyleSheet.create({
   meta: {
     color: '#aaaaaa',
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  tabButton: {
+    flex: 1,
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  tabButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  tabButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  tabButtonTextSelected: {
+    color: '#4da6ff',
   },
   section: {
     backgroundColor: '#1c1c1c',
@@ -541,48 +723,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  targetGroup: {
-    marginBottom: 12,
-  },
-  targetGroupLabel: {
-    color: '#aaaaaa',
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  targetChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  primaryTargetChip: {
-    backgroundColor: '#16324d',
-    borderWidth: 1,
-    borderColor: '#4da6ff',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  primaryTargetChipText: {
-    color: '#4da6ff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  secondaryTargetChip: {
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  secondaryTargetChipText: {
-    color: '#dddddd',
-    fontSize: 13,
-    fontWeight: '600',
-  },
   progressSummaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -629,13 +769,38 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 4,
   },
+  metricSelectorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  metricChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  metricChipSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  metricChipText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  metricChipTextSelected: {
+    color: '#4da6ff',
+  },
   chartCard: {
     backgroundColor: '#161616',
     borderWidth: 1,
     borderColor: '#2a2a2a',
     borderRadius: 12,
     padding: 14,
-    marginBottom: 14,
   },
   chartHeaderRow: {
     flexDirection: 'row',
@@ -643,6 +808,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     marginBottom: 14,
+  },
+  chartHeaderTextWrap: {
+    flex: 1,
   },
   chartTitle: {
     color: '#ffffff',
@@ -689,6 +857,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     marginBottom: 6,
+    textAlign: 'center',
   },
   chartTrack: {
     width: 26,
@@ -710,55 +879,120 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 8,
   },
-  recentSessionsCard: {
+  historyCard: {
     backgroundColor: '#161616',
     borderWidth: 1,
     borderColor: '#2a2a2a',
     borderRadius: 12,
     padding: 14,
+    marginBottom: 12,
   },
-  recentSessionsTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  recentSessionRow: {
+  historyHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#252525',
+    marginBottom: 12,
   },
-  recentSessionDate: {
+  historyDate: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  historySubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+  },
+  historyWeight: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  historyStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  historyStatPill: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  historyStatValue: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 3,
   },
-  recentSessionMeta: {
+  historyStatLabel: {
     color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  historyNoteBox: {
+    backgroundColor: '#121212',
+    borderRadius: 10,
+    padding: 12,
+  },
+  historyNoteLabel: {
+    color: '#ffffff',
     fontSize: 12,
-  },
-  recentSessionStats: {
-    alignItems: 'flex-end',
-  },
-  recentSessionValue: {
-    color: '#4da6ff',
-    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 3,
+    marginBottom: 4,
   },
-  recentSessionSubvalue: {
+  historyNoteText: {
+    color: '#dddddd',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  targetGroup: {
+    marginBottom: 12,
+  },
+  targetGroupLabel: {
     color: '#aaaaaa',
     fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
-  emptyProgressText: {
-    color: '#aaaaaa',
-    fontSize: 15,
-    lineHeight: 22,
+  targetChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  primaryTargetChip: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  primaryTargetChipText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  secondaryTargetChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  secondaryTargetChipText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '600',
   },
   emptySectionText: {
     color: '#aaaaaa',
