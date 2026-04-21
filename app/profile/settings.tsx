@@ -6,12 +6,15 @@ import {
   Pressable,
   Alert,
   ScrollView,
+  Share,
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
 import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
 import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
+import { buildAppDataExport } from '../../utils/exportAppData';
+import { resetAppData } from '../../utils/resetAppData';
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
@@ -79,6 +82,55 @@ export default function ProfileSettingsScreen() {
 
   const showComingSoon = (label: string) => {
     Alert.alert('Coming soon', `${label} will be added in the next settings sessions.`);
+  };
+
+  const handleExportData = async () => {
+    try {
+      const exportPayload = await buildAppDataExport();
+      const exportJson = JSON.stringify(exportPayload, null, 2);
+
+      await Share.share({
+        title: 'Reptra Export',
+        message: exportJson,
+      });
+    } catch (error) {
+      Alert.alert(
+        'Export failed',
+        'We could not prepare your export right now. Please try again.'
+      );
+    }
+  };
+
+  const handleResetData = () => {
+    Alert.alert(
+      'Reset all data?',
+      'This will permanently remove your workouts, routines, progress photos, custom exercises, and settings from this device.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await resetAppData();
+              setSettings(defaultSettings);
+              setRestTimerInputs(
+                defaultSettings.restTimerPresets.map((value) => value.toString())
+              );
+              Alert.alert(
+                'Data reset',
+                'All local Reptra data has been cleared from this device.'
+              );
+            } catch (error) {
+              Alert.alert(
+                'Reset failed',
+                'We could not clear your local data right now. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -218,31 +270,27 @@ export default function ProfileSettingsScreen() {
             </View>
           </View>
 
-          <Pressable
-            style={styles.settingRow}
-            onPress={() => showComingSoon('Theme and appearance')}
-          >
-            <View style={styles.settingTextWrap}>
-              <Text style={styles.settingTitle}>Appearance</Text>
-              <Text style={styles.settingDescription}>
-                Theme and display options later
-              </Text>
-            </View>
-            <Text style={styles.chevron}>{'>'}</Text>
-          </Pressable>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Data</Text>
+            <Text style={styles.sectionDescription}>
+              Export your local Reptra data as a JSON backup you can save or send.
+            </Text>
 
-          <Pressable
-            style={styles.settingRow}
-            onPress={() => showComingSoon('Data reset and export')}
-          >
-            <View style={styles.settingTextWrap}>
-              <Text style={styles.settingTitle}>Data</Text>
-              <Text style={styles.settingDescription}>
-                Reset and export tools later
-              </Text>
-            </View>
-            <Text style={styles.chevron}>{'>'}</Text>
-          </Pressable>
+            <Pressable style={styles.exportButton} onPress={handleExportData}>
+              <Text style={styles.exportButtonText}>Export Data</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.resetButton}
+              onPress={handleResetData}
+            >
+              <Text style={styles.resetButtonText}>Reset All Data</Text>
+            </Pressable>
+
+            <Text style={styles.resetWarningText}>
+              This clears all local data on this device. Export first if you want a backup.
+            </Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </>
@@ -355,6 +403,39 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  exportButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  exportButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  resetButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    color: '#ff8a8a',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  resetWarningText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
   },
   settingRow: {
     backgroundColor: '#1c1c1c',
