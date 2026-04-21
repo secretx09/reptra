@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Tabs, useFocusEffect } from 'expo-router';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { IconSymbol } from '../../components/ui/icon-symbol';
 import { loadSettings } from '../../storage/settings';
 import { AppTheme } from '../../types/settings';
@@ -56,7 +56,7 @@ export default function TabsLayout() {
           title: 'Workout',
           headerTitle: 'Reptra',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="dumbbell" size={22} color={color} />
+            <Ionicons name="barbell" size={22} color={color} />
           ),
         }}
       />
