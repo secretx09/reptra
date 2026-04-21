@@ -10,7 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
 import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 import { buildAppDataExport } from '../../utils/exportAppData';
@@ -281,6 +281,13 @@ export default function ProfileSettingsScreen() {
             </Pressable>
 
             <Pressable
+              style={styles.importButton}
+              onPress={() => router.push('/profile/import-data')}
+            >
+              <Text style={styles.importButtonText}>Import Data</Text>
+            </Pressable>
+
+            <Pressable
               style={styles.resetButton}
               onPress={handleResetData}
             >
@@ -415,6 +422,20 @@ const styles = StyleSheet.create({
   },
   exportButtonText: {
     color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  importButton: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  importButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
   },

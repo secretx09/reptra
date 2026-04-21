@@ -28,7 +28,6 @@ export default function CreateCustomExerciseScreen() {
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('Chest');
   const [equipment, setEquipment] = useState('');
   const [instructionsInput, setInstructionsInput] = useState('');
-  const [mistakesInput, setMistakesInput] = useState('');
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -64,7 +63,6 @@ export default function CreateCustomExerciseScreen() {
       secondaryMuscles: [],
       equipment: equipment.trim(),
       instructions: splitMultilineInput(instructionsInput),
-      commonMistakes: splitMultilineInput(mistakesInput),
       isCustom: true,
     };
 
@@ -138,15 +136,6 @@ export default function CreateCustomExerciseScreen() {
             placeholderTextColor="#888888"
             value={instructionsInput}
             onChangeText={setInstructionsInput}
-            multiline
-          />
-
-          <TextInput
-            style={styles.multilineInput}
-            placeholder="Common mistakes (one per line)"
-            placeholderTextColor="#888888"
-            value={mistakesInput}
-            onChangeText={setMistakesInput}
             multiline
           />
 

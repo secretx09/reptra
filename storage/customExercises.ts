@@ -28,9 +28,6 @@ function normalizeCustomExercise(exercise: Partial<Exercise>): Exercise {
     instructions: Array.isArray(exercise.instructions)
       ? exercise.instructions
       : [],
-    commonMistakes: Array.isArray(exercise.commonMistakes)
-      ? exercise.commonMistakes
-      : [],
     isCustom: true,
   };
 }

@@ -62,7 +62,6 @@ export default function ExerciseDetailScreen() {
   const primaryMuscles = exercise?.primaryMuscles ?? [];
   const secondaryMuscles = exercise?.secondaryMuscles ?? [];
   const instructions = exercise?.instructions ?? [];
-  const commonMistakes = exercise?.commonMistakes ?? [];
   const demoMedia = exercise?.demoMedia;
 
   const progressPoints = useMemo(() => {
@@ -424,20 +423,6 @@ export default function ExerciseDetailScreen() {
             )}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Common Mistakes</Text>
-            {commonMistakes.length > 0 ? (
-              commonMistakes.map((mistake, index) => (
-                <Text key={index} style={styles.listItem}>
-                  - {mistake}
-                </Text>
-              ))
-            ) : (
-              <Text style={styles.emptySectionText}>
-                No common mistakes added for this exercise yet.
-              </Text>
-            )}
-          </View>
         </ScrollView>
       </SafeAreaView>
     </>

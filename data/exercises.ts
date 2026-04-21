@@ -20,11 +20,6 @@ export const exercises: Exercise[] = [
       'Lower the bar to your chest with control.',
       'Press the bar back up until your arms are extended.'
     ],
-    commonMistakes: [
-      'Bouncing the bar off the chest',
-      'Flaring elbows too much',
-      'Lifting feet off the floor'
-    ],
     isCustom: false,
   },
   {
@@ -45,11 +40,6 @@ export const exercises: Exercise[] = [
       'Stand with feet about shoulder width apart.',
       'Lower by bending knees and hips together.',
       'Drive back up to standing.'
-    ],
-    commonMistakes: [
-      'Knees collapsing inward',
-      'Heels coming off the floor',
-      'Rounding the lower back'
     ],
     isCustom: false,
   },
@@ -72,11 +62,6 @@ export const exercises: Exercise[] = [
       'Keep your chest up and back flat.',
       'Drive through the floor and stand tall.'
     ],
-    commonMistakes: [
-      'Rounding the back',
-      'Jerking the bar off the floor',
-      'Letting the bar drift away from the body'
-    ],
     isCustom: false,
   },
   {
@@ -98,11 +83,6 @@ export const exercises: Exercise[] = [
       'Press the bar overhead in a straight path.',
       'Lower it back to the starting position with control.'
     ],
-    commonMistakes: [
-      'Overarching the lower back',
-      'Pressing the bar too far forward',
-      'Using too much leg drive'
-    ],
     isCustom: false,
   },
   {
@@ -123,11 +103,6 @@ export const exercises: Exercise[] = [
       'Hold the bar with arms extended.',
       'Pull the bar toward your lower chest or upper stomach.',
       'Lower it with control.'
-    ],
-    commonMistakes: [
-      'Standing too upright',
-      'Using too much momentum',
-      'Rounding the upper back'
     ],
     isCustom: false,
   },

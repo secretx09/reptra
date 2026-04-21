@@ -14,6 +14,5 @@ export interface Exercise {
   equipment: string;
   demoMedia?: ExerciseDemoMedia;
   instructions: string[];
-  commonMistakes: string[];
   isCustom: boolean;
 }
