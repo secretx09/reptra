@@ -32,12 +32,14 @@ import {
   formatRestTimerLabel,
   parseRestTimerInput,
 } from '../../../utils/restTimer';
+import { getMostRecentSetPrefill } from '../../../utils/workoutHistory';
 import { getWeightPlaceholder } from '../../../utils/weightUnits';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [startedAt] = useState(() => new Date().toISOString());
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [savedWorkouts, setSavedWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [defaultRestTimerSeconds, setDefaultRestTimerSeconds] = useState(90);
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
@@ -114,8 +116,10 @@ export default function WorkoutSessionScreen() {
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const existingWorkouts = await loadWorkouts();
         const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setSavedWorkouts(existingWorkouts);
         setWeightUnit(savedSettings.weightUnit);
         setDefaultRestTimerSeconds(savedSettings.defaultRestTimerSeconds);
       };
@@ -180,6 +184,8 @@ export default function WorkoutSessionScreen() {
   }, [exerciseRestTimes]);
 
   const handleAddExercise = (exercise: Exercise) => {
+    const firstSetPrefill = getMostRecentSetPrefill(savedWorkouts, exercise.id, 1);
+
     const routineExercise: RoutineExerciseWithDefaults = {
       ...exercise,
       defaultSets: '',
@@ -192,7 +198,15 @@ export default function WorkoutSessionScreen() {
     setSessionExercises((prev) => [...prev, routineExercise]);
     setExerciseSets((prev) => ({
       ...prev,
-      [exercise.id]: [],
+      [exercise.id]: [
+        {
+          id: new Date().toISOString(),
+          setNumber: 1,
+          weight: firstSetPrefill?.weight || '',
+          reps: firstSetPrefill?.reps || '',
+          completed: false,
+        },
+      ],
     }));
     setExerciseRestTimes((prev) => ({
       ...prev,

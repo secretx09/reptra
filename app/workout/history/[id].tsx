@@ -48,6 +48,17 @@ export default function WorkoutHistoryDetailScreen() {
     );
   };
 
+  const handleStartAgain = () => {
+    if (!workout) return;
+
+    router.push({
+      pathname: '/workout/session/empty',
+      params: {
+        templateWorkoutId: workout.id,
+      },
+    });
+  };
+
   if (!workout) {
     return (
       <SafeAreaView style={styles.container}>
@@ -93,6 +104,13 @@ export default function WorkoutHistoryDetailScreen() {
               {formattedDuration ? (
                 <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
               ) : null}
+
+              <Pressable
+                style={styles.startAgainButton}
+                onPress={handleStartAgain}
+              >
+                <Text style={styles.startAgainButtonText}>Start Again</Text>
+              </Pressable>
             </View>
           }
           renderItem={({ item, index }: { item: SavedExerciseLog; index: number }) => (
@@ -220,6 +238,20 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#ff8a8a',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  startAgainButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  startAgainButtonText: {
+    color: '#4da6ff',
+    fontSize: 15,
     fontWeight: '700',
   },
   listContent: {

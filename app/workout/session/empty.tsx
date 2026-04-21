@@ -19,17 +19,24 @@ import {
   SavedExerciseLog,
 } from '../../../types/workout';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
+import { useLocalSearchParams } from 'expo-router';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 import {
   formatRestTimerCountdown,
   formatRestTimerLabel,
   parseRestTimerInput,
 } from '../../../utils/restTimer';
+import {
+  buildTemplateExercisesFromWorkout,
+  getMostRecentSetPrefill,
+} from '../../../utils/workoutHistory';
 import { getWeightPlaceholder } from '../../../utils/weightUnits';
 
 export default function EmptyWorkoutSessionScreen() {
+  const { templateWorkoutId } = useLocalSearchParams<{ templateWorkoutId?: string }>();
   const [startedAt] = useState(() => new Date().toISOString());
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [savedWorkouts, setSavedWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [defaultRestTimerSeconds, setDefaultRestTimerSeconds] = useState(90);
   const [searchText, setSearchText] = useState('');
@@ -42,13 +49,16 @@ export default function EmptyWorkoutSessionScreen() {
   const [restEditorInputs, setRestEditorInputs] = useState<Record<string, string>>({});
   const [openRestEditorId, setOpenRestEditorId] = useState<string | null>(null);
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+  const [appliedTemplateWorkoutId, setAppliedTemplateWorkoutId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
         const loadedExercises = await loadExerciseLibrary();
+        const existingWorkouts = await loadWorkouts();
         const savedSettings = await loadSettings();
         setExerciseLibrary(loadedExercises);
+        setSavedWorkouts(existingWorkouts);
         setWeightUnit(savedSettings.weightUnit);
         setDefaultRestTimerSeconds(savedSettings.defaultRestTimerSeconds);
       };
@@ -56,6 +66,56 @@ export default function EmptyWorkoutSessionScreen() {
       fetchExerciseLibrary();
     }, [])
   );
+
+  useEffect(() => {
+    if (!templateWorkoutId) {
+      return;
+    }
+
+    if (appliedTemplateWorkoutId === templateWorkoutId) {
+      return;
+    }
+
+    if (exerciseLibrary.length === 0 || savedWorkouts.length === 0) {
+      return;
+    }
+
+    const templateWorkout = savedWorkouts.find(
+      (workout) => workout.id === templateWorkoutId
+    );
+
+    if (!templateWorkout) {
+      return;
+    }
+
+    const template = buildTemplateExercisesFromWorkout(
+      templateWorkout,
+      exerciseLibrary
+    );
+
+    const restTimes: Record<string, number> = {};
+    const restConfigs: Record<string, number> = {};
+    const restInputs: Record<string, string> = {};
+
+    template.exercises.forEach((exercise) => {
+      restTimes[exercise.id] = 0;
+      restConfigs[exercise.id] = 0;
+      restInputs[exercise.id] = '';
+    });
+
+    setAddedExercises(template.exercises);
+    setExerciseSets(template.setsByExerciseId);
+    setExerciseNotes(template.notesByExerciseId);
+    setExerciseRestTimes(restTimes);
+    setExerciseRestConfigs(restConfigs);
+    setRestEditorInputs(restInputs);
+    setAppliedTemplateWorkoutId(templateWorkoutId);
+  }, [
+    appliedTemplateWorkoutId,
+    exerciseLibrary,
+    savedWorkouts,
+    templateWorkoutId,
+  ]);
 
   const muscleGroups = useMemo(
     () => getMuscleGroups(exerciseLibrary),
@@ -103,10 +163,20 @@ export default function EmptyWorkoutSessionScreen() {
   }, [exerciseRestTimes]);
 
   const handleAddExercise = (exercise: Exercise) => {
+    const firstSetPrefill = getMostRecentSetPrefill(savedWorkouts, exercise.id, 1);
+
     setAddedExercises((prev) => [...prev, exercise]);
     setExerciseSets((prev) => ({
       ...prev,
-      [exercise.id]: [],
+      [exercise.id]: [
+        {
+          id: new Date().toISOString(),
+          setNumber: 1,
+          weight: firstSetPrefill?.weight || '',
+          reps: firstSetPrefill?.reps || '',
+          completed: false,
+        },
+      ],
     }));
     setExerciseRestTimes((prev) => ({
       ...prev,
