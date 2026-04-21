@@ -19,6 +19,11 @@ import {
 } from '../../../types/routine';
 import { WeightUnit } from '../../../types/settings';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import {
+  getSupersetDisplayMap,
+  normalizeSupersetExercises,
+  toggleSupersetWithPrevious,
+} from '../../../utils/routineSupersets';
 import { getWeightFieldLabel } from '../../../utils/weightUnits';
 
 export default function EditRoutineScreen() {
@@ -84,8 +89,17 @@ export default function EditRoutineScreen() {
     });
   }, [editedExercises, exerciseLibrary, searchText, selectedMuscleGroup]);
 
+  const supersetDisplayMap = useMemo(
+    () => getSupersetDisplayMap(editedExercises),
+    [editedExercises]
+  );
+
   const handleRemoveExercise = (exerciseId: string) => {
-    setEditedExercises((prev) => prev.filter((exercise) => exercise.id !== exerciseId));
+    setEditedExercises((prev) =>
+      normalizeSupersetExercises(
+        prev.filter((exercise) => exercise.id !== exerciseId)
+      )
+    );
   };
 
   const handleAddExercise = (exercise: Exercise) => {
@@ -97,6 +111,7 @@ export default function EditRoutineScreen() {
         defaultWeight: '',
         defaultReps: '',
         defaultRestSeconds: '',
+        supersetGroupId: null,
       },
     ]);
   };
@@ -107,7 +122,7 @@ export default function EditRoutineScreen() {
     setEditedExercises((prev) => {
       const updated = [...prev];
       [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-      return updated;
+      return normalizeSupersetExercises(updated);
     });
   };
 
@@ -117,8 +132,12 @@ export default function EditRoutineScreen() {
 
       const updated = [...prev];
       [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-      return updated;
+      return normalizeSupersetExercises(updated);
     });
+  };
+
+  const handleToggleSuperset = (index: number) => {
+    setEditedExercises((prev) => toggleSupersetWithPrevious(prev, index));
   };
 
   const handleUpdateExerciseDefault = (
@@ -223,7 +242,17 @@ export default function EditRoutineScreen() {
                       <View style={styles.exerciseHeaderText}>
                         <Text style={styles.exerciseIndex}>{index + 1}</Text>
                         <View style={styles.exerciseTitleWrap}>
-                          <Text style={styles.exerciseName}>{item.name}</Text>
+                          <View style={styles.exerciseTitleRow}>
+                            <Text style={styles.exerciseName}>{item.name}</Text>
+
+                            {supersetDisplayMap[item.id] && (
+                              <View style={styles.supersetBadge}>
+                                <Text style={styles.supersetBadgeText}>
+                                  {supersetDisplayMap[item.id].label}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
                           <Text style={styles.exerciseMeta}>
                             {item.muscleGroup} • {item.equipment}
                           </Text>
@@ -343,6 +372,29 @@ export default function EditRoutineScreen() {
                         />
                       </View>
                     </View>
+
+                    {index > 0 && (
+                      <Pressable
+                        style={[
+                          styles.supersetButton,
+                          supersetDisplayMap[item.id] &&
+                            styles.supersetButtonActive,
+                        ]}
+                        onPress={() => handleToggleSuperset(index)}
+                      >
+                        <Text
+                          style={[
+                            styles.supersetButtonText,
+                            supersetDisplayMap[item.id] &&
+                              styles.supersetButtonTextActive,
+                          ]}
+                        >
+                          {supersetDisplayMap[item.id]
+                            ? 'Remove Superset'
+                            : 'Superset With Previous'}
+                        </Text>
+                      </Pressable>
+                    )}
                   </View>
                 ))
               )}
@@ -510,6 +562,12 @@ const styles = StyleSheet.create({
   exerciseTitleWrap: {
     flex: 1,
   },
+  exerciseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   exerciseInfo: {
     flex: 1,
   },
@@ -530,6 +588,19 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#9a9a9a',
     fontSize: 13,
+  },
+  supersetBadge: {
+    backgroundColor: '#0f2740',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  supersetBadgeText: {
+    color: '#4da6ff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   defaultsGrid: {
     flexDirection: 'row',
@@ -603,6 +674,27 @@ const styles = StyleSheet.create({
   },
   orderButtonTextDisabled: {
     color: '#666666',
+  },
+  supersetButton: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    backgroundColor: '#121212',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  supersetButtonActive: {
+    borderColor: '#4da6ff',
+    backgroundColor: '#16324d',
+  },
+  supersetButtonText: {
+    color: '#d2d2d2',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  supersetButtonTextActive: {
+    color: '#4da6ff',
   },
   filterRow: {
     flexDirection: 'row',

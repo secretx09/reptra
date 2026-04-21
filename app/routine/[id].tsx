@@ -14,6 +14,7 @@ import { deleteRoutineById, loadRoutines } from '../../storage/routines';
 import { Exercise } from '../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
 import { WeightUnit } from '../../types/settings';
+import { getSupersetDisplayMap } from '../../utils/routineSupersets';
 import { formatWeightUnit } from '../../utils/weightUnits';
 
 export default function RoutineDetailScreen() {
@@ -74,6 +75,8 @@ export default function RoutineDetailScreen() {
     );
   }
 
+  const supersetDisplayMap = getSupersetDisplayMap(routine.exercises);
+
   return (
     <>
       <Stack.Screen options={{ title: routine.name }} />
@@ -115,7 +118,17 @@ export default function RoutineDetailScreen() {
                 <View style={styles.exerciseHeaderText}>
                   <Text style={styles.exerciseIndex}>{index + 1}</Text>
                   <View style={styles.exerciseTitleWrap}>
-                    <Text style={styles.exerciseName}>{item.name}</Text>
+                    <View style={styles.exerciseTitleRow}>
+                      <Text style={styles.exerciseName}>{item.name}</Text>
+
+                      {supersetDisplayMap[item.id] && (
+                        <View style={styles.supersetBadge}>
+                          <Text style={styles.supersetBadgeText}>
+                            {supersetDisplayMap[item.id].label}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.exerciseMeta}>
                       {item.muscleGroup} • {item.equipment}
                     </Text>
@@ -260,6 +273,12 @@ const styles = StyleSheet.create({
   exerciseTitleWrap: {
     flex: 1,
   },
+  exerciseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   exerciseName: {
     color: '#ffffff',
     fontSize: 16,
@@ -269,6 +288,19 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#9a9a9a',
     fontSize: 13,
+  },
+  supersetBadge: {
+    backgroundColor: '#0f2740',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  supersetBadgeText: {
+    color: '#4da6ff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   restBadge: {
     backgroundColor: '#16324d',

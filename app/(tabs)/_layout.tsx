@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Tabs, useFocusEffect } from 'expo-router';
+import { IconSymbol } from '../../components/ui/icon-symbol';
 import { loadSettings } from '../../storage/settings';
 import { AppTheme } from '../../types/settings';
 import { getThemePalette } from '../../utils/appTheme';
@@ -40,15 +41,33 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Home', headerTitle: 'Reptra' }}
+        options={{
+          title: 'Home',
+          headerTitle: 'Reptra',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol name="house.fill" size={22} color={color} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="workout"
-        options={{ title: 'Workout', headerTitle: 'Reptra' }}
+        options={{
+          title: 'Workout',
+          headerTitle: 'Reptra',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol name="dumbbell.fill" size={22} color={color} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', headerTitle: 'Reptra' }}
+        options={{
+          title: 'Profile',
+          headerTitle: 'Reptra',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol name="person.crop.circle.fill" size={22} color={color} />
+          ),
+        }}
       />
     </Tabs>
   );

@@ -13,7 +13,9 @@ export const baseMuscleGroups = [
 
 export async function loadExerciseLibrary(): Promise<Exercise[]> {
   const customExercises = await loadCustomExercises();
-  return [...builtInExercises, ...customExercises];
+  return [...builtInExercises, ...customExercises].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 }
 
 export function getMuscleGroups(exerciseLibrary: Exercise[]) {
