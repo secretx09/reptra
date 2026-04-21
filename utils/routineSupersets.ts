@@ -4,6 +4,14 @@ export interface SupersetDisplayMeta {
   label: string;
   position: number;
   size: number;
+  slotLabel: string;
+  groupLabel: string;
+}
+
+export interface SupersetBlock {
+  id: string;
+  label: string;
+  exercises: RoutineExerciseWithDefaults[];
 }
 
 const getGroupSizes = (exercises: RoutineExerciseWithDefaults[]) => {
@@ -124,8 +132,47 @@ export const getSupersetDisplayMap = (
       label: labelsByGroupId[groupId],
       position: positionByGroupId[groupId],
       size,
+      slotLabel: `${String.fromCharCode(64 + groupCount)}${positionByGroupId[groupId]}`,
+      groupLabel: String.fromCharCode(64 + groupCount),
     };
   });
 
   return displayMap;
+};
+
+export const getSupersetBlocks = (
+  exercises: RoutineExerciseWithDefaults[]
+): SupersetBlock[] => {
+  const normalizedExercises = normalizeSupersetExercises(exercises);
+  const displayMap = getSupersetDisplayMap(normalizedExercises);
+  const blocks: SupersetBlock[] = [];
+
+  normalizedExercises.forEach((exercise) => {
+    const supersetMeta = displayMap[exercise.id];
+
+    if (!supersetMeta) {
+      blocks.push({
+        id: exercise.id,
+        label: '',
+        exercises: [exercise],
+      });
+      return;
+    }
+
+    const blockId = `superset-${supersetMeta.groupLabel}`;
+    const existingBlock = blocks[blocks.length - 1];
+
+    if (existingBlock && existingBlock.id === blockId) {
+      existingBlock.exercises.push(exercise);
+      return;
+    }
+
+    blocks.push({
+      id: blockId,
+      label: supersetMeta.groupLabel,
+      exercises: [exercise],
+    });
+  });
+
+  return blocks;
 };

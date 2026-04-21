@@ -23,6 +23,7 @@ import {
 } from '../../../types/workout';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 import {
+  getSupersetBlocks,
   getSupersetDisplayMap,
   normalizeSupersetExercises,
 } from '../../../utils/routineSupersets';
@@ -119,6 +120,10 @@ export default function WorkoutSessionScreen() {
 
   const supersetDisplayMap = useMemo(
     () => getSupersetDisplayMap(sessionExercises),
+    [sessionExercises]
+  );
+  const supersetBlocks = useMemo(
+    () => getSupersetBlocks(sessionExercises),
     [sessionExercises]
   );
 
@@ -353,6 +358,174 @@ export default function WorkoutSessionScreen() {
     );
   }
 
+  const renderExerciseCard = (
+    item: RoutineExerciseWithDefaults,
+    index: number,
+    isSupersetChild = false
+  ) => {
+    const sets = exerciseSets[item.id] || [];
+    const exerciseNote = exerciseNotes[item.id] || '';
+    const restTimeRemaining = exerciseRestTimes[item.id] || 0;
+    const customRestValue = customRestSeconds[item.id] || '';
+    const supersetMeta = supersetDisplayMap[item.id];
+
+    return (
+      <View
+        key={item.id}
+        style={[
+          styles.exerciseCard,
+          isSupersetChild && styles.supersetExerciseCard,
+        ]}
+      >
+        <View style={styles.exerciseHeaderRow}>
+          <View style={styles.exerciseHeaderText}>
+            <Text style={styles.exerciseIndex}>{index + 1}</Text>
+            <View style={styles.exerciseTitleWrap}>
+              <View style={styles.exerciseTitleRow}>
+                <Text style={styles.exerciseName}>{item.name}</Text>
+
+                {supersetMeta && (
+                  <View style={styles.supersetBadge}>
+                    <Text style={styles.supersetBadgeText}>
+                      {supersetMeta.slotLabel}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.exerciseMeta}>
+                {item.muscleGroup} • {item.equipment}
+              </Text>
+            </View>
+          </View>
+
+          {!!item.defaultRestSeconds && (
+            <View style={styles.restBadge}>
+              <Text style={styles.restBadgeText}>
+                {item.defaultRestSeconds}s rest
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <TextInput
+          style={styles.exerciseNoteInput}
+          placeholder="Exercise note..."
+          placeholderTextColor="#777777"
+          value={exerciseNote}
+          onChangeText={(value) => handleUpdateExerciseNote(item.id, value)}
+          multiline
+        />
+
+        <View style={styles.timerCard}>
+          <View style={styles.timerHeaderRow}>
+            <Text style={styles.timerLabel}>Rest Timer</Text>
+            <Text style={styles.timerValue}>
+              {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
+            </Text>
+          </View>
+
+          <View style={styles.timerButtonsRow}>
+            {restTimerPresets.map((seconds) => (
+              <Pressable
+                key={`${item.id}-${seconds}`}
+                style={styles.timerButton}
+                onPress={() => startRestTimer(item.id, seconds)}
+              >
+                <Text style={styles.timerButtonText}>{seconds}s</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.customTimerRow}>
+            <TextInput
+              style={styles.customTimerInput}
+              placeholder="Custom seconds"
+              placeholderTextColor="#777777"
+              keyboardType="numeric"
+              value={customRestValue}
+              onChangeText={(value) =>
+                setCustomRestSeconds((prev) => ({
+                  ...prev,
+                  [item.id]: value,
+                }))
+              }
+            />
+
+            <Pressable
+              style={styles.customTimerButton}
+              onPress={() => handleStartCustomRestTimer(item.id)}
+            >
+              <Text style={styles.customTimerButtonText}>Start</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {sets.map((set) => (
+          <View
+            key={set.id}
+            style={[styles.setRow, set.completed && styles.setRowCompleted]}
+          >
+            <Pressable
+              style={[
+                styles.checkButton,
+                set.completed && styles.checkButtonCompleted,
+              ]}
+              onPress={() => handleToggleSetCompleted(item.id, set.id)}
+            >
+              <Text
+                style={[
+                  styles.checkButtonText,
+                  set.completed && styles.checkButtonTextCompleted,
+                ]}
+              >
+                ✓
+              </Text>
+            </Pressable>
+
+            <Text
+              style={[styles.setLabel, set.completed && styles.completedText]}
+            >
+              {set.setNumber}
+            </Text>
+
+            <TextInput
+              style={[styles.input, set.completed && styles.inputCompleted]}
+              placeholder={getWeightPlaceholder(weightUnit)}
+              placeholderTextColor="#777777"
+              keyboardType="numeric"
+              value={set.weight}
+              onChangeText={(value) =>
+                handleUpdateSet(item.id, set.id, 'weight', value)
+              }
+            />
+
+            <TextInput
+              style={[styles.input, set.completed && styles.inputCompleted]}
+              placeholder="Reps"
+              placeholderTextColor="#777777"
+              keyboardType="numeric"
+              value={set.reps}
+              onChangeText={(value) =>
+                handleUpdateSet(item.id, set.id, 'reps', value)
+              }
+            />
+
+            <Pressable
+              style={styles.deleteSetButton}
+              onPress={() => handleDeleteSet(item.id, set.id)}
+            >
+              <Text style={styles.deleteSetButtonText}>✕</Text>
+            </Pressable>
+          </View>
+        ))}
+
+        <Pressable style={styles.addSetButton} onPress={() => handleAddSet(item.id)}>
+          <Text style={styles.addSetText}>+ Add Set</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'Workout Session' }} />
@@ -453,165 +626,34 @@ export default function WorkoutSessionScreen() {
             )}
           </View>
 
-          {sessionExercises.map((item, index) => {
-            const sets = exerciseSets[item.id] || [];
-            const exerciseNote = exerciseNotes[item.id] || '';
-            const restTimeRemaining = exerciseRestTimes[item.id] || 0;
-            const customRestValue = customRestSeconds[item.id] || '';
+          {supersetBlocks.map((block) => {
+            if (block.label === '') {
+              const exercise = block.exercises[0];
+              const index = sessionExercises.findIndex((item) => item.id === exercise.id);
+              return renderExerciseCard(exercise, index);
+            }
 
             return (
-              <View key={item.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseHeaderRow}>
-                  <View style={styles.exerciseHeaderText}>
-                    <Text style={styles.exerciseIndex}>{index + 1}</Text>
-                    <View style={styles.exerciseTitleWrap}>
-                      <View style={styles.exerciseTitleRow}>
-                        <Text style={styles.exerciseName}>{item.name}</Text>
-
-                        {supersetDisplayMap[item.id] && (
-                          <View style={styles.supersetBadge}>
-                            <Text style={styles.supersetBadgeText}>
-                              {supersetDisplayMap[item.id].label}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.exerciseMeta}>
-                        {item.muscleGroup} • {item.equipment}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {!!item.defaultRestSeconds && (
-                    <View style={styles.restBadge}>
-                      <Text style={styles.restBadgeText}>
-                        {item.defaultRestSeconds}s rest
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <TextInput
-                  style={styles.exerciseNoteInput}
-                  placeholder="Exercise note..."
-                  placeholderTextColor="#777777"
-                  value={exerciseNote}
-                  onChangeText={(value) => handleUpdateExerciseNote(item.id, value)}
-                  multiline
-                />
-
-                <View style={styles.timerCard}>
-                  <View style={styles.timerHeaderRow}>
-                    <Text style={styles.timerLabel}>Rest Timer</Text>
-                    <Text style={styles.timerValue}>
-                      {restTimeRemaining > 0 ? formatTime(restTimeRemaining) : 'Ready'}
+              <View key={block.id} style={styles.supersetBlock}>
+                <View style={styles.supersetBlockHeader}>
+                  <View>
+                    <Text style={styles.supersetBlockTitle}>Superset {block.label}</Text>
+                    <Text style={styles.supersetBlockSubtitle}>
+                      Move through {block.label}1 to {block.label}
+                      {block.exercises.length} before resting
                     </Text>
                   </View>
-
-                  <View style={styles.timerButtonsRow}>
-                    {restTimerPresets.map((seconds) => (
-                      <Pressable
-                        key={`${item.id}-${seconds}`}
-                        style={styles.timerButton}
-                        onPress={() => startRestTimer(item.id, seconds)}
-                      >
-                        <Text style={styles.timerButtonText}>{seconds}s</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <View style={styles.customTimerRow}>
-                    <TextInput
-                      style={styles.customTimerInput}
-                      placeholder="Custom seconds"
-                      placeholderTextColor="#777777"
-                      keyboardType="numeric"
-                      value={customRestValue}
-                      onChangeText={(value) =>
-                        setCustomRestSeconds((prev) => ({
-                          ...prev,
-                          [item.id]: value,
-                        }))
-                      }
-                    />
-
-                    <Pressable
-                      style={styles.customTimerButton}
-                      onPress={() => handleStartCustomRestTimer(item.id)}
-                    >
-                      <Text style={styles.customTimerButtonText}>Start</Text>
-                    </Pressable>
+                  <View style={styles.supersetBlockBadge}>
+                    <Text style={styles.supersetBlockBadgeText}>
+                      {block.exercises.length} exercises
+                    </Text>
                   </View>
                 </View>
 
-                {sets.map((set) => (
-                  <View
-                    key={set.id}
-                    style={[styles.setRow, set.completed && styles.setRowCompleted]}
-                  >
-                    <Pressable
-                      style={[
-                        styles.checkButton,
-                        set.completed && styles.checkButtonCompleted,
-                      ]}
-                      onPress={() => handleToggleSetCompleted(item.id, set.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.checkButtonText,
-                          set.completed && styles.checkButtonTextCompleted,
-                        ]}
-                      >
-                        ✓
-                      </Text>
-                    </Pressable>
-
-                    <Text
-                      style={[
-                        styles.setLabel,
-                        set.completed && styles.completedText,
-                      ]}
-                    >
-                      {set.setNumber}
-                    </Text>
-
-                    <TextInput
-                      style={[styles.input, set.completed && styles.inputCompleted]}
-                      placeholder={getWeightPlaceholder(weightUnit)}
-                      placeholderTextColor="#777777"
-                      keyboardType="numeric"
-                      value={set.weight}
-                      onChangeText={(value) =>
-                        handleUpdateSet(item.id, set.id, 'weight', value)
-                      }
-                    />
-
-                    <TextInput
-                      style={[styles.input, set.completed && styles.inputCompleted]}
-                      placeholder="Reps"
-                      placeholderTextColor="#777777"
-                      keyboardType="numeric"
-                      value={set.reps}
-                      onChangeText={(value) =>
-                        handleUpdateSet(item.id, set.id, 'reps', value)
-                      }
-                    />
-
-                    <Pressable
-                      style={styles.deleteSetButton}
-                      onPress={() => handleDeleteSet(item.id, set.id)}
-                    >
-                      <Text style={styles.deleteSetButtonText}>✕</Text>
-                    </Pressable>
-                  </View>
-                ))}
-
-                <Pressable
-                  style={styles.addSetButton}
-                  onPress={() => handleAddSet(item.id)}
-                >
-                  <Text style={styles.addSetText}>+ Add Set</Text>
-                </Pressable>
+                {block.exercises.map((exercise) => {
+                  const index = sessionExercises.findIndex((item) => item.id === exercise.id);
+                  return renderExerciseCard(exercise, index, true);
+                })}
               </View>
             );
           })}
@@ -764,6 +806,48 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
+  },
+  supersetBlock: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+  },
+  supersetBlockHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
+  supersetBlockTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  supersetBlockSubtitle: {
+    color: '#9dbbda',
+    fontSize: 12,
+  },
+  supersetBlockBadge: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  supersetBlockBadgeText: {
+    color: '#4da6ff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  supersetExerciseCard: {
+    marginBottom: 8,
+    borderColor: '#355574',
   },
   exerciseHeaderRow: {
     flexDirection: 'row',

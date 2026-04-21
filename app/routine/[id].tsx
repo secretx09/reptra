@@ -124,7 +124,7 @@ export default function RoutineDetailScreen() {
                       {supersetDisplayMap[item.id] && (
                         <View style={styles.supersetBadge}>
                           <Text style={styles.supersetBadgeText}>
-                            {supersetDisplayMap[item.id].label}
+                            {supersetDisplayMap[item.id].slotLabel}
                           </Text>
                         </View>
                       )}

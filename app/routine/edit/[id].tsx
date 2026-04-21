@@ -234,13 +234,13 @@ export default function EditRoutineScreen() {
                         <View style={styles.exerciseTitleRow}>
                           <Text style={styles.exerciseName}>{item.name}</Text>
 
-                          {supersetDisplayMap[item.id] && (
-                            <View style={styles.supersetBadge}>
-                              <Text style={styles.supersetBadgeText}>
-                                {supersetDisplayMap[item.id].label}
-                              </Text>
-                            </View>
-                          )}
+                            {supersetDisplayMap[item.id] && (
+                              <View style={styles.supersetBadge}>
+                                <Text style={styles.supersetBadgeText}>
+                                  {supersetDisplayMap[item.id].slotLabel}
+                                </Text>
+                              </View>
+                            )}
                         </View>
                         <Text style={styles.exerciseMeta}>
                           {item.muscleGroup} • {item.equipment}

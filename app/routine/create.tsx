@@ -205,13 +205,13 @@ export default function CreateRoutineScreen() {
                         {index + 1}. {exercise.name}
                       </Text>
 
-                      {supersetDisplayMap[exercise.id] && (
-                        <View style={styles.supersetBadge}>
-                          <Text style={styles.supersetBadgeText}>
-                            {supersetDisplayMap[exercise.id].label}
-                          </Text>
-                        </View>
-                      )}
+                  {supersetDisplayMap[exercise.id] && (
+                    <View style={styles.supersetBadge}>
+                      <Text style={styles.supersetBadgeText}>
+                        {supersetDisplayMap[exercise.id].slotLabel}
+                      </Text>
+                    </View>
+                  )}
                     </View>
 
                     <Text style={styles.exerciseMeta}>
