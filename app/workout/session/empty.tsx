@@ -151,7 +151,6 @@ export default function EmptyWorkoutSessionScreen() {
     }));
     setSearchText('');
     setSelectedMuscleGroup('All');
-    setIsExercisePickerOpen(false);
   };
 
   const handleRemoveExercise = (exerciseId: string) => {

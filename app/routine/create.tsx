@@ -90,6 +90,8 @@ export default function CreateRoutineScreen() {
         supersetGroupId: null,
       },
     ]);
+    setSearchText('');
+    setSelectedMuscleGroup('All');
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
@@ -161,6 +163,14 @@ export default function CreateRoutineScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.topRow}>
+        <Text style={styles.title}>Build Your Routine</Text>
+
+        <Pressable style={styles.topSaveButton} onPress={handleSaveRoutine}>
+          <Text style={styles.topSaveButtonText}>Save</Text>
+        </Pressable>
+      </View>
+
       <FlatList
         data={isExercisePickerOpen ? filteredExercises : []}
         keyExtractor={(item) => item.id}
@@ -169,14 +179,6 @@ export default function CreateRoutineScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <>
-            <View style={styles.topRow}>
-              <Text style={styles.title}>Build Your Routine</Text>
-
-              <Pressable style={styles.topSaveButton} onPress={handleSaveRoutine}>
-                <Text style={styles.topSaveButtonText}>Save</Text>
-              </Pressable>
-            </View>
-
             <TextInput
               style={styles.input}
               placeholder="Routine name"
@@ -390,6 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111111',
     paddingHorizontal: 16,
+    paddingTop: 16,
   },
   topRow: {
     flexDirection: 'row',
@@ -645,7 +648,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   listContent: {
-    paddingTop: 16,
     paddingBottom: 24,
   },
 });

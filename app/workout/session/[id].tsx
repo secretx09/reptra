@@ -209,7 +209,6 @@ export default function WorkoutSessionScreen() {
     }));
     setSearchText('');
     setSelectedMuscleGroup('All');
-    setIsExercisePickerOpen(false);
   };
 
   const handleAddSet = (exerciseId: string) => {
