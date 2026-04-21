@@ -131,7 +131,9 @@ export default function CreateRoutineScreen() {
     }
 
     const normalizedExercises = selectedExercises.map((exercise) => {
-      const parsedRestSeconds = parseRestTimerInput(exercise.defaultRestSeconds);
+      const parsedRestSeconds = parseRestTimerInput(
+        exercise.defaultRestSeconds ?? ''
+      );
 
       return {
         ...exercise,

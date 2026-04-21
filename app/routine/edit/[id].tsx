@@ -46,9 +46,23 @@ export default function EditRoutineScreen() {
       const foundRoutine = routines.find((item) => item.id === id) || null;
 
       if (foundRoutine) {
-        setRoutine(foundRoutine);
-        setRoutineName(foundRoutine.name);
-        setEditedExercises(normalizeSupersetExercises(foundRoutine.exercises));
+        const normalizedExercises = normalizeSupersetExercises(
+          foundRoutine.exercises.map((exercise) => ({
+            ...exercise,
+            defaultSets: exercise.defaultSets ?? '',
+            defaultWeight: exercise.defaultWeight ?? '',
+            defaultReps: exercise.defaultReps ?? '',
+            defaultRestSeconds: exercise.defaultRestSeconds ?? '',
+          }))
+        );
+
+        setRoutine({
+          ...foundRoutine,
+          name: foundRoutine.name ?? '',
+          exercises: normalizedExercises,
+        });
+        setRoutineName(foundRoutine.name ?? '');
+        setEditedExercises(normalizedExercises);
       }
     };
 
@@ -168,7 +182,9 @@ export default function EditRoutineScreen() {
     }
 
     const normalizedExercises = editedExercises.map((exercise) => {
-      const parsedRestSeconds = parseRestTimerInput(exercise.defaultRestSeconds);
+      const parsedRestSeconds = parseRestTimerInput(
+        exercise.defaultRestSeconds ?? ''
+      );
 
       return {
         ...exercise,

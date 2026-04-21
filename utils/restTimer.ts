@@ -1,4 +1,12 @@
-export function parseRestTimerInput(value: string): number | null {
+export function parseRestTimerInput(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value > 0 ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
   const trimmedValue = value.trim();
 
   if (!trimmedValue) {

@@ -62,7 +62,15 @@ export default function WorkoutSessionScreen() {
         return;
       }
 
-      const normalizedExercises = normalizeSupersetExercises(found.exercises);
+      const normalizedExercises = normalizeSupersetExercises(
+        found.exercises.map((exercise) => ({
+          ...exercise,
+          defaultSets: exercise.defaultSets ?? '',
+          defaultWeight: exercise.defaultWeight ?? '',
+          defaultReps: exercise.defaultReps ?? '',
+          defaultRestSeconds: exercise.defaultRestSeconds ?? '',
+        }))
+      );
       const initialExerciseSets: Record<string, WorkoutSet[]> = {};
       const initialRestConfigs: Record<string, number> = {};
       const initialRestEditorInputs: Record<string, string> = {};
