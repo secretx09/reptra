@@ -2,8 +2,8 @@ import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -35,21 +35,11 @@ export default function WorkoutSessionScreen() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [restTimerPresets, setRestTimerPresets] = useState<number[]>([60, 90, 120]);
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
-  const [sessionExercises, setSessionExercises] = useState<
-    RoutineExerciseWithDefaults[]
-  >([]);
-  const [exerciseSets, setExerciseSets] = useState<{
-    [exerciseId: string]: WorkoutSet[];
-  }>({});
-  const [exerciseNotes, setExerciseNotes] = useState<{
-    [exerciseId: string]: string;
-  }>({});
-  const [exerciseRestTimes, setExerciseRestTimes] = useState<{
-    [exerciseId: string]: number;
-  }>({});
-  const [customRestSeconds, setCustomRestSeconds] = useState<{
-    [exerciseId: string]: string;
-  }>({});
+  const [sessionExercises, setSessionExercises] = useState<RoutineExerciseWithDefaults[]>([]);
+  const [exerciseSets, setExerciseSets] = useState<Record<string, WorkoutSet[]>>({});
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
+  const [exerciseRestTimes, setExerciseRestTimes] = useState<Record<string, number>>({});
+  const [customRestSeconds, setCustomRestSeconds] = useState<Record<string, string>>({});
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
@@ -59,35 +49,32 @@ export default function WorkoutSessionScreen() {
       const routines = await loadRoutines();
       const found = routines.find((r) => r.id === id) || null;
 
-      if (found) {
-        setRoutine(found);
-        setSessionExercises(normalizeSupersetExercises(found.exercises));
+      if (!found) {
+        setRoutine(null);
+        return;
+      }
 
-        const initialExerciseSets: { [exerciseId: string]: WorkoutSet[] } = {};
+      setRoutine(found);
+      setSessionExercises(normalizeSupersetExercises(found.exercises));
 
-        found.exercises.forEach((exercise: RoutineExerciseWithDefaults) => {
-          const defaultSetCount = Number(exercise.defaultSets);
+      const initialExerciseSets: Record<string, WorkoutSet[]> = {};
 
-          if (!Number.isNaN(defaultSetCount) && defaultSetCount > 0) {
-            initialExerciseSets[exercise.id] = Array.from(
-              { length: defaultSetCount },
-              (_, index) => ({
+      found.exercises.forEach((exercise) => {
+        const defaultSetCount = Number(exercise.defaultSets);
+
+        initialExerciseSets[exercise.id] =
+          !Number.isNaN(defaultSetCount) && defaultSetCount > 0
+            ? Array.from({ length: defaultSetCount }, (_, index) => ({
                 id: `${exercise.id}-${index}-${Date.now()}`,
                 setNumber: index + 1,
                 weight: exercise.defaultWeight || '',
                 reps: exercise.defaultReps || '',
                 completed: false,
-              })
-            );
-          } else {
-            initialExerciseSets[exercise.id] = [];
-          }
-        });
+              }))
+            : [];
+      });
 
-        setExerciseSets(initialExerciseSets);
-      } else {
-        setRoutine(null);
-      }
+      setExerciseSets(initialExerciseSets);
     };
 
     fetchRoutine();
@@ -130,6 +117,11 @@ export default function WorkoutSessionScreen() {
     });
   }, [exerciseLibrary, searchText, selectedMuscleGroup, sessionExercises]);
 
+  const supersetDisplayMap = useMemo(
+    () => getSupersetDisplayMap(sessionExercises),
+    [sessionExercises]
+  );
+
   useEffect(() => {
     const hasActiveTimers = Object.values(exerciseRestTimes).some(
       (seconds) => seconds > 0
@@ -139,7 +131,7 @@ export default function WorkoutSessionScreen() {
 
     const interval = setInterval(() => {
       setExerciseRestTimes((prev) => {
-        const nextState: { [exerciseId: string]: number } = {};
+        const nextState: Record<string, number> = {};
 
         Object.entries(prev).forEach(([exerciseId, seconds]) => {
           nextState[exerciseId] = seconds > 1 ? seconds - 1 : 0;
@@ -231,27 +223,18 @@ export default function WorkoutSessionScreen() {
     });
   };
 
-  const supersetDisplayMap = useMemo(
-    () => getSupersetDisplayMap(sessionExercises),
-    [sessionExercises]
-  );
-
   const handleUpdateSet = (
     exerciseId: string,
     setId: string,
     field: 'weight' | 'reps',
     value: string
   ) => {
-    setExerciseSets((prev) => {
-      const updatedSets = (prev[exerciseId] || []).map((set) =>
+    setExerciseSets((prev) => ({
+      ...prev,
+      [exerciseId]: (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, [field]: value } : set
-      );
-
-      return {
-        ...prev,
-        [exerciseId]: updatedSets,
-      };
-    });
+      ),
+    }));
   };
 
   const handleToggleSetCompleted = (exerciseId: string, setId: string) => {
@@ -268,16 +251,12 @@ export default function WorkoutSessionScreen() {
       Number.isInteger(parsedDefaultRest) &&
       parsedDefaultRest > 0;
 
-    setExerciseSets((prev) => {
-      const updatedSets = (prev[exerciseId] || []).map((set) =>
+    setExerciseSets((prev) => ({
+      ...prev,
+      [exerciseId]: (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, completed: !set.completed } : set
-      );
-
-      return {
-        ...prev,
-        [exerciseId]: updatedSets,
-      };
-    });
+      ),
+    }));
 
     if (shouldStartDefaultRest) {
       startRestTimer(exerciseId, parsedDefaultRest);
@@ -286,17 +265,14 @@ export default function WorkoutSessionScreen() {
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
     setExerciseSets((prev) => {
-      const currentSets = prev[exerciseId] || [];
-      const filteredSets = currentSets.filter((set) => set.id !== setId);
-
-      const renumberedSets = filteredSets.map((set, index) => ({
-        ...set,
-        setNumber: index + 1,
-      }));
+      const filteredSets = (prev[exerciseId] || []).filter((set) => set.id !== setId);
 
       return {
         ...prev,
-        [exerciseId]: renumberedSets,
+        [exerciseId]: filteredSets.map((set, index) => ({
+          ...set,
+          setNumber: index + 1,
+        })),
       };
     });
   };
@@ -382,112 +358,109 @@ export default function WorkoutSessionScreen() {
       <Stack.Screen options={{ title: 'Workout Session' }} />
 
       <SafeAreaView style={styles.container}>
-        <FlatList
-          data={sessionExercises}
-          keyExtractor={(item: Exercise) => item.id}
-          ListHeaderComponent={
-            <>
-              <Text style={styles.title}>{routine.name}</Text>
-              <Text style={styles.subtitle}>
-                {sessionExercises.length} exercise
-                {sessionExercises.length === 1 ? '' : 's'}
-              </Text>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>{routine.name}</Text>
+          <Text style={styles.subtitle}>
+            {sessionExercises.length} exercise
+            {sessionExercises.length === 1 ? '' : 's'}
+          </Text>
 
-              <View style={styles.addExerciseSection}>
+          <View style={styles.addExerciseSection}>
+            <Pressable
+              style={styles.addExerciseTrigger}
+              onPress={() => setIsExercisePickerOpen((prev) => !prev)}
+            >
+              <Text style={styles.addExerciseTriggerText}>
+                {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+              </Text>
+            </Pressable>
+
+            {isExercisePickerOpen && (
+              <View style={styles.exercisePickerCard}>
+                <Text style={styles.exercisePickerTitle}>Add Exercise</Text>
+
                 <Pressable
-                  style={styles.addExerciseTrigger}
-                  onPress={() =>
-                    setIsExercisePickerOpen((prev) => !prev)
-                  }
+                  style={styles.createCustomButton}
+                  onPress={() => router.push('/exercise/create')}
                 >
-                  <Text style={styles.addExerciseTriggerText}>
-                    {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+                  <Text style={styles.createCustomButtonText}>
+                    + Create Custom Exercise
                   </Text>
                 </Pressable>
 
-                {isExercisePickerOpen && (
-                  <View style={styles.exercisePickerCard}>
-                    <Text style={styles.exercisePickerTitle}>Add Exercise</Text>
+                <TextInput
+                  style={styles.inputSearch}
+                  placeholder="Search exercises..."
+                  placeholderTextColor="#888888"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
 
-                    <Pressable
-                      style={styles.createCustomButton}
-                      onPress={() => router.push('/exercise/create')}
-                    >
-                      <Text style={styles.createCustomButtonText}>
-                        + Create Custom Exercise
-                      </Text>
-                    </Pressable>
+                <View style={styles.filterRow}>
+                  {muscleGroups.map((group) => {
+                    const isSelected = selectedMuscleGroup === group;
 
-                    <TextInput
-                      style={styles.inputSearch}
-                      placeholder="Search exercises..."
-                      placeholderTextColor="#888888"
-                      value={searchText}
-                      onChangeText={setSearchText}
-                    />
+                    return (
+                      <Pressable
+                        key={group}
+                        style={[
+                          styles.filterButton,
+                          isSelected && styles.filterButtonSelected,
+                        ]}
+                        onPress={() => setSelectedMuscleGroup(group)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterButtonText,
+                            isSelected && styles.filterButtonTextSelected,
+                          ]}
+                        >
+                          {group}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
 
-                    <View style={styles.filterRow}>
-                      {muscleGroups.map((group) => {
-                        const isSelected = selectedMuscleGroup === group;
+                {filteredExercises.length === 0 ? (
+                  <Text style={styles.emptyPickerText}>
+                    No matching exercises found.
+                  </Text>
+                ) : (
+                  filteredExercises.map((exercise) => (
+                    <View key={exercise.id} style={styles.addExerciseCard}>
+                      <View style={styles.addExerciseInfo}>
+                        <Text style={styles.exerciseName}>{exercise.name}</Text>
+                        <Text style={styles.exerciseMeta}>
+                          {exercise.muscleGroup} • {exercise.equipment}
+                        </Text>
+                      </View>
 
-                        return (
-                          <Pressable
-                            key={group}
-                            style={[
-                              styles.filterButton,
-                              isSelected && styles.filterButtonSelected,
-                            ]}
-                            onPress={() => setSelectedMuscleGroup(group)}
-                          >
-                            <Text
-                              style={[
-                                styles.filterButtonText,
-                                isSelected && styles.filterButtonTextSelected,
-                              ]}
-                            >
-                              {group}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
+                      <Pressable
+                        style={styles.addExerciseButton}
+                        onPress={() => handleAddExercise(exercise)}
+                      >
+                        <Text style={styles.addExerciseButtonText}>Add</Text>
+                      </Pressable>
                     </View>
-
-                    {filteredExercises.length === 0 ? (
-                      <Text style={styles.emptyPickerText}>
-                        No matching exercises found.
-                      </Text>
-                    ) : (
-                      filteredExercises.map((exercise) => (
-                        <View key={exercise.id} style={styles.addExerciseCard}>
-                          <View style={styles.addExerciseInfo}>
-                            <Text style={styles.exerciseName}>{exercise.name}</Text>
-                            <Text style={styles.exerciseMeta}>
-                              {exercise.muscleGroup} • {exercise.equipment}
-                            </Text>
-                          </View>
-
-                          <Pressable
-                            style={styles.addExerciseButton}
-                            onPress={() => handleAddExercise(exercise)}
-                          >
-                            <Text style={styles.addExerciseButtonText}>Add</Text>
-                          </Pressable>
-                        </View>
-                      ))
-                    )}
-                  </View>
+                  ))
                 )}
               </View>
-            </>
-          }
-          renderItem={({ item, index }) => {
+            )}
+          </View>
+
+          {sessionExercises.map((item, index) => {
             const sets = exerciseSets[item.id] || [];
             const exerciseNote = exerciseNotes[item.id] || '';
             const restTimeRemaining = exerciseRestTimes[item.id] || 0;
             const customRestValue = customRestSeconds[item.id] || '';
 
             return (
-              <View style={styles.exerciseCard}>
+              <View key={item.id} style={styles.exerciseCard}>
                 <View style={styles.exerciseHeaderRow}>
                   <View style={styles.exerciseHeaderText}>
                     <Text style={styles.exerciseIndex}>{index + 1}</Text>
@@ -523,9 +496,7 @@ export default function WorkoutSessionScreen() {
                   placeholder="Exercise note..."
                   placeholderTextColor="#777777"
                   value={exerciseNote}
-                  onChangeText={(value) =>
-                    handleUpdateExerciseNote(item.id, value)
-                  }
+                  onChangeText={(value) => handleUpdateExerciseNote(item.id, value)}
                   multiline
                 />
 
@@ -576,10 +547,7 @@ export default function WorkoutSessionScreen() {
                 {sets.map((set) => (
                   <View
                     key={set.id}
-                    style={[
-                      styles.setRow,
-                      set.completed && styles.setRowCompleted,
-                    ]}
+                    style={[styles.setRow, set.completed && styles.setRowCompleted]}
                   >
                     <Pressable
                       style={[
@@ -608,10 +576,7 @@ export default function WorkoutSessionScreen() {
                     </Text>
 
                     <TextInput
-                      style={[
-                        styles.input,
-                        set.completed && styles.inputCompleted,
-                      ]}
+                      style={[styles.input, set.completed && styles.inputCompleted]}
                       placeholder={getWeightPlaceholder(weightUnit)}
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
@@ -622,10 +587,7 @@ export default function WorkoutSessionScreen() {
                     />
 
                     <TextInput
-                      style={[
-                        styles.input,
-                        set.completed && styles.inputCompleted,
-                      ]}
+                      style={[styles.input, set.completed && styles.inputCompleted]}
                       placeholder="Reps"
                       placeholderTextColor="#777777"
                       keyboardType="numeric"
@@ -652,15 +614,12 @@ export default function WorkoutSessionScreen() {
                 </Pressable>
               </View>
             );
-          }}
-          contentContainerStyle={styles.listContent}
-          ListFooterComponent={
-            <Pressable style={styles.finishButton} onPress={handleFinishWorkout}>
-              <Text style={styles.finishButtonText}>Finish Workout</Text>
-            </Pressable>
-          }
-          showsVerticalScrollIndicator={false}
-        />
+          })}
+
+          <Pressable style={styles.finishButton} onPress={handleFinishWorkout}>
+            <Text style={styles.finishButtonText}>Finish Workout</Text>
+          </Pressable>
+        </ScrollView>
       </SafeAreaView>
     </>
   );
@@ -855,6 +814,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 2,
+    flexShrink: 1,
   },
   exerciseMeta: {
     color: '#9a9a9a',

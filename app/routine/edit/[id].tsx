@@ -2,8 +2,8 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -206,28 +206,11 @@ export default function EditRoutineScreen() {
         </Pressable>
       </View>
 
-      <FlatList
-        data={isExercisePickerOpen ? filteredExercisesToAdd : []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.addExerciseCard}>
-            <View style={styles.exerciseInfo}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseMeta}>
-                {item.muscleGroup} • {item.equipment}
-              </Text>
-            </View>
-
-            <Pressable
-              style={styles.addButton}
-              onPress={() => handleAddExercise(item)}
-            >
-              <Text style={styles.addButtonText}>Add</Text>
-            </Pressable>
-          </View>
-        )}
-        ListHeaderComponent={
-          <>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+      >
             <Text style={styles.label}>Routine Name</Text>
             <TextInput
               style={styles.input}
@@ -460,18 +443,31 @@ export default function EditRoutineScreen() {
                     );
                   })}
                 </View>
+
+                {filteredExercisesToAdd.length === 0 ? (
+                  <Text style={styles.emptyText}>No matching exercises to add.</Text>
+                ) : (
+                  filteredExercisesToAdd.map((item) => (
+                    <View key={item.id} style={styles.addExerciseCard}>
+                      <View style={styles.exerciseInfo}>
+                        <Text style={styles.exerciseName}>{item.name}</Text>
+                        <Text style={styles.exerciseMeta}>
+                          {item.muscleGroup} • {item.equipment}
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        style={styles.addButton}
+                        onPress={() => handleAddExercise(item)}
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
               </>
             )}
-          </>
-        }
-        ListEmptyComponent={
-          isExercisePickerOpen ? (
-            <Text style={styles.emptyText}>No matching exercises to add.</Text>
-          ) : null
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      </ScrollView>
     </SafeAreaView>
   );
 }

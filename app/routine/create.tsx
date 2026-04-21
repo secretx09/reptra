@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TextInput,
   Pressable,
   Alert,
@@ -171,26 +171,23 @@ export default function CreateRoutineScreen() {
         </Pressable>
       </View>
 
-      <FlatList
-        data={isExercisePickerOpen ? filteredExercises : []}
-        keyExtractor={(item) => item.id}
-        renderItem={renderExercise}
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Routine name"
-              placeholderTextColor="#888888"
-              value={routineName}
-              onChangeText={setRoutineName}
-            />
+        keyboardShouldPersistTaps="handled"
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="Routine name"
+          placeholderTextColor="#888888"
+          value={routineName}
+          onChangeText={setRoutineName}
+        />
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Exercises Added</Text>
-              <Text style={styles.summaryValue}>{selectedExercises.length}</Text>
-            </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Exercises Added</Text>
+          <Text style={styles.summaryValue}>{selectedExercises.length}</Text>
+        </View>
 
               <Text style={styles.sectionTitle}>
                 Selected Exercises ({selectedExercises.length})
@@ -327,62 +324,63 @@ export default function CreateRoutineScreen() {
                 </Text>
               </Pressable>
 
-              {isExercisePickerOpen && (
-                <>
-                  <Text style={styles.sectionTitle}>Pick Exercises</Text>
+        {isExercisePickerOpen && (
+          <>
+            <Text style={styles.sectionTitle}>Pick Exercises</Text>
 
+            <Pressable
+              style={styles.createCustomButton}
+              onPress={() => router.push('/exercise/create')}
+            >
+              <Text style={styles.createCustomButtonText}>
+                + Create Custom Exercise
+              </Text>
+            </Pressable>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Search exercises..."
+              placeholderTextColor="#888888"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+
+            <View style={styles.filterRow}>
+              {muscleGroups.map((group) => {
+                const isSelected = selectedMuscleGroup === group;
+
+                return (
                   <Pressable
-                    style={styles.createCustomButton}
-                    onPress={() => router.push('/exercise/create')}
+                    key={group}
+                    style={[
+                      styles.filterButton,
+                      isSelected && styles.filterButtonSelected,
+                    ]}
+                    onPress={() => setSelectedMuscleGroup(group)}
                   >
-                    <Text style={styles.createCustomButtonText}>
-                      + Create Custom Exercise
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        isSelected && styles.filterButtonTextSelected,
+                      ]}
+                    >
+                      {group}
                     </Text>
                   </Pressable>
+                );
+              })}
+            </View>
 
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Search exercises..."
-                    placeholderTextColor="#888888"
-                    value={searchText}
-                    onChangeText={setSearchText}
-                  />
-
-                  <View style={styles.filterRow}>
-                    {muscleGroups.map((group) => {
-                      const isSelected = selectedMuscleGroup === group;
-
-                      return (
-                        <Pressable
-                          key={group}
-                          style={[
-                            styles.filterButton,
-                            isSelected && styles.filterButtonSelected,
-                          ]}
-                          onPress={() => setSelectedMuscleGroup(group)}
-                        >
-                          <Text
-                            style={[
-                              styles.filterButtonText,
-                              isSelected && styles.filterButtonTextSelected,
-                            ]}
-                          >
-                            {group}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
+            {filteredExercises.length === 0 ? (
+              <Text style={styles.emptyPickerText}>No exercises found.</Text>
+            ) : (
+              filteredExercises.map((item) => (
+                <View key={item.id}>{renderExercise({ item })}</View>
+              ))
+            )}
           </>
-        }
-        ListEmptyComponent={
-          isExercisePickerOpen ? (
-            <Text style={styles.emptyPickerText}>No exercises found.</Text>
-          ) : null
-        }
-      />
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }

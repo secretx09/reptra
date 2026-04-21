@@ -6,7 +6,7 @@ import {
   Pressable,
   Alert,
   TextInput,
-  FlatList,
+  ScrollView,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,18 +30,10 @@ export default function EmptyWorkoutSessionScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([]);
-  const [exerciseSets, setExerciseSets] = useState<{
-    [exerciseId: string]: WorkoutSet[];
-  }>({});
-  const [exerciseNotes, setExerciseNotes] = useState<{
-    [exerciseId: string]: string;
-  }>({});
-  const [exerciseRestTimes, setExerciseRestTimes] = useState<{
-    [exerciseId: string]: number;
-  }>({});
-  const [customRestSeconds, setCustomRestSeconds] = useState<{
-    [exerciseId: string]: string;
-  }>({});
+  const [exerciseSets, setExerciseSets] = useState<Record<string, WorkoutSet[]>>({});
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
+  const [exerciseRestTimes, setExerciseRestTimes] = useState<Record<string, number>>({});
+  const [customRestSeconds, setCustomRestSeconds] = useState<Record<string, string>>({});
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
 
   useFocusEffect(
@@ -90,7 +82,7 @@ export default function EmptyWorkoutSessionScreen() {
 
     const interval = setInterval(() => {
       setExerciseRestTimes((prev) => {
-        const nextState: { [exerciseId: string]: number } = {};
+        const nextState: Record<string, number> = {};
 
         Object.entries(prev).forEach(([exerciseId, seconds]) => {
           nextState[exerciseId] = seconds > 1 ? seconds - 1 : 0;
@@ -197,44 +189,33 @@ export default function EmptyWorkoutSessionScreen() {
     field: 'weight' | 'reps',
     value: string
   ) => {
-    setExerciseSets((prev) => {
-      const updatedSets = (prev[exerciseId] || []).map((set) =>
+    setExerciseSets((prev) => ({
+      ...prev,
+      [exerciseId]: (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, [field]: value } : set
-      );
-
-      return {
-        ...prev,
-        [exerciseId]: updatedSets,
-      };
-    });
+      ),
+    }));
   };
 
   const handleToggleSetCompleted = (exerciseId: string, setId: string) => {
-    setExerciseSets((prev) => {
-      const updatedSets = (prev[exerciseId] || []).map((set) =>
+    setExerciseSets((prev) => ({
+      ...prev,
+      [exerciseId]: (prev[exerciseId] || []).map((set) =>
         set.id === setId ? { ...set, completed: !set.completed } : set
-      );
-
-      return {
-        ...prev,
-        [exerciseId]: updatedSets,
-      };
-    });
+      ),
+    }));
   };
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
     setExerciseSets((prev) => {
-      const currentSets = prev[exerciseId] || [];
-      const filteredSets = currentSets.filter((set) => set.id !== setId);
-
-      const renumberedSets = filteredSets.map((set, index) => ({
-        ...set,
-        setNumber: index + 1,
-      }));
+      const filteredSets = (prev[exerciseId] || []).filter((set) => set.id !== setId);
 
       return {
         ...prev,
-        [exerciseId]: renumberedSets,
+        [exerciseId]: filteredSets.map((set, index) => ({
+          ...set,
+          setNumber: index + 1,
+        })),
       };
     });
   };
@@ -320,272 +301,266 @@ export default function EmptyWorkoutSessionScreen() {
         </Pressable>
       </View>
 
-      <FlatList
-        data={isExercisePickerOpen ? filteredExercises : []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.addExerciseCard}>
-            <View style={styles.exerciseInfo}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseMeta}>
-                {item.muscleGroup} • {item.equipment}
-              </Text>
-            </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.sectionTitle}>Current Exercises</Text>
 
-            <Pressable
-              style={styles.addButton}
-              onPress={() => handleAddExercise(item)}
-            >
-              <Text style={styles.addButtonText}>Add</Text>
-            </Pressable>
-          </View>
-        )}
-        ListHeaderComponent={
-          <>
-            <Text style={styles.sectionTitle}>Current Exercises</Text>
+        {addedExercises.length === 0 ? (
+          <Text style={styles.emptyText}>No exercises added yet.</Text>
+        ) : (
+          addedExercises.map((exercise, index) => {
+            const sets = exerciseSets[exercise.id] || [];
+            const exerciseNote = exerciseNotes[exercise.id] || '';
+            const restTimeRemaining = exerciseRestTimes[exercise.id] || 0;
+            const customRestValue = customRestSeconds[exercise.id] || '';
 
-            {addedExercises.length === 0 ? (
-              <Text style={styles.emptyText}>No exercises added yet.</Text>
-            ) : (
-              addedExercises.map((exercise, index) => {
-                const sets = exerciseSets[exercise.id] || [];
-                const exerciseNote = exerciseNotes[exercise.id] || '';
-                const restTimeRemaining = exerciseRestTimes[exercise.id] || 0;
-                const customRestValue = customRestSeconds[exercise.id] || '';
-
-                return (
-                  <View key={exercise.id} style={styles.currentExerciseCard}>
-                    <View style={styles.exerciseHeaderRow}>
-                      <View style={styles.exerciseHeaderText}>
-                        <Text style={styles.exerciseIndex}>{index + 1}</Text>
-                        <View style={styles.exerciseTitleWrap}>
-                          <Text style={styles.exerciseName}>{exercise.name}</Text>
-                          <Text style={styles.exerciseMeta}>
-                            {exercise.muscleGroup} • {exercise.equipment}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Pressable
-                        style={styles.removeButton}
-                        onPress={() => handleRemoveExercise(exercise.id)}
-                      >
-                        <Text style={styles.removeButtonText}>Remove</Text>
-                      </Pressable>
+            return (
+              <View key={exercise.id} style={styles.currentExerciseCard}>
+                <View style={styles.exerciseHeaderRow}>
+                  <View style={styles.exerciseHeaderText}>
+                    <Text style={styles.exerciseIndex}>{index + 1}</Text>
+                    <View style={styles.exerciseTitleWrap}>
+                      <Text style={styles.exerciseName}>{exercise.name}</Text>
+                      <Text style={styles.exerciseMeta}>
+                        {exercise.muscleGroup} • {exercise.equipment}
+                      </Text>
                     </View>
+                  </View>
 
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveExercise(exercise.id)}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </Pressable>
+                </View>
+
+                <TextInput
+                  style={styles.exerciseNoteInput}
+                  placeholder="Exercise note..."
+                  placeholderTextColor="#777777"
+                  value={exerciseNote}
+                  onChangeText={(value) =>
+                    handleUpdateExerciseNote(exercise.id, value)
+                  }
+                  multiline
+                />
+
+                <View style={styles.timerCard}>
+                  <View style={styles.timerHeaderRow}>
+                    <Text style={styles.timerLabel}>Rest Timer</Text>
+                    <Text style={styles.timerValue}>
+                      {restTimeRemaining > 0
+                        ? formatTime(restTimeRemaining)
+                        : 'Ready'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.timerButtonsRow}>
+                    {restTimerPresets.map((seconds) => (
+                      <Pressable
+                        key={`${exercise.id}-${seconds}`}
+                        style={styles.timerButton}
+                        onPress={() => startRestTimer(exercise.id, seconds)}
+                      >
+                        <Text style={styles.timerButtonText}>{seconds}s</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <View style={styles.customTimerRow}>
                     <TextInput
-                      style={styles.exerciseNoteInput}
-                      placeholder="Exercise note..."
+                      style={styles.customTimerInput}
+                      placeholder="Custom seconds"
                       placeholderTextColor="#777777"
-                      value={exerciseNote}
+                      keyboardType="numeric"
+                      value={customRestValue}
                       onChangeText={(value) =>
-                        handleUpdateExerciseNote(exercise.id, value)
+                        setCustomRestSeconds((prev) => ({
+                          ...prev,
+                          [exercise.id]: value,
+                        }))
                       }
-                      multiline
                     />
 
-                    <View style={styles.timerCard}>
-                      <View style={styles.timerHeaderRow}>
-                        <Text style={styles.timerLabel}>Rest Timer</Text>
-                        <Text style={styles.timerValue}>
-                          {restTimeRemaining > 0
-                            ? formatTime(restTimeRemaining)
-                            : 'Ready'}
-                        </Text>
-                      </View>
-
-                      <View style={styles.timerButtonsRow}>
-                        {restTimerPresets.map((seconds) => (
-                          <Pressable
-                            key={`${exercise.id}-${seconds}`}
-                            style={styles.timerButton}
-                            onPress={() => startRestTimer(exercise.id, seconds)}
-                          >
-                            <Text style={styles.timerButtonText}>{seconds}s</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-
-                      <View style={styles.customTimerRow}>
-                        <TextInput
-                          style={styles.customTimerInput}
-                          placeholder="Custom seconds"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={customRestValue}
-                          onChangeText={(value) =>
-                            setCustomRestSeconds((prev) => ({
-                              ...prev,
-                              [exercise.id]: value,
-                            }))
-                          }
-                        />
-
-                        <Pressable
-                          style={styles.customTimerButton}
-                          onPress={() => handleStartCustomRestTimer(exercise.id)}
-                        >
-                          <Text style={styles.customTimerButtonText}>Start</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-
-                    {sets.map((set) => (
-                      <View
-                        key={set.id}
-                        style={[
-                          styles.setRow,
-                          set.completed && styles.setRowCompleted,
-                        ]}
-                      >
-                        <Pressable
-                          style={[
-                            styles.checkButton,
-                            set.completed && styles.checkButtonCompleted,
-                          ]}
-                          onPress={() =>
-                            handleToggleSetCompleted(exercise.id, set.id)
-                          }
-                        >
-                          <Text
-                            style={[
-                              styles.checkButtonText,
-                              set.completed && styles.checkButtonTextCompleted,
-                            ]}
-                          >
-                            ✓
-                          </Text>
-                        </Pressable>
-
-                        <Text
-                          style={[
-                            styles.setLabel,
-                            set.completed && styles.completedText,
-                          ]}
-                        >
-                          {set.setNumber}
-                        </Text>
-
-                        <TextInput
-                          style={[
-                            styles.input,
-                            set.completed && styles.inputCompleted,
-                          ]}
-                          placeholder={getWeightPlaceholder(weightUnit)}
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={set.weight}
-                          onChangeText={(value) =>
-                            handleUpdateSet(exercise.id, set.id, 'weight', value)
-                          }
-                        />
-
-                        <TextInput
-                          style={[
-                            styles.input,
-                            set.completed && styles.inputCompleted,
-                          ]}
-                          placeholder="Reps"
-                          placeholderTextColor="#777777"
-                          keyboardType="numeric"
-                          value={set.reps}
-                          onChangeText={(value) =>
-                            handleUpdateSet(exercise.id, set.id, 'reps', value)
-                          }
-                        />
-
-                        <Pressable
-                          style={styles.deleteSetButton}
-                          onPress={() => handleDeleteSet(exercise.id, set.id)}
-                        >
-                          <Text style={styles.deleteSetButtonText}>✕</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-
                     <Pressable
-                      style={styles.addSetButton}
-                      onPress={() => handleAddSet(exercise.id)}
+                      style={styles.customTimerButton}
+                      onPress={() => handleStartCustomRestTimer(exercise.id)}
                     >
-                      <Text style={styles.addSetText}>+ Add Set</Text>
+                      <Text style={styles.customTimerButtonText}>Start</Text>
                     </Pressable>
                   </View>
-                );
-              })
-            )}
+                </View>
 
-            <View style={styles.addExerciseSection}>
+                {sets.map((set) => (
+                  <View
+                    key={set.id}
+                    style={[
+                      styles.setRow,
+                      set.completed && styles.setRowCompleted,
+                    ]}
+                  >
+                    <Pressable
+                      style={[
+                        styles.checkButton,
+                        set.completed && styles.checkButtonCompleted,
+                      ]}
+                      onPress={() =>
+                        handleToggleSetCompleted(exercise.id, set.id)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.checkButtonText,
+                          set.completed && styles.checkButtonTextCompleted,
+                        ]}
+                      >
+                        ✓
+                      </Text>
+                    </Pressable>
+
+                    <Text
+                      style={[
+                        styles.setLabel,
+                        set.completed && styles.completedText,
+                      ]}
+                    >
+                      {set.setNumber}
+                    </Text>
+
+                    <TextInput
+                      style={[
+                        styles.input,
+                        set.completed && styles.inputCompleted,
+                      ]}
+                      placeholder={getWeightPlaceholder(weightUnit)}
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={set.weight}
+                      onChangeText={(value) =>
+                        handleUpdateSet(exercise.id, set.id, 'weight', value)
+                      }
+                    />
+
+                    <TextInput
+                      style={[
+                        styles.input,
+                        set.completed && styles.inputCompleted,
+                      ]}
+                      placeholder="Reps"
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={set.reps}
+                      onChangeText={(value) =>
+                        handleUpdateSet(exercise.id, set.id, 'reps', value)
+                      }
+                    />
+
+                    <Pressable
+                      style={styles.deleteSetButton}
+                      onPress={() => handleDeleteSet(exercise.id, set.id)}
+                    >
+                      <Text style={styles.deleteSetButtonText}>✕</Text>
+                    </Pressable>
+                  </View>
+                ))}
+
+                <Pressable
+                  style={styles.addSetButton}
+                  onPress={() => handleAddSet(exercise.id)}
+                >
+                  <Text style={styles.addSetText}>+ Add Set</Text>
+                </Pressable>
+              </View>
+            );
+          })
+        )}
+
+        <View style={styles.addExerciseSection}>
+          <Pressable
+            style={styles.addExerciseTrigger}
+            onPress={() => setIsExercisePickerOpen((prev) => !prev)}
+          >
+            <Text style={styles.addExerciseTriggerText}>
+              {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+            </Text>
+          </Pressable>
+
+          {isExercisePickerOpen && (
+            <View style={styles.exercisePickerCard}>
+              <Text style={styles.sectionTitle}>Add Exercises</Text>
+
               <Pressable
-                style={styles.addExerciseTrigger}
-                onPress={() => setIsExercisePickerOpen((prev) => !prev)}
+                style={styles.createCustomButton}
+                onPress={() => router.push('/exercise/create')}
               >
-                <Text style={styles.addExerciseTriggerText}>
-                  {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+                <Text style={styles.createCustomButtonText}>
+                  + Create Custom Exercise
                 </Text>
               </Pressable>
 
-              {isExercisePickerOpen && (
-                <View style={styles.exercisePickerCard}>
-                  <Text style={styles.sectionTitle}>Add Exercises</Text>
+              <TextInput
+                style={styles.inputSearch}
+                placeholder="Search exercises..."
+                placeholderTextColor="#888888"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
 
-                  <Pressable
-                    style={styles.createCustomButton}
-                    onPress={() => router.push('/exercise/create')}
-                  >
-                    <Text style={styles.createCustomButtonText}>
-                      + Create Custom Exercise
-                    </Text>
-                  </Pressable>
+              <View style={styles.filterRow}>
+                {muscleGroups.map((group) => {
+                  const isSelected = selectedMuscleGroup === group;
 
-                  <TextInput
-                    style={styles.inputSearch}
-                    placeholder="Search exercises..."
-                    placeholderTextColor="#888888"
-                    value={searchText}
-                    onChangeText={setSearchText}
-                  />
+                  return (
+                    <Pressable
+                      key={group}
+                      style={[
+                        styles.filterButton,
+                        isSelected && styles.filterButtonSelected,
+                      ]}
+                      onPress={() => setSelectedMuscleGroup(group)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterButtonText,
+                          isSelected && styles.filterButtonTextSelected,
+                        ]}
+                      >
+                        {group}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-                  <View style={styles.filterRow}>
-                    {muscleGroups.map((group) => {
-                      const isSelected = selectedMuscleGroup === group;
+              {filteredExercises.length === 0 ? (
+                <Text style={styles.emptyText}>No matching exercises found.</Text>
+              ) : (
+                filteredExercises.map((item) => (
+                  <View key={item.id} style={styles.addExerciseCard}>
+                    <View style={styles.exerciseInfo}>
+                      <Text style={styles.exerciseName}>{item.name}</Text>
+                      <Text style={styles.exerciseMeta}>
+                        {item.muscleGroup} • {item.equipment}
+                      </Text>
+                    </View>
 
-                      return (
-                        <Pressable
-                          key={group}
-                          style={[
-                            styles.filterButton,
-                            isSelected && styles.filterButtonSelected,
-                          ]}
-                          onPress={() => setSelectedMuscleGroup(group)}
-                        >
-                          <Text
-                            style={[
-                              styles.filterButtonText,
-                              isSelected && styles.filterButtonTextSelected,
-                            ]}
-                          >
-                            {group}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                    <Pressable
+                      style={styles.addButton}
+                      onPress={() => handleAddExercise(item)}
+                    >
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </Pressable>
                   </View>
-                </View>
+                ))
               )}
             </View>
-          </>
-        }
-        ListEmptyComponent={
-          isExercisePickerOpen ? (
-            <Text style={styles.emptyText}>No matching exercises found.</Text>
-          ) : null
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        removeClippedSubviews={false}
-      />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
