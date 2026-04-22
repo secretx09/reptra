@@ -14,7 +14,11 @@ import { deleteRoutineById, loadRoutines } from '../../storage/routines';
 import { Exercise } from '../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
 import { WeightUnit } from '../../types/settings';
-import { getSupersetDisplayMap } from '../../utils/routineSupersets';
+import {
+  getSupersetBlocks,
+  getSupersetDisplayMap,
+} from '../../utils/routineSupersets';
+import { formatRestTimerLabel } from '../../utils/restTimer';
 import { formatWeightUnit } from '../../utils/weightUnits';
 
 export default function RoutineDetailScreen() {
@@ -76,6 +80,7 @@ export default function RoutineDetailScreen() {
   }
 
   const supersetDisplayMap = getSupersetDisplayMap(routine.exercises);
+  const supersetBlocks = getSupersetBlocks(routine.exercises);
 
   return (
     <>
@@ -92,6 +97,24 @@ export default function RoutineDetailScreen() {
                 {routine.exercises.length} exercise
                 {routine.exercises.length === 1 ? '' : 's'}
               </Text>
+
+              {supersetBlocks.some((block) => block.label !== '') && (
+                <View style={styles.supersetOverviewCard}>
+                  <Text style={styles.supersetOverviewTitle}>Superset Layout</Text>
+                  {supersetBlocks
+                    .filter((block) => block.label !== '')
+                    .map((block) => (
+                      <Text key={block.id} style={styles.supersetOverviewLine}>
+                        {`Superset ${block.label}: ${block.exercises
+                          .map(
+                            (exercise) =>
+                              `${supersetDisplayMap[exercise.id]?.slotLabel} ${exercise.name}`
+                          )
+                          .join(' + ')}`}
+                      </Text>
+                    ))}
+                </View>
+              )}
 
               <View style={styles.actionRow}>
                 <Pressable
@@ -113,7 +136,12 @@ export default function RoutineDetailScreen() {
             </>
           }
           renderItem={({ item, index }: { item: RoutineExerciseWithDefaults; index: number }) => (
-            <View style={styles.exerciseCard}>
+            <View
+              style={[
+                styles.exerciseCard,
+                supersetDisplayMap[item.id] && styles.supersetExerciseCard,
+              ]}
+            >
               <View style={styles.exerciseHeaderRow}>
                 <View style={styles.exerciseHeaderText}>
                   <Text style={styles.exerciseIndex}>{index + 1}</Text>
@@ -130,15 +158,20 @@ export default function RoutineDetailScreen() {
                       )}
                     </View>
                     <Text style={styles.exerciseMeta}>
-                      {item.muscleGroup} • {item.equipment}
+                      {item.muscleGroup} {'\u2022'} {item.equipment}
                     </Text>
+                    {supersetDisplayMap[item.id] && (
+                      <Text style={styles.supersetHint}>
+                        {`Part of Superset ${supersetDisplayMap[item.id].groupLabel}`}
+                      </Text>
+                    )}
                   </View>
                 </View>
 
                 {!!item.defaultRestSeconds && (
                   <View style={styles.restBadge}>
                     <Text style={styles.restBadgeText}>
-                      {item.defaultRestSeconds}s rest
+                      {formatRestTimerLabel(Number(item.defaultRestSeconds))}
                     </Text>
                   </View>
                 )}
@@ -202,6 +235,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 14,
   },
+  supersetOverviewCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  supersetOverviewTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  supersetOverviewLine: {
+    color: '#d8ecff',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 2,
+  },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
@@ -250,6 +303,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  supersetExerciseCard: {
+    borderColor: '#355574',
+  },
   exerciseHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -288,6 +344,12 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#9a9a9a',
     fontSize: 13,
+  },
+  supersetHint: {
+    color: '#7fbfff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
   },
   supersetBadge: {
     backgroundColor: '#0f2740',

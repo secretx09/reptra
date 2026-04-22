@@ -21,6 +21,7 @@ import { loadSettings } from '../../storage/settings';
 import { getMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import {
   getSupersetDisplayMap,
+  getSupersetBlocks,
   normalizeSupersetExercises,
   toggleSupersetWithPrevious,
 } from '../../utils/routineSupersets';
@@ -76,6 +77,11 @@ export default function CreateRoutineScreen() {
 
   const supersetDisplayMap = useMemo(
     () => getSupersetDisplayMap(selectedExercises),
+    [selectedExercises]
+  );
+
+  const supersetBlocks = useMemo(
+    () => getSupersetBlocks(selectedExercises).filter((block) => block.label !== ''),
     [selectedExercises]
   );
 
@@ -201,6 +207,27 @@ export default function CreateRoutineScreen() {
           <Text style={styles.summaryValue}>{selectedExercises.length}</Text>
         </View>
 
+        {supersetBlocks.length > 0 && (
+          <View style={styles.supersetSummaryCard}>
+            <Text style={styles.supersetSummaryTitle}>Superset Layout</Text>
+            <Text style={styles.supersetSummaryText}>
+              {supersetBlocks.length} superset
+              {supersetBlocks.length === 1 ? '' : 's'} built into this routine.
+            </Text>
+
+            {supersetBlocks.map((block) => (
+              <Text key={block.id} style={styles.supersetSummaryLine}>
+                {`Superset ${block.label}: ${block.exercises
+                  .map(
+                    (exercise) =>
+                      `${supersetDisplayMap[exercise.id]?.slotLabel} ${exercise.name}`
+                  )
+                  .join(' + ')}`}
+              </Text>
+            ))}
+          </View>
+        )}
+
               <Text style={styles.sectionTitle}>
                 Selected Exercises ({selectedExercises.length})
               </Text>
@@ -229,6 +256,12 @@ export default function CreateRoutineScreen() {
                     <Text style={styles.exerciseMeta}>
                       {exercise.muscleGroup} {'\u2022'} {exercise.equipment}
                     </Text>
+
+                    {supersetDisplayMap[exercise.id] && (
+                      <Text style={styles.supersetHint}>
+                        {`${supersetDisplayMap[exercise.id].slotLabel} in Superset ${supersetDisplayMap[exercise.id].groupLabel}`}
+                      </Text>
+                    )}
 
                     <View style={styles.defaultsRow}>
                       <TextInput
@@ -456,6 +489,31 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
   },
+  supersetSummaryCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  supersetSummaryTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  supersetSummaryText: {
+    color: '#9dbbda',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  supersetSummaryLine: {
+    color: '#d8ecff',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 3,
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 18,
@@ -491,6 +549,12 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#aaaaaa',
     fontSize: 14,
+    marginBottom: 10,
+  },
+  supersetHint: {
+    color: '#7fbfff',
+    fontSize: 12,
+    fontWeight: '600',
     marginBottom: 10,
   },
   supersetBadge: {

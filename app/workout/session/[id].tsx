@@ -161,6 +161,48 @@ export default function WorkoutSessionScreen() {
     [sessionExercises]
   );
 
+  const getBlockForExercise = useCallback(
+    (exerciseId: string) =>
+      supersetBlocks.find((block) =>
+        block.exercises.some((exercise) => exercise.id === exerciseId)
+      ) || null,
+    [supersetBlocks]
+  );
+
+  const getSupersetRoundStatus = useCallback(
+    (block: (typeof supersetBlocks)[number]) => {
+      const maxSetCount = Math.max(
+        ...block.exercises.map(
+          (exercise) => (exerciseSets[exercise.id] || []).length
+        ),
+        0
+      );
+
+      for (let setNumber = 1; setNumber <= maxSetCount; setNumber += 1) {
+        for (const exercise of block.exercises) {
+          const matchingSet = (exerciseSets[exercise.id] || []).find(
+            (set) => set.setNumber === setNumber
+          );
+
+          if (!matchingSet || !matchingSet.completed) {
+            return {
+              nextSlotLabel: `${supersetDisplayMap[exercise.id]?.slotLabel || ''} Set ${setNumber}`,
+              roundLabel: `Round ${setNumber}`,
+              isComplete: false,
+            };
+          }
+        }
+      }
+
+      return {
+        nextSlotLabel: '',
+        roundLabel: maxSetCount > 0 ? `Round ${maxSetCount} complete` : 'Ready to start',
+        isComplete: true,
+      };
+    },
+    [exerciseSets, supersetDisplayMap]
+  );
+
   useEffect(() => {
     const hasActiveTimers = Object.values(exerciseRestTimes).some(
       (seconds) => seconds > 0
@@ -262,9 +304,42 @@ export default function WorkoutSessionScreen() {
     const currentSet = (exerciseSets[exerciseId] || []).find(
       (set) => set.id === setId
     );
-    const configuredRestSeconds = exerciseRestConfigs[exerciseId] || 0;
-    const shouldStartRestTimer =
-      currentSet && !currentSet.completed && configuredRestSeconds > 0;
+    const currentBlock = getBlockForExercise(exerciseId);
+    const isCompletingSet = !!currentSet && !currentSet.completed;
+
+    let timerExerciseIds: string[] = [];
+    let resolvedRestSeconds = 0;
+
+    if (currentSet && isCompletingSet) {
+      if (currentBlock && currentBlock.label) {
+        const blockExerciseIds = currentBlock.exercises.map(
+          (exercise) => exercise.id
+        );
+        const roundIsComplete = currentBlock.exercises.every((exercise) => {
+          const matchingSet = (exerciseSets[exercise.id] || []).find(
+            (set) => set.setNumber === currentSet.setNumber
+          );
+
+          if (exercise.id === exerciseId) {
+            return !!matchingSet;
+          }
+
+          return !!matchingSet?.completed;
+        });
+
+        if (roundIsComplete) {
+          timerExerciseIds = blockExerciseIds;
+          resolvedRestSeconds =
+            exerciseRestConfigs[exerciseId] ||
+            currentBlock.exercises.reduce((best, exercise) => {
+              return Math.max(best, exerciseRestConfigs[exercise.id] || 0);
+            }, 0);
+        }
+      } else {
+        resolvedRestSeconds = exerciseRestConfigs[exerciseId] || 0;
+        timerExerciseIds = resolvedRestSeconds > 0 ? [exerciseId] : [];
+      }
+    }
 
     setExerciseSets((prev) => ({
       ...prev,
@@ -273,10 +348,13 @@ export default function WorkoutSessionScreen() {
       ),
     }));
 
-    if (shouldStartRestTimer) {
+    if (resolvedRestSeconds > 0 && timerExerciseIds.length > 0) {
       setExerciseRestTimes((prev) => ({
         ...prev,
-        [exerciseId]: configuredRestSeconds,
+        ...timerExerciseIds.reduce<Record<string, number>>((acc, id) => {
+          acc[id] = resolvedRestSeconds;
+          return acc;
+        }, {}),
       }));
     }
   };
@@ -449,6 +527,14 @@ export default function WorkoutSessionScreen() {
     const exerciseNote = exerciseNotes[exercise.id] || '';
     const supersetMeta = supersetDisplayMap[exercise.id];
     const isEditorOpen = openRestEditorId === exercise.id;
+    const currentBlock = getBlockForExercise(exercise.id);
+    const nextSupersetSlot =
+      currentBlock && currentBlock.label
+        ? getSupersetRoundStatus(currentBlock).nextSlotLabel
+        : '';
+    const isNextSupersetExercise =
+      !!nextSupersetSlot &&
+      nextSupersetSlot.startsWith(supersetMeta?.slotLabel || '');
 
     return (
       <View
@@ -456,6 +542,7 @@ export default function WorkoutSessionScreen() {
         style={[
           styles.exerciseCard,
           isSupersetChild && styles.supersetExerciseCard,
+          isNextSupersetExercise && styles.nextSupersetExerciseCard,
         ]}
       >
         <View style={styles.exerciseHeaderRow}>
@@ -476,6 +563,13 @@ export default function WorkoutSessionScreen() {
               <Text style={styles.exerciseMeta}>
                 {exercise.muscleGroup} {'\u2022'} {exercise.equipment}
               </Text>
+              {supersetMeta && (
+                <Text style={styles.supersetExerciseHint}>
+                  {isNextSupersetExercise
+                    ? 'Up next in the superset flow'
+                    : `Part of Superset ${supersetMeta.groupLabel}`}
+                </Text>
+              )}
             </View>
           </View>
         </View>
@@ -719,12 +813,17 @@ export default function WorkoutSessionScreen() {
 
             return (
               <View key={block.id} style={styles.supersetBlock}>
+                {(() => {
+                  const roundStatus = getSupersetRoundStatus(block);
+
+                  return (
                 <View style={styles.supersetBlockHeader}>
-                  <View>
+                  <View style={styles.supersetBlockHeaderText}>
                     <Text style={styles.supersetBlockTitle}>Superset {block.label}</Text>
                     <Text style={styles.supersetBlockSubtitle}>
-                      Move through {block.label}1 to {block.label}
-                      {block.exercises.length} before resting
+                      {roundStatus.isComplete
+                        ? `${roundStatus.roundLabel}. Add another round or rest as needed.`
+                        : `Next up: ${roundStatus.nextSlotLabel}. Rest starts after the full round.`}
                     </Text>
                   </View>
 
@@ -734,6 +833,8 @@ export default function WorkoutSessionScreen() {
                     </Text>
                   </View>
                 </View>
+                  );
+                })()}
 
                 {block.exercises.map((exercise) => {
                   const index = sessionExercises.findIndex((item) => item.id === exercise.id);
@@ -837,6 +938,10 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
+  supersetBlockHeaderText: {
+    flex: 1,
+    paddingRight: 4,
+  },
   supersetBlockTitle: {
     color: '#ffffff',
     fontSize: 17,
@@ -854,6 +959,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
+    flexShrink: 0,
+    alignSelf: 'flex-start',
   },
   supersetBlockBadgeText: {
     color: '#4da6ff',
@@ -863,6 +970,17 @@ const styles = StyleSheet.create({
   supersetExerciseCard: {
     marginBottom: 8,
     borderColor: '#355574',
+  },
+  nextSupersetExerciseCard: {
+    borderColor: '#4da6ff',
+    shadowColor: '#4da6ff',
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 2,
   },
   exerciseHeaderRow: {
     flexDirection: 'row',
@@ -918,6 +1036,12 @@ const styles = StyleSheet.create({
   exerciseMeta: {
     color: '#9a9a9a',
     fontSize: 13,
+  },
+  supersetExerciseHint: {
+    color: '#7fbfff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
   },
   supersetBadge: {
     backgroundColor: '#0f2740',
