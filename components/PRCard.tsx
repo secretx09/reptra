@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { ExercisePR } from '../types/workout';
 import { WeightUnit } from '../types/settings';
-import { formatWeightUnit } from '../utils/weightUnits';
+import { convertWeightValue, formatWeightNumber, formatWeightUnit } from '../utils/weightUnits';
 
 type PRCardProps = {
   pr: ExercisePR;
@@ -9,16 +9,27 @@ type PRCardProps = {
 };
 
 export default function PRCard({ pr, weightUnit }: PRCardProps) {
+  const convertedHeaviestWeight = convertWeightValue(
+    pr.heaviestWeight,
+    'lb',
+    weightUnit
+  );
+  const convertedOneRepMax = convertWeightValue(
+    pr.bestEstimatedOneRepMax,
+    'lb',
+    weightUnit
+  );
+
   return (
     <View style={styles.card}>
       <Text style={styles.exerciseName}>{pr.exerciseName}</Text>
 
       <Text style={styles.weight}>
-        Max: {pr.heaviestWeight} {formatWeightUnit(weightUnit)}
+        Max: {formatWeightNumber(convertedHeaviestWeight)} {formatWeightUnit(weightUnit)}
       </Text>
 
       <Text style={styles.oneRepMax}>
-        1RM: {Math.round(pr.bestEstimatedOneRepMax)} {formatWeightUnit(weightUnit)}
+        1RM: {formatWeightNumber(convertedOneRepMax)} {formatWeightUnit(weightUnit)}
       </Text>
     </View>
   );

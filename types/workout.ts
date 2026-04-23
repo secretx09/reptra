@@ -1,3 +1,5 @@
+import { WeightUnit } from './settings';
+
 export interface WorkoutSession {
   id: string;
   routineId: string | null;
@@ -45,6 +47,7 @@ export interface SavedWorkoutSession {
   id: string;
   routineId: string | null;
   routineName: string;
+  weightUnit?: WeightUnit;
   startedAt?: string;
   completedAt: string;
   durationMinutes?: number;

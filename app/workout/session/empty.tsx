@@ -422,6 +422,7 @@ export default function EmptyWorkoutSessionScreen() {
       id: new Date().toISOString(),
       routineId: null,
       routineName: 'Empty Workout',
+      weightUnit,
       startedAt,
       completedAt,
       durationMinutes,

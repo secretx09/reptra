@@ -492,6 +492,7 @@ export default function WorkoutSessionScreen() {
       id: new Date().toISOString(),
       routineId: routine.id,
       routineName: routine.name,
+      weightUnit,
       startedAt,
       completedAt,
       durationMinutes,

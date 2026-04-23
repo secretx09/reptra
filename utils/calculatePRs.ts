@@ -1,4 +1,5 @@
 import { SavedWorkoutSession, ExercisePR } from '../types/workout';
+import { convertWeightValue } from './weightUnits';
 
 function estimateOneRepMax(weight: number, reps: number): number {
   return weight * (1 + reps / 30);
@@ -10,9 +11,12 @@ export function calculateExercisePRs(
   const prMap: Record<string, ExercisePR> = {};
 
   workouts.forEach((workout) => {
+    const sourceWeightUnit = workout.weightUnit ?? 'lb';
+
     workout.exercises.forEach((exercise) => {
       exercise.sets.forEach((set) => {
-        const weight = Number(set.weight);
+        const rawWeight = Number(set.weight);
+        const weight = convertWeightValue(rawWeight, sourceWeightUnit, 'lb');
         const reps = Number(set.reps);
 
         if (!Number.isNaN(weight) && weight > 0) {

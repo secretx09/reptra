@@ -2,16 +2,21 @@ import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
+import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
+import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 
 export default function ProfileWorkoutHistoryScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
+    const savedSettings = await loadSettings();
     setWorkouts(savedWorkouts);
+    setWeightUnit(savedSettings.weightUnit);
   };
 
   useFocusEffect(
@@ -31,6 +36,7 @@ export default function ProfileWorkoutHistoryScreen() {
           renderItem={({ item }) => (
             <WorkoutHistoryCard
               workout={item}
+              weightUnit={weightUnit}
               onPress={() => router.push(`/workout/history/${item.id}`)}
             />
           )}

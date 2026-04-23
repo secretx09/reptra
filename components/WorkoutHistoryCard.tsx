@@ -1,19 +1,30 @@
 import { Pressable, Text, StyleSheet } from 'react-native';
+import { WeightUnit } from '../types/settings';
 import { SavedWorkoutSession } from '../types/workout';
+import { calculateWorkoutSummary } from '../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../utils/formatDuration';
+import {
+  convertWeightValue,
+  formatWeightNumber,
+  formatWeightUnit,
+} from '../utils/weightUnits';
 
 type WorkoutHistoryCardProps = {
   workout: SavedWorkoutSession;
   onPress?: () => void;
+  weightUnit?: WeightUnit;
 };
 
 export default function WorkoutHistoryCard({
   workout,
   onPress,
+  weightUnit = 'lb',
 }: WorkoutHistoryCardProps) {
-  const totalSets = workout.exercises.reduce(
-    (sum, exercise) => sum + exercise.sets.length,
-    0
+  const { totalSets, totalReps, heaviestWeight } = calculateWorkoutSummary(workout);
+  const convertedHeaviestWeight = convertWeightValue(
+    heaviestWeight,
+    'lb',
+    weightUnit
   );
 
   const formattedDate = new Date(workout.completedAt).toLocaleDateString();
@@ -34,6 +45,14 @@ export default function WorkoutHistoryCard({
         {workout.exercises.length === 1 ? '' : 's'} • {totalSets} set
         {totalSets === 1 ? '' : 's'}
       </Text>
+      {totalReps > 0 || heaviestWeight > 0 ? (
+        <Text style={styles.meta}>
+          {totalReps > 0 ? `${totalReps} reps` : '0 reps'}
+          {heaviestWeight > 0
+            ? ` • Heaviest ${formatWeightNumber(convertedHeaviestWeight)} ${formatWeightUnit(weightUnit)}`
+            : ''}
+        </Text>
+      ) : null}
       {formattedDuration ? (
         <Text style={styles.meta}>Duration: {formattedDuration}</Text>
       ) : null}

@@ -10,7 +10,12 @@ import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { calculateEstimatedOneRepMax } from '../../utils/oneRepMax';
-import { formatWeightUnit } from '../../utils/weightUnits';
+import {
+  convertVolumeValue,
+  convertWeightValue,
+  formatWeightNumber,
+  formatWeightUnit,
+} from '../../utils/weightUnits';
 
 type ExerciseTab = 'summary' | 'history' | 'howto';
 type ChartMetricKey =
@@ -122,6 +127,7 @@ export default function ExerciseDetailScreen() {
     return workouts
       .map((workout) => {
         const exerciseLog = workout.exercises.find((item) => item.exerciseId === id);
+        const sourceWeightUnit = workout.weightUnit ?? 'lb';
 
         if (!exerciseLog || exerciseLog.sets.length === 0) {
           return null;
@@ -134,7 +140,11 @@ export default function ExerciseDetailScreen() {
         let totalReps = 0;
 
         exerciseLog.sets.forEach((set) => {
-          const weight = Number(set.weight);
+          const weight = convertWeightValue(
+            Number(set.weight),
+            sourceWeightUnit,
+            'lb'
+          );
           const reps = Number(set.reps);
 
           if (!Number.isNaN(reps) && reps > 0) {
@@ -206,15 +216,25 @@ export default function ExerciseDetailScreen() {
     estimatedOneRepMaxChange === null
       ? 'Log another session to unlock session-to-session 1RM trend.'
       : estimatedOneRepMaxChange > 0
-        ? `Your latest estimated 1RM is up ${estimatedOneRepMaxChange} ${formatWeightUnit(weightUnit)} from your previous logged session.`
+        ? `Your latest estimated 1RM is up ${formatWeightNumber(
+            convertWeightValue(estimatedOneRepMaxChange, 'lb', weightUnit)
+          )} ${formatWeightUnit(weightUnit)} from your previous logged session.`
         : estimatedOneRepMaxChange < 0
-          ? `Your latest estimated 1RM is down ${Math.abs(estimatedOneRepMaxChange)} ${formatWeightUnit(weightUnit)} from your previous logged session.`
+          ? `Your latest estimated 1RM is down ${formatWeightNumber(
+              convertWeightValue(Math.abs(estimatedOneRepMaxChange), 'lb', weightUnit)
+            )} ${formatWeightUnit(weightUnit)} from your previous logged session.`
           : 'Your estimated 1RM matched your previous logged session.';
 
   const formatMetricValue = useCallback(
     (value: number, metric: ChartMetricKey) => {
       if (metric === 'bestWeight' || metric === 'bestEstimatedOneRepMax') {
-        return `${value} ${formatWeightUnit(weightUnit)}`;
+        return `${formatWeightNumber(
+          convertWeightValue(value, 'lb', weightUnit)
+        )} ${formatWeightUnit(weightUnit)}`;
+      }
+
+      if (metric === 'bestSetVolume' || metric === 'sessionVolume') {
+        return `${formatWeightNumber(convertVolumeValue(value, 'lb', weightUnit))}`;
       }
 
       return `${value}`;
@@ -287,7 +307,10 @@ export default function ExerciseDetailScreen() {
             <View style={styles.oneRepMaxHero}>
               <Text style={styles.oneRepMaxEyebrow}>Estimated 1RM</Text>
               <Text style={styles.oneRepMaxValue}>
-                {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                {formatWeightNumber(
+                  convertWeightValue(bestEstimatedOneRepMax, 'lb', weightUnit)
+                )}{' '}
+                {formatWeightUnit(weightUnit)}
               </Text>
               <Text style={styles.oneRepMaxText}>
                 Best projected single-rep strength based on your logged sets.
@@ -297,25 +320,39 @@ export default function ExerciseDetailScreen() {
             <View style={styles.progressSummaryGrid}>
               <View style={styles.progressSummaryCard}>
                 <Text style={styles.progressSummaryValue}>
-                  {bestWeight} {formatWeightUnit(weightUnit)}
+                  {formatWeightNumber(
+                    convertWeightValue(bestWeight, 'lb', weightUnit)
+                  )}{' '}
+                  {formatWeightUnit(weightUnit)}
                 </Text>
                 <Text style={styles.progressSummaryLabel}>Heaviest Weight</Text>
               </View>
 
               <View style={styles.progressSummaryCard}>
                 <Text style={styles.progressSummaryValue}>
-                  {bestEstimatedOneRepMax} {formatWeightUnit(weightUnit)}
+                  {formatWeightNumber(
+                    convertWeightValue(bestEstimatedOneRepMax, 'lb', weightUnit)
+                  )}{' '}
+                  {formatWeightUnit(weightUnit)}
                 </Text>
                 <Text style={styles.progressSummaryLabel}>Best Est. 1RM</Text>
               </View>
 
               <View style={styles.progressSummaryCard}>
-                <Text style={styles.progressSummaryValue}>{bestSetVolume}</Text>
+                <Text style={styles.progressSummaryValue}>
+                  {formatWeightNumber(
+                    convertVolumeValue(bestSetVolume, 'lb', weightUnit)
+                  )}
+                </Text>
                 <Text style={styles.progressSummaryLabel}>Best Set Volume</Text>
               </View>
 
               <View style={styles.progressSummaryCard}>
-                <Text style={styles.progressSummaryValue}>{bestSessionVolume}</Text>
+                <Text style={styles.progressSummaryValue}>
+                  {formatWeightNumber(
+                    convertVolumeValue(bestSessionVolume, 'lb', weightUnit)
+                  )}
+                </Text>
                 <Text style={styles.progressSummaryLabel}>Best Session Volume</Text>
               </View>
 
@@ -446,25 +483,42 @@ export default function ExerciseDetailScreen() {
                 </View>
 
                 <Text style={styles.historyWeight}>
-                  {point.bestWeight} {formatWeightUnit(weightUnit)}
+                  {formatWeightNumber(
+                    convertWeightValue(point.bestWeight, 'lb', weightUnit)
+                  )}{' '}
+                  {formatWeightUnit(weightUnit)}
                 </Text>
               </View>
 
               <View style={styles.historyStatsRow}>
                 <View style={styles.historyStatPill}>
                   <Text style={styles.historyStatValue}>
-                    {point.bestEstimatedOneRepMax}
+                    {formatWeightNumber(
+                      convertWeightValue(
+                        point.bestEstimatedOneRepMax,
+                        'lb',
+                        weightUnit
+                      )
+                    )}
                   </Text>
                   <Text style={styles.historyStatLabel}>Est. 1RM</Text>
                 </View>
 
                 <View style={styles.historyStatPill}>
-                  <Text style={styles.historyStatValue}>{point.bestSetVolume}</Text>
+                  <Text style={styles.historyStatValue}>
+                    {formatWeightNumber(
+                      convertVolumeValue(point.bestSetVolume, 'lb', weightUnit)
+                    )}
+                  </Text>
                   <Text style={styles.historyStatLabel}>Best Set Vol</Text>
                 </View>
 
                 <View style={styles.historyStatPill}>
-                  <Text style={styles.historyStatValue}>{point.sessionVolume}</Text>
+                  <Text style={styles.historyStatValue}>
+                    {formatWeightNumber(
+                      convertVolumeValue(point.sessionVolume, 'lb', weightUnit)
+                    )}
+                  </Text>
                   <Text style={styles.historyStatLabel}>Session Vol</Text>
                 </View>
               </View>

@@ -6,8 +6,13 @@ import { loadSettings } from '../../../storage/settings';
 import { WeightUnit } from '../../../types/settings';
 import { loadWorkouts, deleteWorkoutById } from '../../../storage/workouts';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
+import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
-import { formatWeightWithUnit } from '../../../utils/weightUnits';
+import {
+  convertVolumeValue,
+  formatWeightNumber,
+  formatWeightWithUnit,
+} from '../../../utils/weightUnits';
 
 export default function WorkoutHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,10 +22,11 @@ export default function WorkoutHistoryDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       const fetchWorkout = async () => {
-      const workouts = await loadWorkouts();
+        const workouts = await loadWorkouts();
         const savedSettings = await loadSettings();
-      const foundWorkout = workouts.find((item) => item.id === id) || null;
-      setWorkout(foundWorkout);
+        const foundWorkout = workouts.find((item) => item.id === id) || null;
+
+        setWorkout(foundWorkout);
         setWeightUnit(savedSettings.weightUnit);
       };
 
@@ -77,10 +83,10 @@ export default function WorkoutHistoryDetailScreen() {
   });
   const formattedDuration = formatWorkoutDuration(workout.durationMinutes);
 
-  const totalSets = workout.exercises.reduce(
-    (sum, exercise) => sum + exercise.sets.length,
-    0
-  );
+  const { totalSets, totalReps, totalVolume, heaviestWeight } =
+    calculateWorkoutSummary(workout);
+  const sourceWeightUnit = workout.weightUnit ?? 'lb';
+  const convertedVolume = convertVolumeValue(totalVolume, 'lb', weightUnit);
 
   return (
     <>
@@ -104,6 +110,27 @@ export default function WorkoutHistoryDetailScreen() {
               {formattedDuration ? (
                 <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
               ) : null}
+
+              <View style={styles.summaryStatsRow}>
+                <View style={styles.summaryStatPill}>
+                  <Text style={styles.summaryStatValue}>{totalReps}</Text>
+                  <Text style={styles.summaryStatLabel}>Total Reps</Text>
+                </View>
+
+                <View style={styles.summaryStatPill}>
+                  <Text style={styles.summaryStatValue}>
+                    {formatWeightWithUnit(String(heaviestWeight || 0), weightUnit)}
+                  </Text>
+                  <Text style={styles.summaryStatLabel}>Heaviest Set</Text>
+                </View>
+
+                <View style={styles.summaryStatPill}>
+                  <Text style={styles.summaryStatValue}>
+                    {formatWeightNumber(convertedVolume)}
+                  </Text>
+                  <Text style={styles.summaryStatLabel}>Volume</Text>
+                </View>
+              </View>
 
               <Pressable
                 style={styles.startAgainButton}
@@ -130,7 +157,11 @@ export default function WorkoutHistoryDetailScreen() {
                 <View key={set.id} style={styles.setRow}>
                   <Text style={styles.setLabel}>Set {set.setNumber}</Text>
                   <Text style={styles.setValue}>
-                    {formatWeightWithUnit(set.weight, weightUnit)}
+                    {formatWeightWithUnit(
+                      set.weight,
+                      weightUnit,
+                      sourceWeightUnit
+                    )}
                   </Text>
                   <Text style={styles.setValue}>{set.reps || '-'} reps</Text>
                 </View>
@@ -174,6 +205,30 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 14,
     marginBottom: 2,
+  },
+  summaryStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  summaryStatPill: {
+    flex: 1,
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  summaryStatValue: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  summaryStatLabel: {
+    color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '600',
   },
   exerciseCard: {
     backgroundColor: '#1c1c1c',
