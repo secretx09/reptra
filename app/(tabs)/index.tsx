@@ -22,7 +22,10 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: palette.background }]}
+      edges={['left', 'right']}
+    >
       <Text style={[styles.appName, { color: palette.accent }]}>Reptra</Text>
       <Text style={[styles.title, { color: palette.text }]}>Home</Text>
       <Text style={[styles.text, { color: palette.subtext }]}>

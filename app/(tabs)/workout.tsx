@@ -72,7 +72,10 @@ export default function WorkoutScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: palette.background }]}
+      edges={['left', 'right']}
+    >
       <FlatList
         data={routines}
         keyExtractor={(item) => item.id}

@@ -29,6 +29,7 @@ export default function TabsLayout() {
           backgroundColor: palette.background,
         },
         headerTintColor: palette.text,
+        headerShadowVisible: false,
         headerTitleStyle: {
           fontWeight: '700',
         },

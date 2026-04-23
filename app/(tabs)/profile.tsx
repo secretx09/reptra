@@ -73,7 +73,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: palette.background }]}
-      edges={['left', 'right', 'bottom']}
+      edges={['left', 'right']}
     >
       <FlatList
         data={[]}
@@ -327,7 +327,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#111111',
     paddingHorizontal: 14,
     paddingTop: 4,
-    overflow: 'hidden',
   },
   headerCard: {
     backgroundColor: '#171717',

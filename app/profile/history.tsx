@@ -9,12 +9,15 @@ import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 
 type HistoryFilter = 'all' | 'routine' | 'empty';
+type HistoryDateFilter = 'all' | '7d' | '30d' | '90d';
 
 export default function ProfileWorkoutHistoryScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<HistoryFilter>('all');
+  const [selectedDateFilter, setSelectedDateFilter] =
+    useState<HistoryDateFilter>('all');
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
@@ -30,6 +33,10 @@ export default function ProfileWorkoutHistoryScreen() {
   );
 
   const filteredWorkouts = workouts.filter((workout) => {
+    const completedAtMs = new Date(workout.completedAt).getTime();
+    const now = Date.now();
+    const daysAgo = (now - completedAtMs) / (1000 * 60 * 60 * 24);
+
     const matchesFilter =
       selectedFilter === 'all'
         ? true
@@ -37,10 +44,19 @@ export default function ProfileWorkoutHistoryScreen() {
           ? workout.routineId !== null
           : workout.routineId === null;
 
+    const matchesDateFilter =
+      selectedDateFilter === 'all'
+        ? true
+        : selectedDateFilter === '7d'
+          ? daysAgo <= 7
+          : selectedDateFilter === '30d'
+            ? daysAgo <= 30
+            : daysAgo <= 90;
+
     const normalizedSearch = searchText.trim().toLowerCase();
 
     if (!normalizedSearch) {
-      return matchesFilter;
+      return matchesFilter && matchesDateFilter;
     }
 
     const matchesRoutineName = workout.routineName
@@ -50,7 +66,11 @@ export default function ProfileWorkoutHistoryScreen() {
       exercise.exerciseName.toLowerCase().includes(normalizedSearch)
     );
 
-    return matchesFilter && (matchesRoutineName || matchesExerciseName);
+    return (
+      matchesFilter &&
+      matchesDateFilter &&
+      (matchesRoutineName || matchesExerciseName)
+    );
   });
 
   return (
@@ -138,6 +158,84 @@ export default function ProfileWorkoutHistoryScreen() {
                 </Pressable>
               </View>
 
+              <View style={styles.dateFilterRow}>
+                <Pressable
+                  style={[
+                    styles.dateFilterButton,
+                    selectedDateFilter === 'all' &&
+                      styles.dateFilterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedDateFilter('all')}
+                >
+                  <Text
+                    style={[
+                      styles.dateFilterButtonText,
+                      selectedDateFilter === 'all' &&
+                        styles.dateFilterButtonTextSelected,
+                    ]}
+                  >
+                    All Time
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.dateFilterButton,
+                    selectedDateFilter === '7d' &&
+                      styles.dateFilterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedDateFilter('7d')}
+                >
+                  <Text
+                    style={[
+                      styles.dateFilterButtonText,
+                      selectedDateFilter === '7d' &&
+                        styles.dateFilterButtonTextSelected,
+                    ]}
+                  >
+                    7 Days
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.dateFilterButton,
+                    selectedDateFilter === '30d' &&
+                      styles.dateFilterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedDateFilter('30d')}
+                >
+                  <Text
+                    style={[
+                      styles.dateFilterButtonText,
+                      selectedDateFilter === '30d' &&
+                        styles.dateFilterButtonTextSelected,
+                    ]}
+                  >
+                    30 Days
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.dateFilterButton,
+                    selectedDateFilter === '90d' &&
+                      styles.dateFilterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedDateFilter('90d')}
+                >
+                  <Text
+                    style={[
+                      styles.dateFilterButtonText,
+                      selectedDateFilter === '90d' &&
+                        styles.dateFilterButtonTextSelected,
+                    ]}
+                  >
+                    90 Days
+                  </Text>
+                </Pressable>
+              </View>
+
               <Text style={styles.resultCount}>
                 {filteredWorkouts.length} result
                 {filteredWorkouts.length === 1 ? '' : 's'}
@@ -200,6 +298,12 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
+  dateFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
   filterButton: {
     flex: 1,
     backgroundColor: '#121212',
@@ -219,6 +323,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   filterButtonTextSelected: {
+    color: '#4da6ff',
+  },
+  dateFilterButton: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  dateFilterButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  dateFilterButtonText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  dateFilterButtonTextSelected: {
     color: '#4da6ff',
   },
   resultCount: {
