@@ -1,156 +1,156 @@
 # Reptra
 
-Reptra is a workout tracking app I am building with React Native and Expo.  
-The goal is to make an app where users can track workouts, create routines, log sets, reps, weight, and notes, save workout history, track PRs, estimate 1RM, and more.
+Reptra is a mobile fitness app built with React Native, Expo, TypeScript, and `expo-router`.
 
----
+The app is focused on fast workout logging first: building routines, starting routine workouts, running empty workouts, tracking PRs, viewing workout history, and analyzing exercise progress. Longer term, Reptra is intended to grow into a more complete fitness platform with calorie tracking, progress media, cloud sync, and social features.
 
-## Before Starting
+## Current State
 
-Before I even started building the app, I needed to install the tools required for React Native and Expo development.
+Reptra is already a functional workout tracker with a strong local-first foundation.
 
-## What I Needed to Download
+### What Works Right Now
 
-- VS Code
-- Git
-- Node.js LTS
-- Android Studio
+- Routine creation, editing, deletion, and reordering
+- Mid-workout exercise adding for both routine workouts and empty workouts
+- Empty workout flow with full logging and saving
+- Set logging with weight, reps, notes, and completion checkmarks
+- Smart first-set autofill from recent workout history
+- Per-exercise rest timers with configurable defaults and in-session overrides
+- Superset setup in routines and live superset flow in workout sessions
+- Workout duration tracking
+- Workout history with detail view and `Start Again` reuse flow
+- PR tracking and estimated 1RM calculations
+- Exercise detail pages with summary, history, and how-to tabs
+- Exercise progress charts and recent-session stats
+- Custom exercises
+- Progress photo storage and profile previews
+- Profile stats, weekly activity chart, and PR views
+- Settings for units, theme, default rest timer, export/import, and reset
 
-## What Each One Is For
+## Product Direction
 
-- **VS Code** - code editor  
-- **Git** - version control  
-- **Node.js** - installs npm and lets me run JavaScript tools  
-- **Android Studio** - Android emulator for testing the app  
+Reptra is inspired by apps like Hevy for workout tracking, with future plans to bring in nutrition-style tracking ideas similar to MacrosFirst.
 
----
+### Planned Direction
 
-## Installation Setup
-
-### 1. Check Node and npm
-
-After installing Node.js, I opened Command Prompt and ran:
-
-    node -v
-    npm -v
-
-This should print the installed versions of Node.js and npm.
-
----
-
-### 2. Create the Expo app
-
-I went to the folder where I wanted my project to be stored:
-
-    cd C:\workout app
-
-Then I created the project:
-
-    npx create-expo-app reptra
-
-
----
-
-### 3. Open the project
-
-After the project was created, I opened it in VS Code and moved into the project folder:
-
-    cd reptra
-
----
-
-### 4. Start the development server
-
-To run the project, I used:
-
-    npx expo start
-
-This starts the Expo development server.
-
----
-
-## Emulator Setup
-
-To test the app on Android, I used Android Studio.
-
-### Steps
-
-1. Open Android Studio  
-2. Go to Device Manager  
-3. Create or choose an emulator  
-4. Start the emulator  
-5. In the Expo terminal press:
-
-    a
-
-This opens the app on the emulator.
-
----
-
-## PowerShell Fix
-
-If scripts are blocked, run:
-
-    Set-ExecutionPolicy RemoteSigned
-
----
-
-## Additional Package
-
-Later I installed Async Storage:
-
-    npx expo install @react-native-async-storage/async-storage
-
----
-
-## Full Command List
-
-    node -v
-    npm -v
-    cd C:\workout app
-    npx create-expo-app reptra
-    cd reptra
-    npx expo start
-
-If PowerShell blocks scripts:
-
-    Set-ExecutionPolicy RemoteSigned
-
-Later:
-
-    npx expo install @react-native-async-storage/async-storage
-
----
+- Embedded demo GIFs and videos on exercise pages
+- Post-workout photo attachment tied directly to workout history
+- More advanced superset behavior and polish
+- Additional progress analytics and charts
+- Calorie and macro tracking
+- Cloud sync and multi-device support
+- User accounts, friends, and social features
+- A real Home feed once the backend phase starts
 
 ## Tech Stack
 
-- React Native  
-- Expo  
-- JavaScript / TypeScript  
-- VS Code  
-- Git  
-- Android Studio  
+- React Native
+- Expo
+- TypeScript
+- `expo-router`
+- AsyncStorage
+- React Navigation
+- Expo Vector Icons
 
----
+## Project Structure
 
-## Project Goal
+The app is organized around Expo Router routes and a local-storage architecture.
 
-Reptra is being built to include:
+### Main Areas
 
-- exercise library  
-- routine creator  
-- workout tracking  
-- sets, reps, weights, and notes  
-- workout history  
-- personal records  
-- estimated one rep max  
-- workout streaks  
-- reminders  
-- progress charts  
-- settings  
+- `app/(tabs)`
+  Home, Workout, and Profile tabs
+- `app/routine`
+  Routine creation, editing, and detail flows
+- `app/workout`
+  Active workout sessions and workout history
+- `app/exercise`
+  Exercise library, detail pages, and custom exercise creation
+- `app/profile`
+  PRs, settings, progress photos, and related profile screens
+- `storage`
+  Local persistence for workouts, routines, settings, custom exercises, and progress photos
+- `types`
+  Shared TypeScript models for workout data, routines, settings, and exercises
+- `utils`
+  Formatting, calculations, charts, exercise loading, superset helpers, import/export helpers, and workout-history logic
 
----
+## Data Model Notes
 
-## Notes
+Reptra currently stores data locally with AsyncStorage.
 
-This project started as a standard Expo app, and I am gradually replacing the starter code with my own structure, screens, components, and workout logic.
+Important architectural ideas in the app:
+
+- workout sessions are saved separately from routines
+- UI state is kept separate from saved data
+- routines and workouts have distinct storage layers
+- settings, custom exercises, and progress photos are also stored independently
+
+This makes it easier to keep iterating locally now and later migrate to a backend without rewriting the entire app shape.
+
+## Running the App
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Start the Expo dev server
+
+```bash
+npm start
+```
+
+### Run on Android
+
+```bash
+npm run android
+```
+
+### Run on iOS
+
+```bash
+npm run ios
+```
+
+### Run on web
+
+```bash
+npm run web
+```
+
+## Available Scripts
+
+- `npm start`
+- `npm run android`
+- `npm run ios`
+- `npm run web`
+- `npm run lint`
+
+## Design Goals
+
+- Dark theme
+- Clean, modern UI
+- Rounded cards
+- Blue accent color (`#4da6ff`)
+- Minimal clutter
+- Smooth workout logging flow
+
+## Current Priorities
+
+The project is now in a refinement and advanced-features stage rather than initial scaffolding.
+
+Current priorities are:
+
+- continuing workout-system polish
+- expanding superset support
+- improving exercise detail and progress views
+- improving workout reuse and history tools
+- polishing the overall mobile experience across iPhone and Android
+
+## Backend Note
+
+Reptra does not use a backend yet.
+
+Current storage is fully local. Account systems, cloud sync, social features, and cross-device data are planned for a later phase once the local product foundation is complete.
