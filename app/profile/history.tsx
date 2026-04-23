@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, Text } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
@@ -8,9 +8,13 @@ import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 
+type HistoryFilter = 'all' | 'routine' | 'empty';
+
 export default function ProfileWorkoutHistoryScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [searchText, setSearchText] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<HistoryFilter>('all');
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
@@ -25,13 +29,37 @@ export default function ProfileWorkoutHistoryScreen() {
     }, [])
   );
 
+  const filteredWorkouts = workouts.filter((workout) => {
+    const matchesFilter =
+      selectedFilter === 'all'
+        ? true
+        : selectedFilter === 'routine'
+          ? workout.routineId !== null
+          : workout.routineId === null;
+
+    const normalizedSearch = searchText.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return matchesFilter;
+    }
+
+    const matchesRoutineName = workout.routineName
+      .toLowerCase()
+      .includes(normalizedSearch);
+    const matchesExerciseName = workout.exercises.some((exercise) =>
+      exercise.exerciseName.toLowerCase().includes(normalizedSearch)
+    );
+
+    return matchesFilter && (matchesRoutineName || matchesExerciseName);
+  });
+
   return (
     <>
       <Stack.Screen options={{ title: 'Workout History' }} />
 
       <SafeAreaView style={styles.container}>
         <FlatList
-          data={workouts}
+          data={filteredWorkouts}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <WorkoutHistoryCard
@@ -40,9 +68,87 @@ export default function ProfileWorkoutHistoryScreen() {
               onPress={() => router.push(`/workout/history/${item.id}`)}
             />
           )}
+          ListHeaderComponent={
+            <View style={styles.headerCard}>
+              <Text style={styles.title}>Workout History</Text>
+              <Text style={styles.subtitle}>
+                Search old sessions by workout name or exercise.
+              </Text>
+
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search workouts or exercises..."
+                placeholderTextColor="#777777"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+
+              <View style={styles.filterRow}>
+                <Pressable
+                  style={[
+                    styles.filterButton,
+                    selectedFilter === 'all' && styles.filterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedFilter('all')}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      selectedFilter === 'all' && styles.filterButtonTextSelected,
+                    ]}
+                  >
+                    All
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.filterButton,
+                    selectedFilter === 'routine' && styles.filterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedFilter('routine')}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      selectedFilter === 'routine' &&
+                        styles.filterButtonTextSelected,
+                    ]}
+                  >
+                    Routines
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.filterButton,
+                    selectedFilter === 'empty' && styles.filterButtonSelected,
+                  ]}
+                  onPress={() => setSelectedFilter('empty')}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      selectedFilter === 'empty' &&
+                        styles.filterButtonTextSelected,
+                    ]}
+                  >
+                    Empty
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.resultCount}>
+                {filteredWorkouts.length} result
+                {filteredWorkouts.length === 1 ? '' : 's'}
+              </Text>
+            </View>
+          }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
-              No workouts yet. Finish a workout to see it here.
+              {workouts.length === 0
+                ? 'No workouts yet. Finish a workout to see it here.'
+                : 'No workouts match your current search.'}
             </Text>
           }
           contentContainerStyle={styles.listContent}
@@ -58,6 +164,67 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111111',
     padding: 16,
+  },
+  headerCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  title: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  searchInput: {
+    backgroundColor: '#121212',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  filterButton: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  filterButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  filterButtonText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  filterButtonTextSelected: {
+    color: '#4da6ff',
+  },
+  resultCount: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   emptyText: {
     color: '#aaaaaa',

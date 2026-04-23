@@ -119,7 +119,7 @@ export default function WorkoutHistoryDetailScreen() {
 
                 <View style={styles.summaryStatPill}>
                   <Text style={styles.summaryStatValue}>
-                    {formatWeightWithUnit(String(heaviestWeight || 0), weightUnit)}
+                    {formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}
                   </Text>
                   <Text style={styles.summaryStatLabel}>Heaviest Set</Text>
                 </View>
