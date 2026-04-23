@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
@@ -7,9 +7,11 @@ import { loadWorkouts } from '../../storage/workouts';
 import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
+import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
 
 type HistoryFilter = 'all' | 'routine' | 'empty';
 type HistoryDateFilter = 'all' | '7d' | '30d' | '90d';
+type HistorySort = 'newest' | 'oldest' | 'longest' | 'heaviest';
 
 export default function ProfileWorkoutHistoryScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -18,6 +20,7 @@ export default function ProfileWorkoutHistoryScreen() {
   const [selectedFilter, setSelectedFilter] = useState<HistoryFilter>('all');
   const [selectedDateFilter, setSelectedDateFilter] =
     useState<HistoryDateFilter>('all');
+  const [selectedSort, setSelectedSort] = useState<HistorySort>('newest');
 
   const fetchWorkouts = async () => {
     const savedWorkouts = await loadWorkouts();
@@ -32,46 +35,70 @@ export default function ProfileWorkoutHistoryScreen() {
     }, [])
   );
 
-  const filteredWorkouts = workouts.filter((workout) => {
-    const completedAtMs = new Date(workout.completedAt).getTime();
-    const now = Date.now();
-    const daysAgo = (now - completedAtMs) / (1000 * 60 * 60 * 24);
+  const filteredWorkouts = useMemo(() => {
+    const nextWorkouts = workouts.filter((workout) => {
+      const completedAtMs = new Date(workout.completedAt).getTime();
+      const now = Date.now();
+      const daysAgo = (now - completedAtMs) / (1000 * 60 * 60 * 24);
 
-    const matchesFilter =
-      selectedFilter === 'all'
-        ? true
-        : selectedFilter === 'routine'
-          ? workout.routineId !== null
-          : workout.routineId === null;
+      const matchesFilter =
+        selectedFilter === 'all'
+          ? true
+          : selectedFilter === 'routine'
+            ? workout.routineId !== null
+            : workout.routineId === null;
 
-    const matchesDateFilter =
-      selectedDateFilter === 'all'
-        ? true
-        : selectedDateFilter === '7d'
-          ? daysAgo <= 7
-          : selectedDateFilter === '30d'
-            ? daysAgo <= 30
-            : daysAgo <= 90;
+      const matchesDateFilter =
+        selectedDateFilter === 'all'
+          ? true
+          : selectedDateFilter === '7d'
+            ? daysAgo <= 7
+            : selectedDateFilter === '30d'
+              ? daysAgo <= 30
+              : daysAgo <= 90;
 
-    const normalizedSearch = searchText.trim().toLowerCase();
+      const normalizedSearch = searchText.trim().toLowerCase();
 
-    if (!normalizedSearch) {
-      return matchesFilter && matchesDateFilter;
-    }
+      if (!normalizedSearch) {
+        return matchesFilter && matchesDateFilter;
+      }
 
-    const matchesRoutineName = workout.routineName
-      .toLowerCase()
-      .includes(normalizedSearch);
-    const matchesExerciseName = workout.exercises.some((exercise) =>
-      exercise.exerciseName.toLowerCase().includes(normalizedSearch)
-    );
+      const matchesRoutineName = workout.routineName
+        .toLowerCase()
+        .includes(normalizedSearch);
+      const matchesExerciseName = workout.exercises.some((exercise) =>
+        exercise.exerciseName.toLowerCase().includes(normalizedSearch)
+      );
 
-    return (
-      matchesFilter &&
-      matchesDateFilter &&
-      (matchesRoutineName || matchesExerciseName)
-    );
-  });
+      return (
+        matchesFilter &&
+        matchesDateFilter &&
+        (matchesRoutineName || matchesExerciseName)
+      );
+    });
+
+    return nextWorkouts.sort((a, b) => {
+      if (selectedSort === 'oldest') {
+        return (
+          new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
+        );
+      }
+
+      if (selectedSort === 'longest') {
+        return (b.durationMinutes || 0) - (a.durationMinutes || 0);
+      }
+
+      if (selectedSort === 'heaviest') {
+        const aHeaviest = calculateWorkoutSummary(a).heaviestWeight;
+        const bHeaviest = calculateWorkoutSummary(b).heaviestWeight;
+        return bHeaviest - aHeaviest;
+      }
+
+      return (
+        new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+    });
+  }, [searchText, selectedDateFilter, selectedFilter, selectedSort, workouts]);
 
   return (
     <>
@@ -236,6 +263,81 @@ export default function ProfileWorkoutHistoryScreen() {
                 </Pressable>
               </View>
 
+              <View style={styles.sortRow}>
+                <Text style={styles.sortLabel}>Sort</Text>
+
+                <View style={styles.sortOptionsRow}>
+                  <Pressable
+                    style={[
+                      styles.sortButton,
+                      selectedSort === 'newest' && styles.sortButtonSelected,
+                    ]}
+                    onPress={() => setSelectedSort('newest')}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        selectedSort === 'newest' && styles.sortButtonTextSelected,
+                      ]}
+                    >
+                      Newest
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.sortButton,
+                      selectedSort === 'oldest' && styles.sortButtonSelected,
+                    ]}
+                    onPress={() => setSelectedSort('oldest')}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        selectedSort === 'oldest' && styles.sortButtonTextSelected,
+                      ]}
+                    >
+                      Oldest
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.sortButton,
+                      selectedSort === 'longest' && styles.sortButtonSelected,
+                    ]}
+                    onPress={() => setSelectedSort('longest')}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        selectedSort === 'longest' && styles.sortButtonTextSelected,
+                      ]}
+                    >
+                      Longest
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.sortButton,
+                      selectedSort === 'heaviest' && styles.sortButtonSelected,
+                    ]}
+                    onPress={() => setSelectedSort('heaviest')}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        selectedSort === 'heaviest' &&
+                          styles.sortButtonTextSelected,
+                      ]}
+                    >
+                      Heaviest
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
               <Text style={styles.resultCount}>
                 {filteredWorkouts.length} result
                 {filteredWorkouts.length === 1 ? '' : 's'}
@@ -349,6 +451,42 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  sortRow: {
+    marginBottom: 10,
+  },
+  sortLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  sortOptionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  sortButton: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  sortButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  sortButtonText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sortButtonTextSelected: {
+    color: '#4da6ff',
   },
   emptyText: {
     color: '#aaaaaa',
