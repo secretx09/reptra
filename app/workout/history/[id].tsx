@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
 import { WeightUnit } from '../../../types/settings';
+import { Exercise } from '../../../types/exercise';
 import {
   loadWorkouts,
   deleteWorkoutById,
@@ -20,6 +21,8 @@ import {
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
+import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import { getMostRecentSetPrefill } from '../../../utils/workoutHistory';
 import {
   convertWeightValue,
   convertVolumeValue,
@@ -30,6 +33,8 @@ import {
 export default function WorkoutHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [workout, setWorkout] = useState<SavedWorkoutSession | null>(null);
+  const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [isEditingWorkoutNote, setIsEditingWorkoutNote] = useState(false);
   const [workoutNoteDraft, setWorkoutNoteDraft] = useState('');
@@ -40,15 +45,23 @@ export default function WorkoutHistoryDetailScreen() {
   const [editingSetKey, setEditingSetKey] = useState<string | null>(null);
   const [setWeightDraft, setSetWeightDraft] = useState('');
   const [setRepsDraft, setSetRepsDraft] = useState('');
+  const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+  const [exerciseSearchText, setExerciseSearchText] = useState('');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
 
   useFocusEffect(
     useCallback(() => {
       const fetchWorkout = async () => {
-        const workouts = await loadWorkouts();
-        const savedSettings = await loadSettings();
-        const foundWorkout = workouts.find((item) => item.id === id) || null;
+        const [savedWorkouts, savedSettings, loadedExercises] = await Promise.all([
+          loadWorkouts(),
+          loadSettings(),
+          loadExerciseLibrary(),
+        ]);
+        const foundWorkout = savedWorkouts.find((item) => item.id === id) || null;
 
         setWorkout(foundWorkout);
+        setWorkouts(savedWorkouts);
+        setExerciseLibrary(loadedExercises);
         setWorkoutNoteDraft(foundWorkout?.note ?? '');
         setIsEditingWorkoutNote(false);
         setEditingExerciseNoteId(null);
@@ -56,12 +69,42 @@ export default function WorkoutHistoryDetailScreen() {
         setEditingSetKey(null);
         setSetWeightDraft('');
         setSetRepsDraft('');
+        setIsExercisePickerOpen(false);
+        setExerciseSearchText('');
+        setSelectedMuscleGroup('All');
         setWeightUnit(savedSettings.weightUnit);
       };
 
       fetchWorkout();
     }, [id])
   );
+
+  const muscleGroups = useMemo(
+    () => getMuscleGroups(exerciseLibrary),
+    [exerciseLibrary]
+  );
+
+  const filteredExercisesToAdd = useMemo(() => {
+    if (!workout) return [];
+
+    const addedExerciseIds = new Set(
+      workout.exercises.map((exercise) => exercise.exerciseId)
+    );
+    const normalizedSearchText = exerciseSearchText.trim().toLowerCase();
+
+    return exerciseLibrary.filter((exercise) => {
+      if (addedExerciseIds.has(exercise.id)) return false;
+
+      const matchesSearch =
+        normalizedSearchText.length === 0 ||
+        exercise.name.toLowerCase().includes(normalizedSearchText);
+      const matchesMuscleGroup =
+        selectedMuscleGroup === 'All' ||
+        exercise.muscleGroup === selectedMuscleGroup;
+
+      return matchesSearch && matchesMuscleGroup;
+    });
+  }, [exerciseLibrary, exerciseSearchText, selectedMuscleGroup, workout]);
 
   const handleDeleteWorkout = () => {
     if (!workout) return;
@@ -189,6 +232,42 @@ export default function WorkoutHistoryDetailScreen() {
     );
   };
 
+  const handleAddExerciseToWorkout = async (exercise: Exercise) => {
+    if (!workout) return;
+
+    const prefill = getMostRecentSetPrefill(
+      workouts.filter((item) => item.id !== workout.id),
+      exercise.id,
+      1
+    );
+    const newExerciseLog: SavedExerciseLog = {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      note: '',
+      sets: [
+        {
+          id: `${exercise.id}-${Date.now()}`,
+          setNumber: 1,
+          weight: prefill?.weight || '',
+          reps: prefill?.reps || '',
+          completed: true,
+        },
+      ],
+    };
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      exercises: [...workout.exercises, newExerciseLog],
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
+    setExerciseSearchText('');
+    setSelectedMuscleGroup('All');
+  };
+
   const getSetKey = (exerciseId: string, setId: string) => `${exerciseId}:${setId}`;
 
   const handleStartEditingSet = (exerciseId: string, set: WorkoutSet) => {
@@ -245,6 +324,48 @@ export default function WorkoutHistoryDetailScreen() {
     await updateWorkoutById(workout.id, updatedWorkout);
     setWorkout(updatedWorkout);
     handleCancelEditingSet();
+  };
+
+  const handleAddSet = async (exerciseId: string) => {
+    if (!workout) return;
+
+    const targetExercise = workout.exercises.find(
+      (exercise) => exercise.exerciseId === exerciseId
+    );
+
+    if (!targetExercise) return;
+
+    const previousSet = targetExercise.sets[targetExercise.sets.length - 1];
+    const historyPrefill = getMostRecentSetPrefill(
+      workouts.filter((item) => item.id !== workout.id),
+      exerciseId,
+      targetExercise.sets.length + 1
+    );
+    const newSet: WorkoutSet = {
+      id: `${exerciseId}-${Date.now()}`,
+      setNumber: targetExercise.sets.length + 1,
+      weight: previousSet?.weight || historyPrefill?.weight || '',
+      reps: previousSet?.reps || historyPrefill?.reps || '',
+      completed: true,
+    };
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      exercises: workout.exercises.map((exercise) =>
+        exercise.exerciseId === exerciseId
+          ? {
+              ...exercise,
+              sets: [...exercise.sets, newSet],
+            }
+          : exercise
+      ),
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
   };
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
@@ -433,6 +554,83 @@ export default function WorkoutHistoryDetailScreen() {
               >
                 <Text style={styles.startAgainButtonText}>Start Again</Text>
               </Pressable>
+
+              <Pressable
+                style={styles.addExerciseTrigger}
+                onPress={() => setIsExercisePickerOpen((current) => !current)}
+              >
+                <Text style={styles.addExerciseTriggerText}>
+                  {isExercisePickerOpen ? 'Close Exercise Picker' : '+ Add Exercise'}
+                </Text>
+              </Pressable>
+
+              {isExercisePickerOpen && (
+                <View style={styles.exercisePickerCard}>
+                  <Text style={styles.exercisePickerTitle}>Add Exercise</Text>
+
+                  <TextInput
+                    style={styles.exerciseSearchInput}
+                    placeholder="Search exercises..."
+                    placeholderTextColor="#888888"
+                    value={exerciseSearchText}
+                    onChangeText={setExerciseSearchText}
+                  />
+
+                  <View style={styles.filterRow}>
+                    {muscleGroups.map((group) => {
+                      const isSelected = selectedMuscleGroup === group;
+
+                      return (
+                        <Pressable
+                          key={group}
+                          style={[
+                            styles.filterButton,
+                            isSelected && styles.filterButtonSelected,
+                          ]}
+                          onPress={() => setSelectedMuscleGroup(group)}
+                        >
+                          <Text
+                            style={[
+                              styles.filterButtonText,
+                              isSelected && styles.filterButtonTextSelected,
+                            ]}
+                          >
+                            {group}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  {filteredExercisesToAdd.length === 0 ? (
+                    <Text style={styles.emptyPickerText}>
+                      No matching exercises to add.
+                    </Text>
+                  ) : (
+                    filteredExercisesToAdd.map((exercise) => (
+                      <View key={exercise.id} style={styles.exercisePickerRow}>
+                        <View style={styles.exercisePickerInfo}>
+                          <Text style={styles.exercisePickerName}>
+                            {exercise.name}
+                          </Text>
+                          <Text style={styles.exercisePickerMeta}>
+                            {exercise.muscleGroup} {'\u2022'} {exercise.equipment}
+                          </Text>
+                        </View>
+
+                        <Pressable
+                          style={styles.exercisePickerAddButton}
+                          onPress={() => handleAddExerciseToWorkout(exercise)}
+                        >
+                          <Text style={styles.exercisePickerAddButtonText}>
+                            Add
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
           }
           renderItem={({ item, index }: { item: SavedExerciseLog; index: number }) => (
@@ -585,12 +783,31 @@ export default function WorkoutHistoryDetailScreen() {
                   </View>
                 );
               })}
+
+              <Pressable
+                style={styles.addSetButton}
+                onPress={() => handleAddSet(item.exerciseId)}
+              >
+                <Text style={styles.addSetButtonText}>+ Add Set</Text>
+              </Pressable>
             </View>
           )}
           ListFooterComponent={
-            <Pressable style={styles.deleteButton} onPress={handleDeleteWorkout}>
-              <Text style={styles.deleteButtonText}>Delete Workout</Text>
-            </Pressable>
+            <>
+              {workout.exercises.length === 0 && (
+                <View style={styles.emptyWorkoutCard}>
+                  <Text style={styles.emptyWorkoutTitle}>No exercises left</Text>
+                  <Text style={styles.emptyWorkoutText}>
+                    This workout has no saved exercises anymore. You can keep the
+                    workout note, start it again, or delete the workout entirely.
+                  </Text>
+                </View>
+              )}
+
+              <Pressable style={styles.deleteButton} onPress={handleDeleteWorkout}>
+                <Text style={styles.deleteButtonText}>Delete Workout</Text>
+              </Pressable>
+            </>
           }
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -959,6 +1176,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  addSetButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  addSetButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   deleteButton: {
     backgroundColor: '#2a1111',
     borderWidth: 1,
@@ -974,6 +1205,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  emptyWorkoutCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  emptyWorkoutTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptyWorkoutText: {
+    color: '#aaaaaa',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   startAgainButton: {
     backgroundColor: '#16324d',
     borderWidth: 1,
@@ -987,6 +1237,115 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  addExerciseTrigger: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  addExerciseTriggerText: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  exercisePickerCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  exercisePickerTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  exerciseSearchInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  filterButton: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterButtonSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  filterButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterButtonTextSelected: {
+    color: '#111111',
+  },
+  exercisePickerRow: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  exercisePickerInfo: {
+    flex: 1,
+  },
+  exercisePickerName: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  exercisePickerMeta: {
+    color: '#aaaaaa',
+    fontSize: 12,
+  },
+  exercisePickerAddButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  exercisePickerAddButtonText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyPickerText: {
+    color: '#aaaaaa',
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 10,
   },
   listContent: {
     paddingBottom: 24,

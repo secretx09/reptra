@@ -42,14 +42,14 @@ export default function WorkoutHistoryCard({
       </Text>
       <Text style={styles.meta}>
         {workout.exercises.length} exercise
-        {workout.exercises.length === 1 ? '' : 's'} • {totalSets} set
+        {workout.exercises.length === 1 ? '' : 's'} {'\u2022'} {totalSets} set
         {totalSets === 1 ? '' : 's'}
       </Text>
       {totalReps > 0 || heaviestWeight > 0 ? (
         <Text style={styles.meta}>
           {totalReps > 0 ? `${totalReps} reps` : '0 reps'}
           {heaviestWeight > 0
-            ? ` • Heaviest ${formatWeightNumber(convertedHeaviestWeight)} ${formatWeightUnit(weightUnit)}`
+            ? ` \u2022 Heaviest ${formatWeightNumber(convertedHeaviestWeight)} ${formatWeightUnit(weightUnit)}`
             : ''}
         </Text>
       ) : null}
