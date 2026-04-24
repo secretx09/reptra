@@ -21,6 +21,7 @@ import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../type
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
 import {
+  convertWeightValue,
   convertVolumeValue,
   formatWeightNumber,
   formatWeightWithUnit,
@@ -36,6 +37,9 @@ export default function WorkoutHistoryDetailScreen() {
     null
   );
   const [exerciseNoteDraft, setExerciseNoteDraft] = useState('');
+  const [editingSetKey, setEditingSetKey] = useState<string | null>(null);
+  const [setWeightDraft, setSetWeightDraft] = useState('');
+  const [setRepsDraft, setSetRepsDraft] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -49,6 +53,9 @@ export default function WorkoutHistoryDetailScreen() {
         setIsEditingWorkoutNote(false);
         setEditingExerciseNoteId(null);
         setExerciseNoteDraft('');
+        setEditingSetKey(null);
+        setSetWeightDraft('');
+        setSetRepsDraft('');
         setWeightUnit(savedSettings.weightUnit);
       };
 
@@ -139,6 +146,64 @@ export default function WorkoutHistoryDetailScreen() {
     setWorkout(updatedWorkout);
     setEditingExerciseNoteId(null);
     setExerciseNoteDraft('');
+  };
+
+  const getSetKey = (exerciseId: string, setId: string) => `${exerciseId}:${setId}`;
+
+  const handleStartEditingSet = (exerciseId: string, set: WorkoutSet) => {
+    const sourceWeightUnit = workout?.weightUnit ?? 'lb';
+    const displayedWeight = convertWeightValue(
+      Number(set.weight) || 0,
+      sourceWeightUnit,
+      weightUnit
+    );
+
+    setEditingSetKey(getSetKey(exerciseId, set.id));
+    setSetWeightDraft(set.weight ? formatWeightNumber(displayedWeight) : '');
+    setSetRepsDraft(set.reps ?? '');
+  };
+
+  const handleCancelEditingSet = () => {
+    setEditingSetKey(null);
+    setSetWeightDraft('');
+    setSetRepsDraft('');
+  };
+
+  const handleSaveSet = async (exerciseId: string, setId: string) => {
+    if (!workout) return;
+
+    const sourceWeightUnit = workout.weightUnit ?? 'lb';
+    const parsedWeight = Number(setWeightDraft);
+    const savedWeight =
+      setWeightDraft.trim() === '' || Number.isNaN(parsedWeight)
+        ? ''
+        : formatWeightNumber(
+            convertWeightValue(parsedWeight, weightUnit, sourceWeightUnit)
+          );
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      exercises: workout.exercises.map((exercise) =>
+        exercise.exerciseId === exerciseId
+          ? {
+              ...exercise,
+              sets: exercise.sets.map((set) =>
+                set.id === setId
+                  ? {
+                      ...set,
+                      weight: savedWeight,
+                      reps: setRepsDraft.trim(),
+                    }
+                  : set
+              ),
+            }
+          : exercise
+      ),
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    handleCancelEditingSet();
   };
 
   if (!workout) {
@@ -334,19 +399,79 @@ export default function WorkoutHistoryDetailScreen() {
                 </Pressable>
               )}
 
-              {item.sets.map((set: WorkoutSet) => (
-                <View key={set.id} style={styles.setRow}>
-                  <Text style={styles.setLabel}>Set {set.setNumber}</Text>
-                  <Text style={styles.setValue}>
-                    {formatWeightWithUnit(
-                      set.weight,
-                      weightUnit,
-                      sourceWeightUnit
+              {item.sets.map((set: WorkoutSet) => {
+                const setKey = getSetKey(item.exerciseId, set.id);
+                const isEditingSet = editingSetKey === setKey;
+
+                return (
+                  <View
+                    key={set.id}
+                    style={[
+                      styles.setRow,
+                      isEditingSet && styles.setRowEditing,
+                    ]}
+                  >
+                    <Text style={styles.setLabel}>Set {set.setNumber}</Text>
+
+                    {isEditingSet ? (
+                      <View style={styles.setEditWrap}>
+                        <View style={styles.setEditInputs}>
+                          <TextInput
+                            style={styles.setEditInput}
+                            placeholder={weightUnit}
+                            placeholderTextColor="#777777"
+                            keyboardType="numeric"
+                            value={setWeightDraft}
+                            onChangeText={setSetWeightDraft}
+                          />
+
+                          <TextInput
+                            style={styles.setEditInput}
+                            placeholder="Reps"
+                            placeholderTextColor="#777777"
+                            keyboardType="numeric"
+                            value={setRepsDraft}
+                            onChangeText={setSetRepsDraft}
+                          />
+                        </View>
+
+                        <View style={styles.setEditActions}>
+                          <Pressable
+                            style={styles.setSaveButton}
+                            onPress={() => handleSaveSet(item.exerciseId, set.id)}
+                          >
+                            <Text style={styles.setSaveButtonText}>Save</Text>
+                          </Pressable>
+
+                          <Pressable
+                            style={styles.setCancelButton}
+                            onPress={handleCancelEditingSet}
+                          >
+                            <Text style={styles.setCancelButtonText}>Cancel</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={styles.setValue}>
+                          {formatWeightWithUnit(
+                            set.weight,
+                            weightUnit,
+                            sourceWeightUnit
+                          )}
+                        </Text>
+                        <Text style={styles.setValue}>{set.reps || '-'} reps</Text>
+                        <Pressable
+                          style={styles.setEditButton}
+                          onPress={() => handleStartEditingSet(item.exerciseId, set)}
+                        >
+                          <Text style={styles.setEditButtonText}>Edit</Text>
+                        </Pressable>
+                      </>
                     )}
-                  </Text>
-                  <Text style={styles.setValue}>{set.reps || '-'} reps</Text>
-                </View>
-              ))}
+                  </View>
+                );
+              })}
             </View>
           )}
           ListFooterComponent={
@@ -611,6 +736,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  setRowEditing: {
+    alignItems: 'stretch',
+    gap: 10,
+  },
   setLabel: {
     color: '#ffffff',
     fontSize: 14,
@@ -619,6 +748,70 @@ const styles = StyleSheet.create({
   setValue: {
     color: '#aaaaaa',
     fontSize: 14,
+  },
+  setEditButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  setEditButtonText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  setEditWrap: {
+    flex: 1,
+    gap: 8,
+  },
+  setEditInputs: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  setEditInput: {
+    flex: 1,
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    fontSize: 13,
+  },
+  setEditActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  setSaveButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  setSaveButtonText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  setCancelButton: {
+    flex: 1,
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  setCancelButtonText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
   },
   deleteButton: {
     backgroundColor: '#2a1111',
