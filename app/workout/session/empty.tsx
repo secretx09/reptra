@@ -433,12 +433,7 @@ export default function EmptyWorkoutSessionScreen() {
     const updatedWorkouts = [newWorkout, ...existingWorkouts];
     await saveWorkouts(updatedWorkouts);
 
-    Alert.alert('Workout saved', 'Your empty workout has been saved.', [
-      {
-        text: 'OK',
-        onPress: () => router.back(),
-      },
-    ]);
+    router.replace(`/workout/summary/${newWorkout.id}` as never);
   };
 
   return (

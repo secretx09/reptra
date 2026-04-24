@@ -14,10 +14,34 @@ export async function saveWorkouts(workouts: SavedWorkoutSession[]) {
 export async function loadWorkouts(): Promise<SavedWorkoutSession[]> {
   try {
     const data = await AsyncStorage.getItem(WORKOUTS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) {
+      return [];
+    }
+
+    const parsedWorkouts = JSON.parse(data) as SavedWorkoutSession[];
+
+    return parsedWorkouts.map((workout) => ({
+      ...workout,
+      note: workout.note ?? '',
+    }));
   } catch (error) {
     console.error('Failed to load workouts:', error);
     return [];
+  }
+}
+
+export async function updateWorkoutById(
+  workoutId: string,
+  updatedWorkout: SavedWorkoutSession
+) {
+  try {
+    const workouts = await loadWorkouts();
+    const updatedWorkouts = workouts.map((workout) =>
+      workout.id === workoutId ? updatedWorkout : workout
+    );
+    await saveWorkouts(updatedWorkouts);
+  } catch (error) {
+    console.error('Failed to update workout:', error);
   }
 }
 

@@ -111,6 +111,13 @@ export default function WorkoutHistoryDetailScreen() {
                 <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
               ) : null}
 
+              {workout.note?.trim() ? (
+                <View style={styles.workoutNoteBox}>
+                  <Text style={styles.workoutNoteTitle}>Workout Note</Text>
+                  <Text style={styles.workoutNoteText}>{workout.note}</Text>
+                </View>
+              ) : null}
+
               <View style={styles.summaryStatsRow}>
                 <View style={styles.summaryStatPill}>
                   <Text style={styles.summaryStatValue}>{totalReps}</Text>
@@ -210,6 +217,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 14,
+  },
+  workoutNoteBox: {
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  workoutNoteTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  workoutNoteText: {
+    color: '#dddddd',
+    fontSize: 14,
+    lineHeight: 20,
   },
   summaryStatPill: {
     flex: 1,

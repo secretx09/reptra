@@ -503,12 +503,7 @@ export default function WorkoutSessionScreen() {
     const updatedWorkouts = [newWorkout, ...existingWorkouts];
     await saveWorkouts(updatedWorkouts);
 
-    Alert.alert('Workout saved', 'Your workout has been saved.', [
-      {
-        text: 'OK',
-        onPress: () => router.back(),
-      },
-    ]);
+    router.replace(`/workout/summary/${newWorkout.id}` as never);
   };
 
   if (!routine) {
