@@ -148,6 +148,47 @@ export default function WorkoutHistoryDetailScreen() {
     setExerciseNoteDraft('');
   };
 
+  const handleDeleteExercise = (exerciseId: string) => {
+    if (!workout) return;
+
+    const targetExercise = workout.exercises.find(
+      (exercise) => exercise.exerciseId === exerciseId
+    );
+
+    if (!targetExercise) return;
+
+    Alert.alert(
+      'Delete exercise',
+      `Remove ${targetExercise.exerciseName} from this workout?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updatedWorkout: SavedWorkoutSession = {
+              ...workout,
+              exercises: workout.exercises.filter(
+                (exercise) => exercise.exerciseId !== exerciseId
+              ),
+            };
+
+            await updateWorkoutById(workout.id, updatedWorkout);
+            setWorkout(updatedWorkout);
+
+            if (editingExerciseNoteId === exerciseId) {
+              handleCancelEditingExerciseNote();
+            }
+
+            if (editingSetKey?.startsWith(`${exerciseId}:`)) {
+              handleCancelEditingSet();
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const getSetKey = (exerciseId: string, setId: string) => `${exerciseId}:${setId}`;
 
   const handleStartEditingSet = (exerciseId: string, set: WorkoutSet) => {
@@ -204,6 +245,63 @@ export default function WorkoutHistoryDetailScreen() {
     await updateWorkoutById(workout.id, updatedWorkout);
     setWorkout(updatedWorkout);
     handleCancelEditingSet();
+  };
+
+  const handleDeleteSet = (exerciseId: string, setId: string) => {
+    if (!workout) return;
+
+    const targetExercise = workout.exercises.find(
+      (exercise) => exercise.exerciseId === exerciseId
+    );
+    const targetSet = targetExercise?.sets.find((set) => set.id === setId);
+
+    if (!targetExercise || !targetSet) return;
+
+    Alert.alert(
+      'Delete set',
+      `Delete set ${targetSet.setNumber} from ${targetExercise.exerciseName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updatedWorkout: SavedWorkoutSession = {
+              ...workout,
+              exercises: workout.exercises
+                .map((exercise) => {
+                  if (exercise.exerciseId !== exerciseId) {
+                    return exercise;
+                  }
+
+                  const updatedSets = exercise.sets
+                    .filter((set) => set.id !== setId)
+                    .map((set, index) => ({
+                      ...set,
+                      setNumber: index + 1,
+                    }));
+
+                  return {
+                    ...exercise,
+                    sets: updatedSets,
+                  };
+                })
+                .filter(
+                  (exercise) =>
+                    exercise.sets.length > 0 || exercise.note.trim() !== ''
+                ),
+            };
+
+            await updateWorkoutById(workout.id, updatedWorkout);
+            setWorkout(updatedWorkout);
+
+            if (editingSetKey === getSetKey(exerciseId, setId)) {
+              handleCancelEditingSet();
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!workout) {
@@ -339,9 +437,18 @@ export default function WorkoutHistoryDetailScreen() {
           }
           renderItem={({ item, index }: { item: SavedExerciseLog; index: number }) => (
             <View style={styles.exerciseCard}>
-              <Text style={styles.exerciseName}>
-                {index + 1}. {item.exerciseName}
-              </Text>
+              <View style={styles.exerciseHeaderRow}>
+                <Text style={styles.exerciseName}>
+                  {index + 1}. {item.exerciseName}
+                </Text>
+
+                <Pressable
+                  style={styles.deleteExerciseButton}
+                  onPress={() => handleDeleteExercise(item.exerciseId)}
+                >
+                  <Text style={styles.deleteExerciseButtonText}>Delete</Text>
+                </Pressable>
+              </View>
 
               {item.note || editingExerciseNoteId === item.exerciseId ? (
                 <View style={styles.noteBox}>
@@ -466,6 +573,12 @@ export default function WorkoutHistoryDetailScreen() {
                           onPress={() => handleStartEditingSet(item.exerciseId, set)}
                         >
                           <Text style={styles.setEditButtonText}>Edit</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.setDeleteButton}
+                          onPress={() => handleDeleteSet(item.exerciseId, set.id)}
+                        >
+                          <Text style={styles.setDeleteButtonText}>Delete</Text>
                         </Pressable>
                       </>
                     )}
@@ -632,11 +745,31 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
   exerciseName: {
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
-    marginBottom: 10,
+    flex: 1,
+  },
+  deleteExerciseButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  deleteExerciseButtonText: {
+    color: '#ff8a8a',
+    fontSize: 12,
+    fontWeight: '700',
   },
   noteBox: {
     backgroundColor: '#161616',
@@ -759,6 +892,19 @@ const styles = StyleSheet.create({
   },
   setEditButtonText: {
     color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  setDeleteButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  setDeleteButtonText: {
+    color: '#ff8a8a',
     fontSize: 12,
     fontWeight: '700',
   },
