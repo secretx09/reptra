@@ -14,7 +14,16 @@ export async function saveRoutines(routines: RoutineWithExercises[]) {
 export async function loadRoutines(): Promise<RoutineWithExercises[]> {
   try {
     const data = await AsyncStorage.getItem(ROUTINES_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) {
+      return [];
+    }
+
+    const parsedRoutines = JSON.parse(data) as RoutineWithExercises[];
+
+    return parsedRoutines.map((routine) => ({
+      ...routine,
+      isPinned: routine.isPinned ?? false,
+    }));
   } catch (error) {
     console.error('Failed to load routines:', error);
     return [];
@@ -43,5 +52,14 @@ export async function updateRoutineById(
     await saveRoutines(updatedRoutines);
   } catch (error) {
     console.error('Failed to update routine:', error);
+  }
+}
+
+export async function createRoutine(routine: RoutineWithExercises) {
+  try {
+    const routines = await loadRoutines();
+    await saveRoutines([...routines, routine]);
+  } catch (error) {
+    console.error('Failed to create routine:', error);
   }
 }

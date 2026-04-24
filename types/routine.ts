@@ -4,6 +4,7 @@ export interface Routine {
   id: string;
   name: string;
   createdAt: string;
+  isPinned?: boolean;
 }
 
 export interface RoutineExercise {
@@ -28,5 +29,6 @@ export interface RoutineWithExercises {
   id: string;
   name: string;
   createdAt: string;
+  isPinned?: boolean;
   exercises: RoutineExerciseWithDefaults[];
 }

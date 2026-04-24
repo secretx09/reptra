@@ -10,7 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../storage/settings';
-import { deleteRoutineById, loadRoutines } from '../../storage/routines';
+import {
+  createRoutine,
+  deleteRoutineById,
+  loadRoutines,
+  saveRoutines,
+} from '../../storage/routines';
 import { Exercise } from '../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
 import { WeightUnit } from '../../types/settings';
@@ -66,6 +71,50 @@ export default function RoutineDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleTogglePinned = async () => {
+    if (!routine) return;
+
+    const routines = await loadRoutines();
+    const updatedRoutines = routines.map((item) =>
+      item.id === routine.id ? { ...item, isPinned: !(item.isPinned ?? false) } : item
+    );
+
+    const updatedRoutine =
+      updatedRoutines.find((item) => item.id === routine.id) ?? null;
+
+    await saveRoutines(updatedRoutines);
+    setRoutine(updatedRoutine);
+  };
+
+  const handleDuplicateRoutine = async () => {
+    if (!routine) return;
+
+    const duplicatedRoutine: RoutineWithExercises = {
+      ...routine,
+      id: new Date().toISOString(),
+      name: `${routine.name} Copy`,
+      createdAt: new Date().toISOString(),
+      isPinned: false,
+      exercises: routine.exercises.map((exercise) => ({
+        ...exercise,
+        supersetGroupId: exercise.supersetGroupId ?? null,
+      })),
+    };
+
+    await createRoutine(duplicatedRoutine);
+
+    Alert.alert('Routine duplicated', `"${duplicatedRoutine.name}" is ready to edit.`, [
+      {
+        text: 'Open Copy',
+        onPress: () => router.replace(`/routine/${duplicatedRoutine.id}`),
+      },
+      {
+        text: 'Stay Here',
+        style: 'cancel',
+      },
+    ]);
   };
 
   if (!routine) {
@@ -124,6 +173,32 @@ export default function RoutineDetailScreen() {
                   <Text style={styles.editButtonText}>Edit</Text>
                 </Pressable>
 
+                <Pressable
+                  style={styles.duplicateButton}
+                  onPress={handleDuplicateRoutine}
+                >
+                  <Text style={styles.duplicateButtonText}>Duplicate</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.pinButton,
+                    routine.isPinned && styles.pinButtonActive,
+                  ]}
+                  onPress={handleTogglePinned}
+                >
+                  <Text
+                    style={[
+                      styles.pinButtonText,
+                      routine.isPinned && styles.pinButtonTextActive,
+                    ]}
+                  >
+                    {routine.isPinned ? 'Pinned' : 'Pin'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.primaryActionRow}>
                 <Pressable
                   style={styles.startButton}
                   onPress={() => router.push(`/workout/session/${routine.id}`)}
@@ -258,6 +333,11 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     gap: 10,
+    marginBottom: 10,
+  },
+  primaryActionRow: {
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 16,
   },
   editButton: {
@@ -274,12 +354,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  duplicateButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flex: 1,
+  },
+  duplicateButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  pinButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flex: 0.9,
+  },
+  pinButtonActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  pinButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  pinButtonTextActive: {
+    color: '#4da6ff',
+  },
   startButton: {
     backgroundColor: '#4da6ff',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
-    flex: 1.4,
+    flex: 1,
   },
   startButtonText: {
     color: '#111111',

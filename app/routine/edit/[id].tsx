@@ -40,6 +40,7 @@ export default function EditRoutineScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -60,9 +61,11 @@ export default function EditRoutineScreen() {
         setRoutine({
           ...foundRoutine,
           name: foundRoutine.name ?? '',
+          isPinned: foundRoutine.isPinned ?? false,
           exercises: normalizedExercises,
         });
         setRoutineName(foundRoutine.name ?? '');
+        setIsPinned(foundRoutine.isPinned ?? false);
         setEditedExercises(normalizedExercises);
       }
     };
@@ -201,6 +204,7 @@ export default function EditRoutineScreen() {
     const updatedRoutine: RoutineWithExercises = {
       ...routine,
       name: routineName.trim(),
+      isPinned,
       exercises: normalizedExercises,
     };
 
@@ -251,6 +255,25 @@ export default function EditRoutineScreen() {
               value={routineName}
               onChangeText={setRoutineName}
             />
+
+            <Pressable
+              style={[styles.pinToggleCard, isPinned && styles.pinToggleCardActive]}
+              onPress={() => setIsPinned((current) => !current)}
+            >
+              <View style={styles.pinToggleTextWrap}>
+                <Text style={styles.pinToggleTitle}>
+                  {isPinned ? 'Pinned Routine' : 'Pin This Routine'}
+                </Text>
+                <Text style={styles.pinToggleText}>
+                  {isPinned
+                    ? 'This routine will stay near the top on your Workout tab.'
+                    : 'Pin your go-to routine so it stays easier to reach.'}
+                </Text>
+              </View>
+              <Text style={[styles.pinToggleChip, isPinned && styles.pinToggleChipActive]}>
+                {isPinned ? 'Pinned' : 'Off'}
+              </Text>
+            </Pressable>
 
             {supersetBlocks.length > 0 && (
               <View style={styles.supersetSummaryCard}>
@@ -589,6 +612,51 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  pinToggleCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  pinToggleCardActive: {
+    borderColor: '#4da6ff',
+    backgroundColor: '#16324d',
+  },
+  pinToggleTextWrap: {
+    flex: 1,
+  },
+  pinToggleTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  pinToggleText: {
+    color: '#9a9a9a',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  pinToggleChip: {
+    color: '#9a9a9a',
+    fontSize: 12,
+    fontWeight: '700',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  pinToggleChipActive: {
+    color: '#4da6ff',
+    borderColor: '#4da6ff',
+    backgroundColor: '#0f2740',
   },
   supersetSummaryCard: {
     backgroundColor: '#101c29',
