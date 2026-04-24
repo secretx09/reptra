@@ -1,10 +1,22 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  Alert,
+  TextInput,
+} from 'react-native';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
 import { WeightUnit } from '../../../types/settings';
-import { loadWorkouts, deleteWorkoutById } from '../../../storage/workouts';
+import {
+  loadWorkouts,
+  deleteWorkoutById,
+  updateWorkoutById,
+} from '../../../storage/workouts';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
@@ -18,6 +30,8 @@ export default function WorkoutHistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [workout, setWorkout] = useState<SavedWorkoutSession | null>(null);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [isEditingWorkoutNote, setIsEditingWorkoutNote] = useState(false);
+  const [workoutNoteDraft, setWorkoutNoteDraft] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -27,6 +41,8 @@ export default function WorkoutHistoryDetailScreen() {
         const foundWorkout = workouts.find((item) => item.id === id) || null;
 
         setWorkout(foundWorkout);
+        setWorkoutNoteDraft(foundWorkout?.note ?? '');
+        setIsEditingWorkoutNote(false);
         setWeightUnit(savedSettings.weightUnit);
       };
 
@@ -63,6 +79,32 @@ export default function WorkoutHistoryDetailScreen() {
         templateWorkoutId: workout.id,
       },
     });
+  };
+
+  const handleStartEditingWorkoutNote = () => {
+    if (!workout) return;
+
+    setWorkoutNoteDraft(workout.note ?? '');
+    setIsEditingWorkoutNote(true);
+  };
+
+  const handleCancelEditingWorkoutNote = () => {
+    setWorkoutNoteDraft(workout?.note ?? '');
+    setIsEditingWorkoutNote(false);
+  };
+
+  const handleSaveWorkoutNote = async () => {
+    if (!workout) return;
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      note: workoutNoteDraft.trim(),
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkoutNoteDraft(updatedWorkout.note ?? '');
+    setIsEditingWorkoutNote(false);
   };
 
   if (!workout) {
@@ -111,12 +153,61 @@ export default function WorkoutHistoryDetailScreen() {
                 <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
               ) : null}
 
-              {workout.note?.trim() ? (
+              {workout.note?.trim() || isEditingWorkoutNote ? (
                 <View style={styles.workoutNoteBox}>
-                  <Text style={styles.workoutNoteTitle}>Workout Note</Text>
-                  <Text style={styles.workoutNoteText}>{workout.note}</Text>
+                  <View style={styles.workoutNoteHeader}>
+                    <Text style={styles.workoutNoteTitle}>Workout Note</Text>
+
+                    {!isEditingWorkoutNote && (
+                      <Pressable onPress={handleStartEditingWorkoutNote}>
+                        <Text style={styles.workoutNoteAction}>Edit</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  {isEditingWorkoutNote ? (
+                    <>
+                      <TextInput
+                        style={styles.workoutNoteInput}
+                        placeholder="How did this workout feel?"
+                        placeholderTextColor="#777777"
+                        value={workoutNoteDraft}
+                        onChangeText={setWorkoutNoteDraft}
+                        multiline
+                      />
+
+                      <View style={styles.workoutNoteActions}>
+                        <Pressable
+                          style={styles.workoutNoteSaveButton}
+                          onPress={handleSaveWorkoutNote}
+                        >
+                          <Text style={styles.workoutNoteSaveButtonText}>Save</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.workoutNoteCancelButton}
+                          onPress={handleCancelEditingWorkoutNote}
+                        >
+                          <Text style={styles.workoutNoteCancelButtonText}>
+                            Cancel
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={styles.workoutNoteText}>{workout.note}</Text>
+                  )}
                 </View>
-              ) : null}
+              ) : (
+                <Pressable
+                  style={styles.addWorkoutNoteButton}
+                  onPress={handleStartEditingWorkoutNote}
+                >
+                  <Text style={styles.addWorkoutNoteButtonText}>
+                    + Add Workout Note
+                  </Text>
+                </Pressable>
+              )}
 
               <View style={styles.summaryStatsRow}>
                 <View style={styles.summaryStatPill}>
@@ -224,16 +315,87 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 12,
   },
+  workoutNoteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
+  },
   workoutNoteTitle: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 4,
+  },
+  workoutNoteAction: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   workoutNoteText: {
     color: '#dddddd',
     fontSize: 14,
     lineHeight: 20,
+  },
+  workoutNoteInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 82,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  workoutNoteActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  workoutNoteSaveButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  workoutNoteSaveButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  workoutNoteCancelButton: {
+    flex: 1,
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  workoutNoteCancelButtonText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addWorkoutNoteButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  addWorkoutNoteButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   summaryStatPill: {
     flex: 1,
