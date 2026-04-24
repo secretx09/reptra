@@ -32,6 +32,10 @@ export default function WorkoutHistoryDetailScreen() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [isEditingWorkoutNote, setIsEditingWorkoutNote] = useState(false);
   const [workoutNoteDraft, setWorkoutNoteDraft] = useState('');
+  const [editingExerciseNoteId, setEditingExerciseNoteId] = useState<string | null>(
+    null
+  );
+  const [exerciseNoteDraft, setExerciseNoteDraft] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -43,6 +47,8 @@ export default function WorkoutHistoryDetailScreen() {
         setWorkout(foundWorkout);
         setWorkoutNoteDraft(foundWorkout?.note ?? '');
         setIsEditingWorkoutNote(false);
+        setEditingExerciseNoteId(null);
+        setExerciseNoteDraft('');
         setWeightUnit(savedSettings.weightUnit);
       };
 
@@ -105,6 +111,34 @@ export default function WorkoutHistoryDetailScreen() {
     setWorkout(updatedWorkout);
     setWorkoutNoteDraft(updatedWorkout.note ?? '');
     setIsEditingWorkoutNote(false);
+  };
+
+  const handleStartEditingExerciseNote = (exercise: SavedExerciseLog) => {
+    setEditingExerciseNoteId(exercise.exerciseId);
+    setExerciseNoteDraft(exercise.note ?? '');
+  };
+
+  const handleCancelEditingExerciseNote = () => {
+    setEditingExerciseNoteId(null);
+    setExerciseNoteDraft('');
+  };
+
+  const handleSaveExerciseNote = async (exerciseId: string) => {
+    if (!workout) return;
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      exercises: workout.exercises.map((exercise) =>
+        exercise.exerciseId === exerciseId
+          ? { ...exercise, note: exerciseNoteDraft.trim() }
+          : exercise
+      ),
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setEditingExerciseNoteId(null);
+    setExerciseNoteDraft('');
   };
 
   if (!workout) {
@@ -244,12 +278,61 @@ export default function WorkoutHistoryDetailScreen() {
                 {index + 1}. {item.exerciseName}
               </Text>
 
-              {item.note ? (
+              {item.note || editingExerciseNoteId === item.exerciseId ? (
                 <View style={styles.noteBox}>
-                  <Text style={styles.noteTitle}>Exercise Note</Text>
-                  <Text style={styles.noteText}>{item.note}</Text>
+                  <View style={styles.noteHeader}>
+                    <Text style={styles.noteTitle}>Exercise Note</Text>
+
+                    {editingExerciseNoteId !== item.exerciseId && (
+                      <Pressable onPress={() => handleStartEditingExerciseNote(item)}>
+                        <Text style={styles.noteAction}>Edit</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  {editingExerciseNoteId === item.exerciseId ? (
+                    <>
+                      <TextInput
+                        style={styles.exerciseNoteInput}
+                        placeholder="Exercise note..."
+                        placeholderTextColor="#777777"
+                        value={exerciseNoteDraft}
+                        onChangeText={setExerciseNoteDraft}
+                        multiline
+                      />
+
+                      <View style={styles.exerciseNoteActions}>
+                        <Pressable
+                          style={styles.exerciseNoteSaveButton}
+                          onPress={() => handleSaveExerciseNote(item.exerciseId)}
+                        >
+                          <Text style={styles.exerciseNoteSaveButtonText}>Save</Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={styles.exerciseNoteCancelButton}
+                          onPress={handleCancelEditingExerciseNote}
+                        >
+                          <Text style={styles.exerciseNoteCancelButtonText}>
+                            Cancel
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={styles.noteText}>{item.note}</Text>
+                  )}
                 </View>
-              ) : null}
+              ) : (
+                <Pressable
+                  style={styles.addExerciseNoteButton}
+                  onPress={() => handleStartEditingExerciseNote(item)}
+                >
+                  <Text style={styles.addExerciseNoteButtonText}>
+                    + Add Exercise Note
+                  </Text>
+                </Pressable>
+              )}
 
               {item.sets.map((set: WorkoutSet) => (
                 <View key={set.id} style={styles.setRow}>
@@ -436,16 +519,87 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  noteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
+  },
   noteTitle: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 4,
+  },
+  noteAction: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   noteText: {
     color: '#dddddd',
     fontSize: 14,
     lineHeight: 20,
+  },
+  exerciseNoteInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 70,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  exerciseNoteActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  exerciseNoteSaveButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  exerciseNoteSaveButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  exerciseNoteCancelButton: {
+    flex: 1,
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  exerciseNoteCancelButtonText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addExerciseNoteButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  addExerciseNoteButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   setRow: {
     backgroundColor: '#161616',
