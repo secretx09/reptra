@@ -36,6 +36,8 @@ export default function WorkoutHistoryDetailScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false);
+  const [workoutNameDraft, setWorkoutNameDraft] = useState('');
   const [isEditingWorkoutNote, setIsEditingWorkoutNote] = useState(false);
   const [workoutNoteDraft, setWorkoutNoteDraft] = useState('');
   const [editingExerciseNoteId, setEditingExerciseNoteId] = useState<string | null>(
@@ -62,6 +64,8 @@ export default function WorkoutHistoryDetailScreen() {
         setWorkout(foundWorkout);
         setWorkouts(savedWorkouts);
         setExerciseLibrary(loadedExercises);
+        setWorkoutNameDraft(foundWorkout?.routineName ?? '');
+        setIsEditingWorkoutName(false);
         setWorkoutNoteDraft(foundWorkout?.note ?? '');
         setIsEditingWorkoutNote(false);
         setEditingExerciseNoteId(null);
@@ -135,6 +139,42 @@ export default function WorkoutHistoryDetailScreen() {
         templateWorkoutId: workout.id,
       },
     });
+  };
+
+  const handleStartEditingWorkoutName = () => {
+    if (!workout) return;
+
+    setWorkoutNameDraft(workout.routineName);
+    setIsEditingWorkoutName(true);
+  };
+
+  const handleCancelEditingWorkoutName = () => {
+    setWorkoutNameDraft(workout?.routineName ?? '');
+    setIsEditingWorkoutName(false);
+  };
+
+  const handleSaveWorkoutName = async () => {
+    if (!workout) return;
+
+    const trimmedName = workoutNameDraft.trim();
+
+    if (!trimmedName) {
+      Alert.alert('Missing name', 'Please enter a workout name.');
+      return;
+    }
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      routineName: trimmedName,
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
+    setWorkoutNameDraft(updatedWorkout.routineName);
+    setIsEditingWorkoutName(false);
   };
 
   const handleStartEditingWorkoutNote = () => {
@@ -458,7 +498,41 @@ export default function WorkoutHistoryDetailScreen() {
           keyExtractor={(item) => item.exerciseId}
           ListHeaderComponent={
             <View style={styles.headerCard}>
-              <Text style={styles.title}>{workout.routineName}</Text>
+              {isEditingWorkoutName ? (
+                <View style={styles.workoutNameEditBox}>
+                  <TextInput
+                    style={styles.workoutNameInput}
+                    placeholder="Workout name"
+                    placeholderTextColor="#777777"
+                    value={workoutNameDraft}
+                    onChangeText={setWorkoutNameDraft}
+                  />
+
+                  <View style={styles.workoutNameActions}>
+                    <Pressable
+                      style={styles.workoutNameSaveButton}
+                      onPress={handleSaveWorkoutName}
+                    >
+                      <Text style={styles.workoutNameSaveButtonText}>Save</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.workoutNameCancelButton}
+                      onPress={handleCancelEditingWorkoutName}
+                    >
+                      <Text style={styles.workoutNameCancelButtonText}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.workoutTitleRow}>
+                  <Text style={styles.title}>{workout.routineName}</Text>
+
+                  <Pressable onPress={handleStartEditingWorkoutName}>
+                    <Text style={styles.workoutTitleAction}>Rename</Text>
+                  </Pressable>
+                </View>
+              )}
               <Text style={styles.subtitle}>
                 {formattedDate} at {formattedTime}
               </Text>
@@ -836,6 +910,69 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     marginBottom: 6,
+    flex: 1,
+  },
+  workoutTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 6,
+  },
+  workoutTitleAction: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+    paddingTop: 8,
+  },
+  workoutNameEditBox: {
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  workoutNameInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  workoutNameActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  workoutNameSaveButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  workoutNameSaveButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  workoutNameCancelButton: {
+    flex: 1,
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  workoutNameCancelButtonText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '700',
   },
   subtitle: {
     color: '#aaaaaa',
