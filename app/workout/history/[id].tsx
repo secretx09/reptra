@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   TextInput,
+  Share,
 } from 'react-native';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,8 @@ import {
   deleteWorkoutById,
   updateWorkoutById,
 } from '../../../storage/workouts';
+import { loadRoutines, saveRoutines } from '../../../storage/routines';
+import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
@@ -139,6 +142,125 @@ export default function WorkoutHistoryDetailScreen() {
         templateWorkoutId: workout.id,
       },
     });
+  };
+
+  const handleShareWorkout = async () => {
+    if (!workout) return;
+
+    const summaryLines = [
+      workout.routineName,
+      `${formattedDate} at ${formattedTime}`,
+      formattedDuration ? `Duration: ${formattedDuration}` : '',
+      `${workout.exercises.length} exercises`,
+      `${totalSets} sets`,
+      `${totalReps} reps`,
+      `Heaviest: ${formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}`,
+      `Volume: ${formatWeightNumber(convertedVolume)} ${weightUnit}`,
+      workout.note?.trim() ? `Note: ${workout.note.trim()}` : '',
+      '',
+      ...workout.exercises.map((exercise) => {
+        const setSummary = exercise.sets
+          .map(
+            (set) =>
+              `${formatWeightWithUnit(set.weight, weightUnit, sourceWeightUnit)} x ${set.reps || '-'}`
+          )
+          .join(', ');
+        const exerciseNote = exercise.note?.trim()
+          ? ` (${exercise.note.trim()})`
+          : '';
+
+        return `${exercise.exerciseName}: ${setSummary || 'No sets'}${exerciseNote}`;
+      }),
+    ].filter(Boolean);
+
+    try {
+      await Share.share({
+        message: summaryLines.join('\n'),
+      });
+    } catch {
+      Alert.alert('Share failed', 'Unable to open the share sheet right now.');
+    }
+  };
+
+  const handleSaveAsRoutine = async () => {
+    if (!workout) return;
+
+    if (workout.exercises.length === 0) {
+      Alert.alert(
+        'No exercises',
+        'Add at least one exercise before saving this workout as a routine.'
+      );
+      return;
+    }
+
+    const existingRoutines = await loadRoutines();
+    const baseName = `${workout.routineName} Routine`;
+    const existingNames = new Set(
+      existingRoutines.map((routine) => routine.name.trim().toLowerCase())
+    );
+    let routineName = baseName;
+    let copyNumber = 2;
+
+    while (existingNames.has(routineName.trim().toLowerCase())) {
+      routineName = `${baseName} ${copyNumber}`;
+      copyNumber += 1;
+    }
+
+    const routineExercises: RoutineExerciseWithDefaults[] = workout.exercises.map(
+      (savedExercise) => {
+        const libraryExercise = exerciseLibrary.find(
+          (exercise) => exercise.id === savedExercise.exerciseId
+        );
+        const firstSet = savedExercise.sets[0];
+        const parsedWeight = Number(firstSet?.weight);
+        const defaultWeight =
+          firstSet?.weight && !Number.isNaN(parsedWeight)
+            ? formatWeightNumber(
+                convertWeightValue(parsedWeight, sourceWeightUnit, weightUnit)
+              )
+            : '';
+
+        return {
+          ...(libraryExercise ?? {
+            id: savedExercise.exerciseId,
+            name: savedExercise.exerciseName,
+            muscleGroup: 'Custom',
+            primaryMuscles: [],
+            secondaryMuscles: [],
+            equipment: 'Unknown',
+            instructions: [],
+            isCustom: true,
+          }),
+          defaultSets: String(Math.max(savedExercise.sets.length, 1)),
+          defaultWeight,
+          defaultReps: firstSet?.reps || '',
+          defaultRestSeconds: '',
+          supersetGroupId: null,
+        };
+      }
+    );
+
+    const newRoutine: RoutineWithExercises = {
+      id: `routine-${Date.now()}`,
+      name: routineName,
+      createdAt: new Date().toISOString(),
+      isPinned: false,
+      exercises: routineExercises,
+    };
+
+    await saveRoutines([...existingRoutines, newRoutine]);
+
+    Alert.alert(
+      'Routine saved',
+      `"${routineName}" was added to your routines.`,
+      [
+        { text: 'Stay Here', style: 'cancel' },
+        {
+          text: 'View Routine',
+          onPress: () => router.push(`/routine/${newRoutine.id}`),
+        },
+      ]
+    );
   };
 
   const handleStartEditingWorkoutName = () => {
@@ -627,6 +749,19 @@ export default function WorkoutHistoryDetailScreen() {
                 onPress={handleStartAgain}
               >
                 <Text style={styles.startAgainButtonText}>Start Again</Text>
+              </Pressable>
+
+              <Pressable style={styles.shareButton} onPress={handleShareWorkout}>
+                <Text style={styles.shareButtonText}>Share Summary</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.saveAsRoutineButton}
+                onPress={handleSaveAsRoutine}
+              >
+                <Text style={styles.saveAsRoutineButtonText}>
+                  Save as Routine
+                </Text>
               </Pressable>
 
               <Pressable
@@ -1371,6 +1506,34 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   startAgainButtonText: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  shareButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  shareButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  saveAsRoutineButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  saveAsRoutineButtonText: {
     color: '#4da6ff',
     fontSize: 15,
     fontWeight: '700',

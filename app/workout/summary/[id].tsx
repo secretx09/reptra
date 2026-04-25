@@ -3,6 +3,7 @@ import {
   Alert,
   FlatList,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -29,6 +30,8 @@ export default function WorkoutSummaryScreen() {
   const [workout, setWorkout] = useState<SavedWorkoutSession | null>(null);
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
+  const [workoutName, setWorkoutName] = useState('');
+  const [nameSaved, setNameSaved] = useState(true);
   const [workoutNote, setWorkoutNote] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
 
@@ -42,6 +45,8 @@ export default function WorkoutSummaryScreen() {
         const foundWorkout = savedWorkouts.find((item) => item.id === id) || null;
 
         setWorkout(foundWorkout);
+        setWorkoutName(foundWorkout?.routineName ?? '');
+        setNameSaved(true);
         setWorkoutNote(foundWorkout?.note ?? '');
         setNoteSaved(Boolean(foundWorkout?.note?.trim()));
         setWorkouts(savedWorkouts);
@@ -73,6 +78,31 @@ export default function WorkoutSummaryScreen() {
     });
   };
 
+  const handleSaveWorkoutName = async () => {
+    if (!workout) return;
+
+    const trimmedName = workoutName.trim();
+
+    if (!trimmedName) {
+      Alert.alert('Missing name', 'Please enter a workout name.');
+      return;
+    }
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      routineName: trimmedName,
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
+    setWorkoutName(updatedWorkout.routineName);
+    setNameSaved(true);
+    Alert.alert('Name saved', 'Your workout name was updated.');
+  };
+
   const handleSaveWorkoutNote = async () => {
     if (!workout) return;
 
@@ -88,6 +118,40 @@ export default function WorkoutSummaryScreen() {
     );
     setNoteSaved(true);
     Alert.alert('Note saved', 'Your workout note was added to this workout.');
+  };
+
+  const handleShareWorkout = async () => {
+    if (!workout) return;
+
+    const summaryLines = [
+      `${workout.routineName}`,
+      `${formattedDate} at ${formattedTime}`,
+      formattedDuration ? `Duration: ${formattedDuration}` : '',
+      `${workout.exercises.length} exercises`,
+      `${totalSets} sets`,
+      `${totalReps} reps`,
+      `Heaviest: ${formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}`,
+      `Volume: ${formatWeightNumber(convertedVolume)} ${weightUnit}`,
+      '',
+      ...workout.exercises.map((exercise) => {
+        const setSummary = exercise.sets
+          .map(
+            (set) =>
+              `${formatWeightWithUnit(set.weight, weightUnit, sourceWeightUnit)} x ${set.reps || '-'}`
+          )
+          .join(', ');
+
+        return `${exercise.exerciseName}: ${setSummary || 'No sets'}`;
+      }),
+    ].filter(Boolean);
+
+    try {
+      await Share.share({
+        message: summaryLines.join('\n'),
+      });
+    } catch {
+      Alert.alert('Share failed', 'Unable to open the share sheet right now.');
+    }
   };
 
   if (!workout) {
@@ -131,6 +195,29 @@ export default function WorkoutSummaryScreen() {
               {formattedDuration ? (
                 <Text style={styles.subtitle}>Duration: {formattedDuration}</Text>
               ) : null}
+
+              <View style={styles.nameCard}>
+                <Text style={styles.nameTitle}>Workout Name</Text>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Workout name"
+                  placeholderTextColor="#777777"
+                  value={workoutName}
+                  onChangeText={(value) => {
+                    setWorkoutName(value);
+                    setNameSaved(false);
+                  }}
+                />
+
+                <Pressable
+                  style={styles.nameButton}
+                  onPress={handleSaveWorkoutName}
+                >
+                  <Text style={styles.nameButtonText}>
+                    {nameSaved ? 'Update Name' : 'Save Name'}
+                  </Text>
+                </Pressable>
+              </View>
 
               <View style={styles.summaryGrid}>
                 <View style={styles.summaryStat}>
@@ -249,6 +336,10 @@ export default function WorkoutSummaryScreen() {
                 </Pressable>
               </View>
 
+              <Pressable style={styles.shareButton} onPress={handleShareWorkout}>
+                <Text style={styles.shareButtonText}>Share Summary</Text>
+              </Pressable>
+
               <Pressable style={styles.primaryButton} onPress={handleDone}>
                 <Text style={styles.primaryButtonText}>Done</Text>
               </Pressable>
@@ -314,6 +405,44 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 14,
     marginBottom: 2,
+  },
+  nameCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+  },
+  nameTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  nameInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 10,
+  },
+  nameButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  nameButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -459,6 +588,20 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  shareButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  shareButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
   },
