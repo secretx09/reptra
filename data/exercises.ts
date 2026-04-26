@@ -3017,6 +3017,19 @@ const createVideoSearchExercise = (
   isCustom: false,
 });
 
+const normalizeExerciseDemoSearch = (exercise: Exercise): Exercise => ({
+  ...exercise,
+  demoMedia: {
+    type: 'video',
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+      `${exercise.name} proper form`
+    )}`,
+    title: `${exercise.name} Form Demo`,
+    sourceLabel: 'YouTube',
+  },
+  isCustom: false,
+});
+
 const additionalExercises: Exercise[] = [
   createVideoSearchExercise({
     id: 'anderson-squat',
@@ -3804,6 +3817,6 @@ const additionalExercises: Exercise[] = [
   }),
 ];
 
-export const exercises: Exercise[] = [...baseExercises, ...additionalExercises].sort(
-  (a, b) => a.name.localeCompare(b.name)
-);
+export const exercises: Exercise[] = [...baseExercises, ...additionalExercises]
+  .map(normalizeExerciseDemoSearch)
+  .sort((a, b) => a.name.localeCompare(b.name));
