@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { loadSettings } from '../../storage/settings';
+import { deleteCustomExerciseById } from '../../storage/customExercises';
 import { loadWorkouts } from '../../storage/workouts';
 import { Exercise } from '../../types/exercise';
 import { WeightUnit } from '../../types/settings';
@@ -284,6 +285,26 @@ export default function ExerciseDetailScreen() {
     } catch (error) {
       Alert.alert('Unable to open demo', 'Please try again in a moment.');
     }
+  };
+
+  const handleDeleteCustomExercise = () => {
+    if (!exercise?.isCustom) return;
+
+    Alert.alert(
+      'Delete custom exercise',
+      `Delete "${exercise.name}" from your exercise library? Saved workouts that already used it will still keep their history.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteCustomExerciseById(exercise.id);
+            router.replace('/exercise');
+          },
+        },
+      ]
+    );
   };
 
   const renderDemoCard = () => (
@@ -721,6 +742,24 @@ export default function ExerciseDetailScreen() {
             {exercise.muscleGroup} | {exercise.equipment}
           </Text>
 
+          {exercise.isCustom ? (
+            <View style={styles.customActionRow}>
+              <Pressable
+                style={styles.customEditButton}
+                onPress={() => router.push(`/exercise/edit/${exercise.id}`)}
+              >
+                <Text style={styles.customEditButtonText}>Edit Custom Exercise</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.customDeleteButton}
+                onPress={handleDeleteCustomExercise}
+              >
+                <Text style={styles.customDeleteButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           <View style={styles.tabRow}>
             {tabOptions.map((tab) => {
               const isSelected = tab.key === activeTab;
@@ -772,6 +811,39 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 16,
     marginBottom: 20,
+  },
+  customActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  customEditButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  customEditButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  customDeleteButton: {
+    backgroundColor: '#2a1111',
+    borderWidth: 1,
+    borderColor: '#6b1f1f',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  customDeleteButtonText: {
+    color: '#ff8a8a',
+    fontSize: 13,
+    fontWeight: '700',
   },
   tabRow: {
     flexDirection: 'row',

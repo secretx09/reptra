@@ -3,4 +3,8 @@ export interface ProgressPhoto {
   imageUri: string;
   note: string;
   createdAt: string;
+  sourceType?: 'uri' | 'camera' | 'gallery';
+  workoutId?: string | null;
+  workoutName?: string;
+  workoutCompletedAt?: string;
 }

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Pressable,
   Share,
   StyleSheet,
@@ -12,7 +13,9 @@ import {
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
+import { loadProgressPhotos, saveProgressPhotos } from '../../../storage/progressPhotos';
 import { loadWorkouts, updateWorkoutById } from '../../../storage/workouts';
+import { ProgressPhoto } from '../../../types/progressPhoto';
 import { WeightUnit } from '../../../types/settings';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
@@ -35,13 +38,17 @@ export default function WorkoutSummaryScreen() {
   const [nameSaved, setNameSaved] = useState(true);
   const [workoutNote, setWorkoutNote] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
+  const [photoUri, setPhotoUri] = useState('');
+  const [photoNote, setPhotoNote] = useState('');
+  const [linkedPhotos, setLinkedPhotos] = useState<ProgressPhoto[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       const fetchSummary = async () => {
-        const [savedWorkouts, savedSettings] = await Promise.all([
+        const [savedWorkouts, savedSettings, savedPhotos] = await Promise.all([
           loadWorkouts(),
           loadSettings(),
+          loadProgressPhotos(),
         ]);
         const foundWorkout = savedWorkouts.find((item) => item.id === id) || null;
 
@@ -52,6 +59,7 @@ export default function WorkoutSummaryScreen() {
         setNoteSaved(Boolean(foundWorkout?.note?.trim()));
         setWorkouts(savedWorkouts);
         setWeightUnit(savedSettings.weightUnit);
+        setLinkedPhotos(savedPhotos.filter((photo) => photo.workoutId === id));
       };
 
       fetchSummary();
@@ -119,6 +127,35 @@ export default function WorkoutSummaryScreen() {
     );
     setNoteSaved(true);
     Alert.alert('Note saved', 'Your workout note was added to this workout.');
+  };
+
+  const handleSaveProgressPhoto = async () => {
+    if (!workout) return;
+
+    const trimmedPhotoUri = photoUri.trim();
+
+    if (!trimmedPhotoUri) {
+      Alert.alert('Missing photo URI', 'Paste an image URI to attach a photo.');
+      return;
+    }
+
+    const existingPhotos = await loadProgressPhotos();
+    const newPhoto: ProgressPhoto = {
+      id: `photo-${Date.now()}`,
+      imageUri: trimmedPhotoUri,
+      note: photoNote.trim(),
+      createdAt: new Date().toISOString(),
+      sourceType: 'uri',
+      workoutId: workout.id,
+      workoutName: workout.routineName,
+      workoutCompletedAt: workout.completedAt,
+    };
+
+    await saveProgressPhotos([newPhoto, ...existingPhotos]);
+    setLinkedPhotos((prev) => [newPhoto, ...prev]);
+    setPhotoUri('');
+    setPhotoNote('');
+    Alert.alert('Photo attached', 'This progress photo was linked to the workout.');
   };
 
   const handleShareWorkout = async () => {
@@ -409,6 +446,53 @@ export default function WorkoutSummaryScreen() {
                 </Pressable>
               </View>
 
+              <View style={styles.photoCard}>
+                <Text style={styles.noteTitle}>Progress Photo</Text>
+                <Text style={styles.photoHelpText}>
+                  Attach a post-workout check-in to this saved workout.
+                </Text>
+
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Image URI"
+                  placeholderTextColor="#777777"
+                  autoCapitalize="none"
+                  value={photoUri}
+                  onChangeText={setPhotoUri}
+                />
+
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Optional photo note..."
+                  placeholderTextColor="#777777"
+                  value={photoNote}
+                  onChangeText={setPhotoNote}
+                  multiline
+                />
+
+                {photoUri.trim() ? (
+                  <Image
+                    source={{ uri: photoUri.trim() }}
+                    style={styles.photoPreview}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
+                <Pressable
+                  style={styles.noteButton}
+                  onPress={handleSaveProgressPhoto}
+                >
+                  <Text style={styles.noteButtonText}>Attach Photo</Text>
+                </Pressable>
+
+                {linkedPhotos.length > 0 ? (
+                  <Text style={styles.linkedPhotoCount}>
+                    {linkedPhotos.length} photo
+                    {linkedPhotos.length === 1 ? '' : 's'} linked to this workout
+                  </Text>
+                ) : null}
+              </View>
+
               <View style={styles.actionRow}>
                 <Pressable style={styles.secondaryButton} onPress={handleStartAgain}>
                   <Text style={styles.secondaryButtonText}>Start Again</Text>
@@ -681,6 +765,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginTop: 16,
+  },
+  photoCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+  },
+  photoHelpText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  photoPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#101010',
+    marginBottom: 10,
+  },
+  linkedPhotoCount: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 10,
+    textAlign: 'center',
   },
   noteTitle: {
     color: '#ffffff',

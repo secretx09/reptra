@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
+import { loadWorkouts } from '../../storage/workouts';
 import {
   deleteProgressPhotoById,
   loadProgressPhotos,
   saveProgressPhotos,
 } from '../../storage/progressPhotos';
 import { ProgressPhoto } from '../../types/progressPhoto';
+import { SavedWorkoutSession } from '../../types/workout';
 
 function formatPhotoDate(dateString: string) {
   return new Date(dateString).toLocaleDateString([], {
@@ -28,12 +30,20 @@ function formatPhotoDate(dateString: string) {
 
 export default function ProgressPhotosScreen() {
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [imageUri, setImageUri] = useState('');
   const [note, setNote] = useState('');
+  const [sourceType, setSourceType] =
+    useState<NonNullable<ProgressPhoto['sourceType']>>('uri');
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
 
   const fetchPhotos = async () => {
-    const savedPhotos = await loadProgressPhotos();
+    const [savedPhotos, savedWorkouts] = await Promise.all([
+      loadProgressPhotos(),
+      loadWorkouts(),
+    ]);
     setPhotos(savedPhotos);
+    setWorkouts(savedWorkouts);
   };
 
   useFocusEffect(
@@ -45,6 +55,8 @@ export default function ProgressPhotosScreen() {
   const handleAddPhoto = async () => {
     const trimmedUri = imageUri.trim();
     const trimmedNote = note.trim();
+    const selectedWorkout =
+      workouts.find((workout) => workout.id === selectedWorkoutId) ?? null;
 
     if (!trimmedUri) {
       Alert.alert('Missing photo URI', 'Paste an image URI to save a progress photo.');
@@ -56,6 +68,10 @@ export default function ProgressPhotosScreen() {
       imageUri: trimmedUri,
       note: trimmedNote,
       createdAt: new Date().toISOString(),
+      sourceType,
+      workoutId: selectedWorkout?.id ?? null,
+      workoutName: selectedWorkout?.routineName,
+      workoutCompletedAt: selectedWorkout?.completedAt,
     };
 
     const updatedPhotos = [newPhoto, ...photos];
@@ -63,6 +79,8 @@ export default function ProgressPhotosScreen() {
     setPhotos(updatedPhotos);
     setImageUri('');
     setNote('');
+    setSourceType('uri');
+    setSelectedWorkoutId(null);
   };
 
   const handleDeletePhoto = (photo: ProgressPhoto) => {
@@ -95,9 +113,41 @@ export default function ProgressPhotosScreen() {
             <View style={styles.formCard}>
               <Text style={styles.title}>Progress Photos</Text>
               <Text style={styles.subtitle}>
-                Save physique check-ins here for now. You can paste a local file URI
-                or image URL, and we can swap this to a native picker later.
+                Save physique check-ins here. Native camera/gallery picker support
+                can plug into this same flow later.
               </Text>
+
+              <View style={styles.sourceRow}>
+                {[
+                  { key: 'uri', label: 'URI' },
+                  { key: 'camera', label: 'Camera Later' },
+                  { key: 'gallery', label: 'Gallery Later' },
+                ].map((source) => {
+                  const isSelected = sourceType === source.key;
+
+                  return (
+                    <Pressable
+                      key={source.key}
+                      style={[
+                        styles.sourceButton,
+                        isSelected && styles.sourceButtonSelected,
+                      ]}
+                      onPress={() =>
+                        setSourceType(source.key as NonNullable<ProgressPhoto['sourceType']>)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.sourceButtonText,
+                          isSelected && styles.sourceButtonTextSelected,
+                        ]}
+                      >
+                        {source.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
               <TextInput
                 style={styles.input}
@@ -116,6 +166,59 @@ export default function ProgressPhotosScreen() {
                 onChangeText={setNote}
                 multiline
               />
+
+              {imageUri.trim() ? (
+                <Image
+                  source={{ uri: imageUri.trim() }}
+                  style={styles.previewPhoto}
+                  resizeMode="cover"
+                />
+              ) : null}
+
+              <Text style={styles.sectionLabel}>Attach to workout</Text>
+              <View style={styles.workoutPicker}>
+                <Pressable
+                  style={[
+                    styles.workoutChip,
+                    selectedWorkoutId === null && styles.workoutChipSelected,
+                  ]}
+                  onPress={() => setSelectedWorkoutId(null)}
+                >
+                  <Text
+                    style={[
+                      styles.workoutChipText,
+                      selectedWorkoutId === null && styles.workoutChipTextSelected,
+                    ]}
+                  >
+                    No Workout
+                  </Text>
+                </Pressable>
+
+                {workouts.slice(0, 5).map((workout) => {
+                  const isSelected = selectedWorkoutId === workout.id;
+
+                  return (
+                    <Pressable
+                      key={workout.id}
+                      style={[
+                        styles.workoutChip,
+                        isSelected && styles.workoutChipSelected,
+                      ]}
+                      onPress={() => setSelectedWorkoutId(workout.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.workoutChipText,
+                          isSelected && styles.workoutChipTextSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {workout.routineName}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
               <Pressable style={styles.addButton} onPress={handleAddPhoto}>
                 <Text style={styles.addButtonText}>Save Progress Photo</Text>
@@ -138,6 +241,16 @@ export default function ProgressPhotosScreen() {
                 ) : (
                   <Text style={styles.photoHint}>No note added</Text>
                 )}
+
+                {item.workoutName ? (
+                  <Text style={styles.photoWorkout}>
+                    Workout: {item.workoutName}
+                  </Text>
+                ) : null}
+
+                <Text style={styles.photoSource}>
+                  Source: {item.sourceType ?? 'uri'}
+                </Text>
 
                 <Text style={styles.photoUri} numberOfLines={1}>
                   {item.imageUri}
@@ -202,6 +315,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
   },
+  sourceRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sourceButton: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  sourceButtonSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  sourceButtonText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sourceButtonTextSelected: {
+    color: '#4da6ff',
+  },
   noteInput: {
     backgroundColor: '#121212',
     color: '#ffffff',
@@ -214,6 +353,46 @@ const styles = StyleSheet.create({
     minHeight: 88,
     textAlignVertical: 'top',
     marginBottom: 12,
+  },
+  previewPhoto: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#121212',
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  workoutPicker: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  workoutChip: {
+    maxWidth: '48%',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  workoutChipSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  workoutChipText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  workoutChipTextSelected: {
+    color: '#4da6ff',
   },
   addButton: {
     backgroundColor: '#4da6ff',
@@ -258,6 +437,18 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 14,
     marginBottom: 8,
+  },
+  photoWorkout: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  photoSource: {
+    color: '#888888',
+    fontSize: 12,
+    marginBottom: 6,
+    textTransform: 'capitalize',
   },
   photoUri: {
     color: '#777777',

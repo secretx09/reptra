@@ -55,16 +55,23 @@ export function buildTemplateExercisesFromWorkout(
     const libraryExercise = exerciseLibrary.find(
       (exercise) => exercise.id === loggedExercise.exerciseId
     );
+    const resolvedExercise: Exercise =
+      libraryExercise ?? {
+        id: loggedExercise.exerciseId,
+        name: loggedExercise.exerciseName,
+        muscleGroup: 'Custom',
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        equipment: 'Deleted custom exercise',
+        instructions: [],
+        isCustom: true,
+      };
 
-    if (!libraryExercise) {
-      return;
-    }
-
-    exercises.push(libraryExercise);
-    notesByExerciseId[libraryExercise.id] = loggedExercise.note || '';
-    setsByExerciseId[libraryExercise.id] = loggedExercise.sets.map((set) => ({
+    exercises.push(resolvedExercise);
+    notesByExerciseId[resolvedExercise.id] = loggedExercise.note || '';
+    setsByExerciseId[resolvedExercise.id] = loggedExercise.sets.map((set) => ({
       ...set,
-      id: `${libraryExercise.id}-${set.setNumber}-${Date.now()}-${Math.random()
+      id: `${resolvedExercise.id}-${set.setNumber}-${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}`,
       completed: false,

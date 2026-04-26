@@ -6,14 +6,17 @@ import {
   FlatList,
   Pressable,
   Alert,
+  Image,
   TextInput,
   Share,
 } from 'react-native';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
+import { loadProgressPhotos } from '../../../storage/progressPhotos';
 import { WeightUnit } from '../../../types/settings';
 import { Exercise } from '../../../types/exercise';
+import { ProgressPhoto } from '../../../types/progressPhoto';
 import {
   loadWorkouts,
   deleteWorkoutById,
@@ -40,6 +43,7 @@ export default function WorkoutHistoryDetailScreen() {
   const [workout, setWorkout] = useState<SavedWorkoutSession | null>(null);
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [linkedPhotos, setLinkedPhotos] = useState<ProgressPhoto[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [isEditingWorkoutName, setIsEditingWorkoutName] = useState(false);
   const [workoutNameDraft, setWorkoutNameDraft] = useState('');
@@ -59,16 +63,19 @@ export default function WorkoutHistoryDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       const fetchWorkout = async () => {
-        const [savedWorkouts, savedSettings, loadedExercises] = await Promise.all([
+        const [savedWorkouts, savedSettings, loadedExercises, savedPhotos] =
+          await Promise.all([
           loadWorkouts(),
           loadSettings(),
           loadExerciseLibrary(),
+          loadProgressPhotos(),
         ]);
         const foundWorkout = savedWorkouts.find((item) => item.id === id) || null;
 
         setWorkout(foundWorkout);
         setWorkouts(savedWorkouts);
         setExerciseLibrary(loadedExercises);
+        setLinkedPhotos(savedPhotos.filter((photo) => photo.workoutId === id));
         setWorkoutNameDraft(foundWorkout?.routineName ?? '');
         setIsEditingWorkoutName(false);
         setWorkoutNoteDraft(foundWorkout?.note ?? '');
@@ -638,14 +645,41 @@ export default function WorkoutHistoryDetailScreen() {
                   )}
                 </View>
               ) : (
-                <Pressable
-                  style={styles.addWorkoutNoteButton}
-                  onPress={handleStartEditingWorkoutNote}
-                >
+              <Pressable
+                style={styles.addWorkoutNoteButton}
+                onPress={handleStartEditingWorkoutNote}
+              >
                   <Text style={styles.addWorkoutNoteButtonText}>
                     + Add Workout Note
                   </Text>
                 </Pressable>
+              )}
+
+              {linkedPhotos.length > 0 && (
+                <View style={styles.linkedPhotosCard}>
+                  <Text style={styles.linkedPhotosTitle}>Progress Photos</Text>
+                  <Text style={styles.linkedPhotosSubtitle}>
+                    {linkedPhotos.length} photo
+                    {linkedPhotos.length === 1 ? '' : 's'} attached to this workout.
+                  </Text>
+
+                  <View style={styles.linkedPhotoGrid}>
+                    {linkedPhotos.slice(0, 4).map((photo) => (
+                      <View key={photo.id} style={styles.linkedPhotoTile}>
+                        <Image
+                          source={{ uri: photo.imageUri }}
+                          style={styles.linkedPhotoImage}
+                          resizeMode="cover"
+                        />
+                        {photo.note ? (
+                          <Text style={styles.linkedPhotoNote} numberOfLines={2}>
+                            {photo.note}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                </View>
               )}
 
               <View style={styles.summaryStatsRow}>
@@ -1131,6 +1165,45 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 13,
     fontWeight: '700',
+  },
+  linkedPhotosCard: {
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  linkedPhotosTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  linkedPhotosSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  linkedPhotoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  linkedPhotoTile: {
+    width: '48%',
+    backgroundColor: '#101010',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  linkedPhotoImage: {
+    width: '100%',
+    height: 100,
+    backgroundColor: '#101010',
+  },
+  linkedPhotoNote: {
+    color: '#dddddd',
+    fontSize: 11,
+    lineHeight: 16,
+    padding: 8,
   },
   summaryStatPill: {
     flex: 1,

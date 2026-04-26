@@ -57,3 +57,29 @@ export async function saveCustomExercises(customExercises: Exercise[]) {
     console.error('Failed to save custom exercises:', error);
   }
 }
+
+export async function updateCustomExerciseById(
+  exerciseId: string,
+  updatedExercise: Exercise
+) {
+  try {
+    const customExercises = await loadCustomExercises();
+    const updatedExercises = customExercises.map((exercise) =>
+      exercise.id === exerciseId ? normalizeCustomExercise(updatedExercise) : exercise
+    );
+    await saveCustomExercises(updatedExercises);
+  } catch (error) {
+    console.error('Failed to update custom exercise:', error);
+  }
+}
+
+export async function deleteCustomExerciseById(exerciseId: string) {
+  try {
+    const customExercises = await loadCustomExercises();
+    await saveCustomExercises(
+      customExercises.filter((exercise) => exercise.id !== exerciseId)
+    );
+  } catch (error) {
+    console.error('Failed to delete custom exercise:', error);
+  }
+}

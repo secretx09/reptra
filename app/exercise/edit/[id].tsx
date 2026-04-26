@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -8,16 +8,25 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { loadCustomExercises, saveCustomExercises } from '../../storage/customExercises';
-import { Exercise } from '../../types/exercise';
-import { baseMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrary';
-import { buildDemoMedia, splitMultilineInput } from '../../utils/customExerciseForm';
+import {
+  loadCustomExercises,
+  updateCustomExerciseById,
+} from '../../../storage/customExercises';
+import { Exercise } from '../../../types/exercise';
+import { baseMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
+import {
+  buildDemoMedia,
+  joinMultilineInput,
+  splitMultilineInput,
+} from '../../../utils/customExerciseForm';
 
 const selectableMuscleGroups = baseMuscleGroups.filter((group) => group !== 'All');
 
-export default function CreateCustomExerciseScreen() {
+export default function EditCustomExerciseScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [exercise, setExercise] = useState<Exercise | null>(null);
   const [name, setName] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('Chest');
   const [equipment, setEquipment] = useState('');
@@ -27,7 +36,31 @@ export default function CreateCustomExerciseScreen() {
   const [demoTitle, setDemoTitle] = useState('');
   const [demoSource, setDemoSource] = useState('');
 
+  useFocusEffect(
+    useCallback(() => {
+      const fetchExercise = async () => {
+        const customExercises = await loadCustomExercises();
+        const foundExercise =
+          customExercises.find((item) => item.id === id && item.isCustom) ?? null;
+
+        setExercise(foundExercise);
+        setName(foundExercise?.name ?? '');
+        setSelectedMuscleGroup(foundExercise?.muscleGroup ?? 'Chest');
+        setEquipment(foundExercise?.equipment ?? '');
+        setInstructionsInput(joinMultilineInput(foundExercise?.instructions));
+        setDemoType(foundExercise?.demoMedia?.type ?? 'video');
+        setDemoUrl(foundExercise?.demoMedia?.url ?? '');
+        setDemoTitle(foundExercise?.demoMedia?.title ?? '');
+        setDemoSource(foundExercise?.demoMedia?.sourceLabel ?? '');
+      };
+
+      fetchExercise();
+    }, [id])
+  );
+
   const handleSave = async () => {
+    if (!exercise) return;
+
     if (!name.trim()) {
       Alert.alert('Missing name', 'Please enter an exercise name.');
       return;
@@ -38,36 +71,33 @@ export default function CreateCustomExerciseScreen() {
       return;
     }
 
-    const customExercises = await loadCustomExercises();
     const exerciseLibrary = await loadExerciseLibrary();
     const normalizedName = name.trim().toLowerCase();
     const duplicateExists = exerciseLibrary.some(
-      (exercise) => exercise.name.trim().toLowerCase() === normalizedName
+      (item) =>
+        item.id !== exercise.id &&
+        item.name.trim().toLowerCase() === normalizedName
     );
 
     if (duplicateExists) {
-      Alert.alert(
-        'Exercise already exists',
-        'You already created a custom exercise with that name.'
-      );
+      Alert.alert('Exercise already exists', 'Another exercise already uses that name.');
       return;
     }
 
-    const newExercise: Exercise = {
-      id: `custom-${new Date().toISOString()}`,
+    const updatedExercise: Exercise = {
+      ...exercise,
       name: name.trim(),
       muscleGroup: selectedMuscleGroup,
       primaryMuscles: [selectedMuscleGroup],
-      secondaryMuscles: [],
       equipment: equipment.trim(),
       demoMedia: buildDemoMedia(demoType, demoUrl, demoTitle, demoSource),
       instructions: splitMultilineInput(instructionsInput),
       isCustom: true,
     };
 
-    await saveCustomExercises([...customExercises, newExercise]);
+    await updateCustomExerciseById(exercise.id, updatedExercise);
 
-    Alert.alert('Custom exercise saved', 'Your custom exercise is ready to use.', [
+    Alert.alert('Custom exercise updated', 'Your changes were saved.', [
       {
         text: 'OK',
         onPress: () => router.back(),
@@ -75,15 +105,26 @@ export default function CreateCustomExerciseScreen() {
     ]);
   };
 
+  if (!exercise) {
+    return (
+      <SafeAreaView style={styles.notFoundContainer}>
+        <Text style={styles.notFoundTitle}>Custom exercise not found</Text>
+        <Text style={styles.notFoundText}>
+          This exercise may have been deleted.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Custom Exercise' }} />
+      <Stack.Screen options={{ title: 'Edit Exercise' }} />
 
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Create Custom Exercise</Text>
+          <Text style={styles.title}>Edit Custom Exercise</Text>
           <Text style={styles.subtitle}>
-            Add a custom movement so it shows up anywhere you select exercises.
+            Update the details used across the exercise library and future routines.
           </Text>
 
           <TextInput
@@ -141,8 +182,7 @@ export default function CreateCustomExerciseScreen() {
           <View style={styles.mediaCard}>
             <Text style={styles.mediaTitle}>Demo Media</Text>
             <Text style={styles.mediaSubtitle}>
-              Optional for now. Add a GIF or video link so this exercise is ready
-              for embedded demos later.
+              Optional. Add or update a GIF/video link for this exercise.
             </Text>
 
             <View style={styles.mediaTypeRow}>
@@ -198,7 +238,7 @@ export default function CreateCustomExerciseScreen() {
           </View>
 
           <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save Custom Exercise</Text>
+            <Text style={styles.saveButtonText}>Save Changes</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -340,5 +380,23 @@ const styles = StyleSheet.create({
     color: '#111111',
     fontSize: 16,
     fontWeight: '700',
+  },
+  notFoundContainer: {
+    flex: 1,
+    backgroundColor: '#111111',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  notFoundTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  notFoundText: {
+    color: '#aaaaaa',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
