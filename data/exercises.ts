@@ -8,12 +8,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie flat on the bench',
       'Grip the bar slightly wider than shoulder width',
@@ -29,12 +23,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Quads', 'Glutes'],
     secondaryMuscles: ['Hamstrings', 'Core'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Place the bar across your upper back',
       'Stand with feet about shoulder width apart',
@@ -50,12 +38,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Posterior Chain', 'Glutes'],
     secondaryMuscles: ['Hamstrings', 'Upper Back', 'Forearms'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Stand with feet under the bar',
       'Grip the bar just outside your legs',
@@ -71,12 +53,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Shoulders'],
     secondaryMuscles: ['Triceps', 'Upper Chest', 'Core'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Hold the bar at shoulder height',
       'Brace your core',
@@ -92,12 +68,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Lats', 'Mid Back'],
     secondaryMuscles: ['Rear Delts', 'Biceps', 'Forearms'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Hinge at the hips with a flat back',
       'Hold the bar with arms extended',
@@ -115,12 +85,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a 30 to 45 degree incline',
       'Grip the bar slightly wider than shoulder width',
@@ -136,12 +100,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Lower Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a decline and secure your legs',
       'Grip the bar slightly wider than shoulder width',
@@ -157,12 +115,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Triceps'],
     secondaryMuscles: ['Chest', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Grip the bar about shoulder width apart or slightly closer',
       'Lower the bar to your chest with your elbows tucked',
@@ -178,12 +130,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Take a wider than normal grip on the bar',
       'Lower the bar slowly to your chest',
@@ -199,12 +145,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Use an underhand grip on the bar',
       'Unrack the bar carefully and keep your wrists straight',
@@ -220,12 +160,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lower the bar to your chest under control',
       'Pause for 1 to 2 seconds on your chest',
@@ -241,12 +175,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie on the floor under the bar with your knees bent',
       'Grip the bar and unrack it carefully',
@@ -262,12 +190,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Barbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the safety pins so the bar starts near chest level',
       'Position yourself under the bar on the bench',
@@ -285,12 +207,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Shoulders', 'Triceps'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie flat on a bench holding dumbbells at chest level',
       'Press the dumbbells upward until your arms are extended',
@@ -306,12 +222,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a 30 to 45 degree incline',
       'Hold the dumbbells at chest level',
@@ -327,12 +237,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Lower Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a decline and secure your legs',
       'Hold the dumbbells at chest level',
@@ -348,12 +252,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie flat on a bench with dumbbells above your chest',
       'Keep a slight bend in your elbows',
@@ -369,12 +267,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a slight incline',
       'Start with the dumbbells above your upper chest',
@@ -390,12 +282,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Lower Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Dumbbells',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the bench to a decline and secure your legs',
       'Hold the dumbbells above your chest',
@@ -411,12 +297,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Lats', 'Shoulders'],
     equipment: 'Dumbbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie flat on a bench holding one dumbbell above your chest',
       'Keep a slight bend in your elbows',
@@ -432,12 +312,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts', 'Core'],
     equipment: 'Dumbbell',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Lie on a bench holding one dumbbell at chest level',
       'Keep your core tight and shoulders stable',
@@ -455,12 +329,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Lower Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Cable',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set both cable handles to a high position',
       'Grab the handles and step forward into a split stance',
@@ -476,12 +344,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Cable',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set both cable handles to a low position',
       'Grab the handles and step forward into a stable stance',
@@ -497,12 +359,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Cable',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set both cable handles to chest height',
       'Grab the handles and step forward slightly',
@@ -518,12 +374,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts', 'Core'],
     equipment: 'Cable',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set one cable handle to chest height',
       'Stand sideways to the machine and grab the handle',
@@ -539,12 +389,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Cable',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set the cable handles around chest height',
       'Hold the handles at your sides with elbows bent',
@@ -562,12 +406,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts'],
     equipment: 'Machine',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Adjust the seat so the handles line up with your chest',
       'Sit back with your feet flat on the floor',
@@ -583,12 +421,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Front Delts', 'Triceps'],
     equipment: 'Machine',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Adjust the seat so the handles line up with your upper chest',
       'Grip the handles and keep your back against the pad',
@@ -604,12 +436,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts'],
     equipment: 'Machine',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Adjust the seat so your arms are level with your chest',
       'Place your forearms or hands on the pads or handles',
@@ -627,12 +453,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Start in a plank position with your hands under your shoulders',
       'Keep your body in a straight line',
@@ -648,12 +468,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Place your hands on an elevated surface like a bench',
       'Keep your body in a straight line',
@@ -669,12 +483,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Upper Chest'],
     secondaryMuscles: ['Triceps', 'Front Delts', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Place your feet on an elevated surface and your hands on the floor',
       'Keep your body in a straight line',
@@ -690,12 +498,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Front Delts', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Place your hands wider than shoulder width apart',
       'Keep your body in a straight line',
@@ -711,12 +513,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Triceps'],
     secondaryMuscles: ['Chest', 'Front Delts', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Place your hands close together under your chest',
       'Keep your elbows tucked as you lower down',
@@ -732,12 +528,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Shoulders', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Start in a wide push-up position',
       'Lower toward one side while the other arm stays straighter',
@@ -753,12 +543,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Shoulders', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Start in a normal push-up position',
       'Lower your chest toward the floor',
@@ -774,12 +558,6 @@ const baseExercises: Exercise[] = [
     primaryMuscles: ['Chest'],
     secondaryMuscles: ['Triceps', 'Shoulders', 'Core'],
     equipment: 'Bodyweight',
-    demoMedia: {
-      type: 'video',
-      url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-      title: 'Dumbbell Bench Press Form Demo',
-      sourceLabel: 'YouTube',
-    },
     instructions: [
       'Set up in a wide stance with one hand on the floor',
       'Place your other hand behind your back or at your side',
@@ -796,12 +574,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings', 'Glutes'],
   secondaryMuscles: ['Lower Back'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand holding the barbell at hip level',
     'Keep a slight bend in your knees',
@@ -817,12 +589,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings'],
   secondaryMuscles: ['Glutes', 'Lower Back'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand with legs mostly straight holding a barbell',
     'Hinge at your hips while keeping your back flat',
@@ -838,12 +604,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats', 'Mid Back'],
   secondaryMuscles: ['Rear Delts', 'Biceps'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Grip the bar with an overhand grip',
     'Hinge forward with a flat back',
@@ -859,12 +619,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps', 'Mid Back'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Grip the bar with an underhand grip',
     'Hinge forward with a flat back',
@@ -880,12 +634,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Upper Back'],
   secondaryMuscles: ['Lats', 'Biceps'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Start with the bar on the floor',
     'Hinge forward with a flat back',
@@ -901,12 +649,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Mid Back'],
   secondaryMuscles: ['Lats', 'Biceps'],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand over the bar and grip the handles',
     'Keep your chest up and back flat',
@@ -924,12 +666,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps', 'Rear Delts'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Place one hand and knee on a bench',
     'Hold a dumbbell in the other hand',
@@ -945,12 +681,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Mid Back'],
   secondaryMuscles: ['Lats', 'Biceps'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie face down on an incline bench',
     'Hold dumbbells with arms extended',
@@ -966,12 +696,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes', 'Hamstrings'],
   secondaryMuscles: ['Lower Back'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells at your sides',
     'Hinge at your hips with a flat back',
@@ -987,12 +711,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Core', 'Shoulders'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Start in a plank position holding dumbbells',
     'Row one dumbbell toward your hip',
@@ -1010,12 +728,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit at the machine and grab the bar with a wide grip',
     'Pull the bar down to your upper chest',
@@ -1031,12 +743,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Use a close grip attachment',
     'Pull the bar down toward your chest',
@@ -1052,12 +758,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Grip the bar with an underhand grip',
     'Pull the bar down toward your chest',
@@ -1073,12 +773,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Mid Back'],
   secondaryMuscles: ['Lats', 'Biceps'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit with feet on the platform',
     'Pull the handle toward your torso',
@@ -1094,12 +788,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Shoulders'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand facing the cable machine',
     'Keep your arms straight',
@@ -1115,12 +803,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Rear Delts'],
   secondaryMuscles: ['Upper Back'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Set rope attachment at face height',
     'Pull the rope toward your face',
@@ -1138,12 +820,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hang from a bar with an overhand grip',
     'Pull your body upward until your chin clears the bar',
@@ -1158,12 +834,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hang from a bar with an underhand grip',
     'Pull yourself upward until your chin clears the bar',
@@ -1178,12 +848,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Mid Back'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie under a bar and grab it with an overhand grip',
     'Keep your body straight',
@@ -1200,12 +864,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Place the bar across your upper back',
     'Stand with feet about shoulder width apart',
@@ -1221,12 +879,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads'],
   secondaryMuscles: ['Glutes', 'Core', 'Upper Back'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Rest the bar across the front of your shoulders',
     'Keep your elbows high and chest up',
@@ -1242,12 +894,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Core', 'Hamstrings'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold a dumbbell close to your chest',
     'Stand with feet about shoulder width apart',
@@ -1263,12 +909,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads'],
   secondaryMuscles: ['Glutes', 'Hamstrings'],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Position yourself in the hack squat machine',
     'Place your shoulders under the pads and feet on the platform',
@@ -1284,12 +924,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads'],
   secondaryMuscles: ['Glutes', 'Hamstrings'],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit in the leg press machine with feet on the platform',
     'Lower the platform by bending your knees',
@@ -1305,12 +939,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads'],
   secondaryMuscles: [],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit on the leg extension machine',
     'Place your ankles behind the pad',
@@ -1326,12 +954,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Place your back foot on a bench behind you',
     'Keep your front foot planted firmly',
@@ -1347,12 +969,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Step forward into a lunge',
     'Lower until both knees are bent',
@@ -1368,12 +984,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand tall with feet together',
     'Step one foot backward into a lunge',
@@ -1389,12 +999,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand in front of a bench or box',
     'Place one foot on the bench',
@@ -1412,12 +1016,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit with your upper back against a bench and a barbell over your hips',
     'Plant your feet flat on the floor',
@@ -1433,12 +1031,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on your back with knees bent and feet flat',
     'Brace your core',
@@ -1454,12 +1046,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes', 'Hamstrings'],
   secondaryMuscles: ['Lower Back'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand facing away from a low cable with the rope between your legs',
     'Hinge at your hips while keeping your back flat',
@@ -1475,12 +1061,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings'],
   secondaryMuscles: ['Glutes', 'Core'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Anchor your feet under a pad or have someone hold them',
     'Start tall on your knees',
@@ -1496,12 +1076,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings', 'Glutes'],
   secondaryMuscles: ['Lower Back', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Place the bar across your upper back',
     'Keep a slight bend in your knees',
@@ -1519,12 +1093,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Calves'],
   secondaryMuscles: [],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand with the balls of your feet on the platform',
     'Lower your heels to feel a stretch',
@@ -1540,12 +1108,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Calves'],
   secondaryMuscles: [],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit on the machine with the pad across your thighs',
     'Place the balls of your feet on the platform',
@@ -1561,12 +1123,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Calves'],
   secondaryMuscles: [],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Position yourself in the donkey calf raise setup',
     'Place the balls of your feet on the platform',
@@ -1582,12 +1138,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Calves'],
   secondaryMuscles: ['Core'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand on one foot on a raised surface',
     'Lower your heel down slowly',
@@ -1605,12 +1155,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Set up like a normal back squat',
     'Lower into the bottom of the squat',
@@ -1626,12 +1170,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings', 'Glutes'],
   secondaryMuscles: ['Core', 'Lower Back'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold a dumbbell in one or both hands',
     'Balance on one leg with a slight bend in the knee',
@@ -1648,12 +1186,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand holding a barbell with an underhand grip',
     'Keep your elbows close to your sides',
@@ -1669,12 +1201,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold the EZ bar with a comfortable grip',
     'Keep your elbows tucked in',
@@ -1690,12 +1216,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells at your sides',
     'Curl both weights up toward your shoulders',
@@ -1711,12 +1231,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells with palms facing inward',
     'Curl the weights up while keeping your grip neutral',
@@ -1732,12 +1246,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: [],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit and rest your elbow on your inner thigh',
     'Hold a dumbbell with your arm extended',
@@ -1753,12 +1261,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: [],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Rest your arms on the preacher pad',
     'Hold the bar or handle',
@@ -1774,12 +1276,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach a straight bar or rope to a low cable',
     'Grip the attachment with an underhand grip',
@@ -1797,12 +1293,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit on an incline bench with arms hanging down',
     'Hold dumbbells with a neutral grip',
@@ -1818,12 +1308,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold a dumbbell at your side',
     'Curl it across your body toward the opposite shoulder',
@@ -1838,12 +1322,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Forearms'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold the bar with an overhand grip',
     'Keep your elbows tucked in',
@@ -1859,12 +1337,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Curl the dumbbells up with palms facing up',
     'Rotate your wrists at the top',
@@ -1882,12 +1354,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach a straight bar to a high cable',
     'Keep your elbows tucked at your sides',
@@ -1903,12 +1369,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach a rope to a high cable',
     'Keep your elbows at your sides',
@@ -1924,12 +1384,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold a dumbbell overhead with both hands',
     'Lower it behind your head',
@@ -1945,12 +1399,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Face away from the cable machine with a rope attachment',
     'Hold the rope overhead',
@@ -1966,12 +1414,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on a bench holding a barbell',
     'Lower the bar toward your forehead',
@@ -1987,12 +1429,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: ['Chest', 'Shoulders'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Grip parallel bars and support your body',
     'Lower yourself by bending your elbows',
@@ -2008,12 +1444,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: ['Chest', 'Shoulders'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach weight using a dip belt',
     'Grip parallel bars and support your body',
@@ -2031,12 +1461,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: ['Chest'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on a bench holding a barbell',
     'Lower the bar toward your upper chest',
@@ -2052,12 +1476,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on a bench holding dumbbells',
     'Start with arms extended above your chest',
@@ -2074,12 +1492,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: [],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on your back with knees bent and feet flat on the floor',
     'Place your hands across your chest or lightly behind your head',
@@ -2095,12 +1507,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: ['Hip Flexors'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on your back with knees bent',
     'Keep your feet planted on the floor',
@@ -2116,12 +1522,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lower Abs'],
   secondaryMuscles: ['Hip Flexors', 'Forearms'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hang from a pull-up bar with arms fully extended',
     'Keep your body steady and avoid swinging',
@@ -2137,12 +1537,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lower Abs'],
   secondaryMuscles: ['Hip Flexors'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie flat on your back with legs straight',
     'Place your hands at your sides or under your hips',
@@ -2158,12 +1552,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: [],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach a rope to a high cable and kneel down',
     'Hold the rope at the sides of your head',
@@ -2179,12 +1567,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Obliques'],
   secondaryMuscles: ['Abs'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit on the floor with knees bent and feet slightly off the ground if possible',
     'Lean back slightly while keeping your chest up',
@@ -2200,12 +1582,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: ['Obliques', 'Shoulders', 'Lower Back'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Set up on your forearms and toes',
     'Keep your body in a straight line from head to heels',
@@ -2221,12 +1597,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Obliques'],
   secondaryMuscles: ['Abs', 'Shoulders'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on your side and prop yourself up on one forearm',
     'Stack your feet and lift your hips off the floor',
@@ -2242,12 +1612,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: ['Shoulders', 'Lats', 'Lower Back'],
   equipment: 'Ab Wheel',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Kneel on the floor holding the ab wheel handles',
     'Brace your core and roll the wheel forward slowly',
@@ -2263,12 +1627,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Abs'],
   secondaryMuscles: ['Obliques', 'Hip Flexors'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on your back with hands lightly behind your head',
     'Lift your shoulders off the floor and bring your knees up',
@@ -2285,12 +1643,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Shoulders'],
   secondaryMuscles: ['Triceps', 'Quads', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold the bar at shoulder height',
     'Dip slightly by bending your knees',
@@ -2306,12 +1658,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Shoulders'],
   secondaryMuscles: ['Triceps', 'Upper Back'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit or stand with the bar behind your head at shoulder level',
     'Keep your chest up and core tight',
@@ -2329,12 +1675,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Shoulders'],
   secondaryMuscles: ['Triceps', 'Upper Chest'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells at shoulder height',
     'Brace your core and keep your chest up',
@@ -2350,12 +1690,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Shoulders'],
   secondaryMuscles: ['Triceps', 'Upper Chest'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Start with dumbbells in front of your shoulders with palms facing you',
     'Rotate your palms outward as you press overhead',
@@ -2371,12 +1705,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Side Delts'],
   secondaryMuscles: ['Traps'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells at your sides',
     'Keep a slight bend in your elbows',
@@ -2392,12 +1720,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Front Delts'],
   secondaryMuscles: ['Upper Chest'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold dumbbells in front of your thighs',
     'Keep your arms mostly straight',
@@ -2413,12 +1735,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Rear Delts'],
   secondaryMuscles: ['Upper Back'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hinge forward at the hips with a flat back',
     'Hold dumbbells below your shoulders',
@@ -2436,12 +1752,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Side Delts'],
   secondaryMuscles: ['Traps'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand beside a low cable and hold the handle with one hand',
     'Keep a slight bend in your elbow',
@@ -2457,12 +1767,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Front Delts'],
   secondaryMuscles: ['Upper Chest'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand facing away from a low cable or in front of it depending on setup',
     'Hold the handle with one or both hands',
@@ -2478,12 +1782,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Rear Delts'],
   secondaryMuscles: ['Upper Back'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Set the cables around upper chest height',
     'Grab the opposite handles so your arms cross slightly',
@@ -2501,12 +1799,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Shoulders'],
   secondaryMuscles: ['Triceps'],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Adjust the seat so the handles start near shoulder height',
     'Grip the handles and keep your back against the pad',
@@ -2522,12 +1814,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Side Delts'],
   secondaryMuscles: ['Traps'],
   equipment: 'Machine',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit in the machine with your arms against the pads',
     'Keep your chest up and shoulders down',
@@ -2545,12 +1831,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Calves', 'Hamstrings'],
   equipment: 'Box',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand in front of a sturdy box or platform',
     'Dip slightly at the knees and hips',
@@ -2566,12 +1846,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes', 'Quads'],
   secondaryMuscles: ['Hamstrings', 'Calves'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand with feet about shoulder width apart',
     'Swing your arms back and bend your knees slightly',
@@ -2587,12 +1861,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Core'],
   secondaryMuscles: ['Shoulders', 'Lats', 'Legs'],
   equipment: 'Medicine Ball',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold the medicine ball overhead',
     'Rise onto your toes slightly if needed',
@@ -2608,12 +1876,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Chest'],
   secondaryMuscles: ['Shoulders', 'Triceps', 'Core'],
   equipment: 'Medicine Ball',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold the medicine ball at chest level',
     'Brace your core and load slightly through your legs',
@@ -2629,12 +1891,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Calves', 'Core'],
   equipment: 'Sled',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Load the sled and place your hands on the handles',
     'Lean your body forward with a strong brace',
@@ -2650,12 +1906,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings', 'Glutes'],
   secondaryMuscles: ['Back', 'Biceps', 'Core'],
   equipment: 'Sled',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach a rope or straps to the sled',
     'Grip the handles or rope firmly',
@@ -2671,12 +1921,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Calves', 'Core'],
   equipment: 'Bodyweight',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Start in an athletic stance',
     'Drive forward explosively with your first few steps',
@@ -2692,12 +1936,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Calves'],
   secondaryMuscles: ['Glutes', 'Core'],
   equipment: 'Agility Ladder',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Set the ladder flat on the ground',
     'Choose a footwork pattern before starting',
@@ -2714,12 +1952,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Chest'],
   secondaryMuscles: ['Triceps', 'Front Delts'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lower the bar to your chest over 3 seconds',
     'Pause for 1 second on your chest',
@@ -2735,12 +1967,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Core'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lower into the bottom of a squat',
     'Pause for 1 to 3 seconds while staying tight',
@@ -2756,12 +1982,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Glutes', 'Hamstrings'],
   secondaryMuscles: ['Lower Back', 'Lats'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand on a small elevated surface',
     'Grip the bar just outside your legs',
@@ -2777,12 +1997,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Quads', 'Glutes'],
   secondaryMuscles: ['Hamstrings', 'Lower Back'],
   equipment: 'Trap Bar',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Stand inside the trap bar and grip the handles',
     'Keep your chest up and back flat',
@@ -2798,12 +2012,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Chest'],
   secondaryMuscles: ['Triceps', 'Shoulders'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach resistance bands to the bar and rack',
     'Perform a standard bench press',
@@ -2819,12 +2027,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Chest'],
   secondaryMuscles: ['Triceps', 'Shoulders'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Attach chains to both sides of the barbell',
     'Lower the bar to your chest with control',
@@ -2840,12 +2042,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Hamstrings', 'Glutes'],
   secondaryMuscles: ['Core', 'Lower Back'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Balance on one leg holding a dumbbell',
     'Hinge forward while extending your other leg back',
@@ -2861,12 +2057,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Lats'],
   secondaryMuscles: ['Biceps', 'Core'],
   equipment: 'Cable',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit or stand facing the cable machine',
     'Grab the handle with one hand',
@@ -2882,12 +2072,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Sit on an incline bench with arms hanging down',
     'Hold dumbbells with a neutral grip',
@@ -2903,12 +2087,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Hold a dumbbell at your side',
     'Curl it across your body toward the opposite shoulder',
@@ -2923,12 +2101,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Forearms'],
   secondaryMuscles: ['Biceps'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Grip the bar with an overhand grip',
     'Keep elbows tucked',
@@ -2944,12 +2116,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Biceps'],
   secondaryMuscles: ['Forearms'],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Curl the dumbbells up with palms facing up',
     'Rotate your wrists at the top',
@@ -2965,12 +2131,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: ['Chest'],
   equipment: 'Barbell',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on a bench holding a barbell',
     'Lower the bar toward your upper chest',
@@ -2986,12 +2146,6 @@ const baseExercises: Exercise[] = [
   primaryMuscles: ['Triceps'],
   secondaryMuscles: [],
   equipment: 'Dumbbells',
-  demoMedia: {
-    type: 'video',
-    url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+proper+form',
-    title: 'Dumbbell Bench Press Form Demo',
-    sourceLabel: 'YouTube',
-  },
   instructions: [
     'Lie on a bench holding dumbbells',
     'Start with arms extended above your chest',
