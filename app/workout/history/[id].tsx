@@ -19,13 +19,15 @@ import {
   deleteWorkoutById,
   updateWorkoutById,
 } from '../../../storage/workouts';
-import { loadRoutines, saveRoutines } from '../../../storage/routines';
-import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
 import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 import { getMostRecentSetPrefill } from '../../../utils/workoutHistory';
+import {
+  buildWorkoutShareMessage,
+  createRoutineFromWorkout,
+} from '../../../utils/workoutQuickActions';
 import {
   convertWeightValue,
   convertVolumeValue,
@@ -147,35 +149,9 @@ export default function WorkoutHistoryDetailScreen() {
   const handleShareWorkout = async () => {
     if (!workout) return;
 
-    const summaryLines = [
-      workout.routineName,
-      `${formattedDate} at ${formattedTime}`,
-      formattedDuration ? `Duration: ${formattedDuration}` : '',
-      `${workout.exercises.length} exercises`,
-      `${totalSets} sets`,
-      `${totalReps} reps`,
-      `Heaviest: ${formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}`,
-      `Volume: ${formatWeightNumber(convertedVolume)} ${weightUnit}`,
-      workout.note?.trim() ? `Note: ${workout.note.trim()}` : '',
-      '',
-      ...workout.exercises.map((exercise) => {
-        const setSummary = exercise.sets
-          .map(
-            (set) =>
-              `${formatWeightWithUnit(set.weight, weightUnit, sourceWeightUnit)} x ${set.reps || '-'}`
-          )
-          .join(', ');
-        const exerciseNote = exercise.note?.trim()
-          ? ` (${exercise.note.trim()})`
-          : '';
-
-        return `${exercise.exerciseName}: ${setSummary || 'No sets'}${exerciseNote}`;
-      }),
-    ].filter(Boolean);
-
     try {
       await Share.share({
-        message: summaryLines.join('\n'),
+        message: buildWorkoutShareMessage(workout, weightUnit),
       });
     } catch {
       Alert.alert('Share failed', 'Unable to open the share sheet right now.');
@@ -193,68 +169,15 @@ export default function WorkoutHistoryDetailScreen() {
       return;
     }
 
-    const existingRoutines = await loadRoutines();
-    const baseName = `${workout.routineName} Routine`;
-    const existingNames = new Set(
-      existingRoutines.map((routine) => routine.name.trim().toLowerCase())
+    const newRoutine = await createRoutineFromWorkout(
+      workout,
+      exerciseLibrary,
+      weightUnit
     );
-    let routineName = baseName;
-    let copyNumber = 2;
-
-    while (existingNames.has(routineName.trim().toLowerCase())) {
-      routineName = `${baseName} ${copyNumber}`;
-      copyNumber += 1;
-    }
-
-    const routineExercises: RoutineExerciseWithDefaults[] = workout.exercises.map(
-      (savedExercise) => {
-        const libraryExercise = exerciseLibrary.find(
-          (exercise) => exercise.id === savedExercise.exerciseId
-        );
-        const firstSet = savedExercise.sets[0];
-        const parsedWeight = Number(firstSet?.weight);
-        const defaultWeight =
-          firstSet?.weight && !Number.isNaN(parsedWeight)
-            ? formatWeightNumber(
-                convertWeightValue(parsedWeight, sourceWeightUnit, weightUnit)
-              )
-            : '';
-
-        return {
-          ...(libraryExercise ?? {
-            id: savedExercise.exerciseId,
-            name: savedExercise.exerciseName,
-            muscleGroup: 'Custom',
-            primaryMuscles: [],
-            secondaryMuscles: [],
-            equipment: 'Unknown',
-            instructions: [],
-            isCustom: true,
-          }),
-          defaultSets: String(Math.max(savedExercise.sets.length, 1)),
-          defaultWeight,
-          defaultReps: firstSet?.reps || '',
-          defaultRestSeconds: '',
-          note: savedExercise.note?.trim() ?? '',
-          supersetGroupId: null,
-        };
-      }
-    );
-
-    const newRoutine: RoutineWithExercises = {
-      id: `routine-${Date.now()}`,
-      name: routineName,
-      createdAt: new Date().toISOString(),
-      isPinned: false,
-      note: workout.note?.trim() ?? '',
-      exercises: routineExercises,
-    };
-
-    await saveRoutines([...existingRoutines, newRoutine]);
 
     Alert.alert(
       'Routine saved',
-      `"${routineName}" was added to your routines.`,
+      `"${newRoutine.name}" was added to your routines.`,
       [
         { text: 'Stay Here', style: 'cancel' },
         {

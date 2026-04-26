@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import {
 } from '../../utils/weightUnits';
 
 type ExerciseTab = 'summary' | 'history' | 'howto';
+type ChartRangeKey = '6' | '12' | 'all';
 type ChartMetricKey =
   | 'bestWeight'
   | 'bestEstimatedOneRepMax'
@@ -29,6 +30,7 @@ type ExerciseHistoryPoint = {
   id: string;
   completedAt: string;
   label: string;
+  routineName: string;
   bestWeight: number;
   bestEstimatedOneRepMax: number;
   bestSetVolume: number;
@@ -36,6 +38,12 @@ type ExerciseHistoryPoint = {
   totalReps: number;
   totalSets: number;
   note: string;
+  sets: {
+    id: string;
+    setNumber: number;
+    weight: number;
+    reps: number;
+  }[];
 };
 
 const tabOptions: { key: ExerciseTab; label: string }[] = [
@@ -76,6 +84,12 @@ const chartMetricOptions: {
   },
 ];
 
+const chartRangeOptions: { key: ChartRangeKey; label: string }[] = [
+  { key: '6', label: 'Last 6' },
+  { key: '12', label: 'Last 12' },
+  { key: 'all', label: 'All' },
+];
+
 function formatShortDate(dateString: string) {
   return new Date(dateString).toLocaleDateString([], {
     month: 'short',
@@ -90,6 +104,7 @@ export default function ExerciseDetailScreen() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [activeTab, setActiveTab] = useState<ExerciseTab>('summary');
   const [chartMetric, setChartMetric] = useState<ChartMetricKey>('bestWeight');
+  const [chartRange, setChartRange] = useState<ChartRangeKey>('6');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,14 +153,24 @@ export default function ExerciseDetailScreen() {
         let bestSetVolume = 0;
         let sessionVolume = 0;
         let totalReps = 0;
-
-        exerciseLog.sets.forEach((set) => {
+        const loggedSets = exerciseLog.sets.map((set) => {
           const weight = convertWeightValue(
             Number(set.weight),
             sourceWeightUnit,
             'lb'
           );
           const reps = Number(set.reps);
+
+          return {
+            id: set.id,
+            setNumber: set.setNumber,
+            weight: Number.isNaN(weight) ? 0 : weight,
+            reps: Number.isNaN(reps) ? 0 : reps,
+          };
+        });
+
+        loggedSets.forEach((set) => {
+          const { weight, reps } = set;
 
           if (!Number.isNaN(reps) && reps > 0) {
             totalReps += reps;
@@ -172,6 +197,7 @@ export default function ExerciseDetailScreen() {
           id: workout.id,
           completedAt: workout.completedAt,
           label: formatShortDate(workout.completedAt),
+          routineName: workout.routineName,
           bestWeight,
           bestEstimatedOneRepMax,
           bestSetVolume,
@@ -179,6 +205,7 @@ export default function ExerciseDetailScreen() {
           totalReps,
           totalSets: exerciseLog.sets.length,
           note: exerciseLog.note,
+          sets: loggedSets,
         } satisfies ExerciseHistoryPoint;
       })
       .filter((item): item is ExerciseHistoryPoint => item !== null)
@@ -188,12 +215,17 @@ export default function ExerciseDetailScreen() {
       );
   }, [id, workouts]);
 
-  const summaryPoints = historyPoints.slice(-6);
+  const chartPoints =
+    chartRange === 'all' ? historyPoints : historyPoints.slice(-Number(chartRange));
   const chartMetricConfig = chartMetricOptions.find((item) => item.key === chartMetric)!;
   const chartMaxValue = Math.max(
-    ...summaryPoints.map((point) => point[chartMetric]),
+    ...chartPoints.map((point) => point[chartMetric]),
     0
   );
+  const chartBestPoint = chartPoints
+    .slice()
+    .sort((a, b) => b[chartMetric] - a[chartMetric])[0];
+  const chartLatestPoint = chartPoints[chartPoints.length - 1] || null;
   const latestSession = historyPoints[historyPoints.length - 1] || null;
   const previousSession =
     historyPoints.length > 1 ? historyPoints[historyPoints.length - 2] : null;
@@ -412,6 +444,32 @@ export default function ExerciseDetailScreen() {
               })}
             </View>
 
+            <View style={styles.chartRangeRow}>
+              {chartRangeOptions.map((option) => {
+                const isSelected = option.key === chartRange;
+
+                return (
+                  <Pressable
+                    key={option.key}
+                    style={[
+                      styles.chartRangeChip,
+                      isSelected && styles.chartRangeChipSelected,
+                    ]}
+                    onPress={() => setChartRange(option.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.chartRangeChipText,
+                        isSelected && styles.chartRangeChipTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <View style={styles.chartCard}>
               <View style={styles.chartHeaderRow}>
                 <View style={styles.chartHeaderTextWrap}>
@@ -422,18 +480,42 @@ export default function ExerciseDetailScreen() {
                 </View>
 
                 <View style={styles.chartBadge}>
-                  <Text style={styles.chartBadgeValue}>{summaryPoints.length}</Text>
+                  <Text style={styles.chartBadgeValue}>{chartPoints.length}</Text>
                   <Text style={styles.chartBadgeLabel}>Sessions</Text>
                 </View>
               </View>
 
+              <View style={styles.chartInsightRow}>
+                <View style={styles.chartInsightPill}>
+                  <Text style={styles.chartInsightLabel}>Latest</Text>
+                  <Text style={styles.chartInsightValue}>
+                    {chartLatestPoint
+                      ? formatMetricValue(chartLatestPoint[chartMetric], chartMetric)
+                      : '0'}
+                  </Text>
+                </View>
+
+                <View style={styles.chartInsightPill}>
+                  <Text style={styles.chartInsightLabel}>Best</Text>
+                  <Text style={styles.chartInsightValue}>
+                    {chartBestPoint
+                      ? formatMetricValue(chartBestPoint[chartMetric], chartMetric)
+                      : '0'}
+                  </Text>
+                </View>
+              </View>
+
               <View style={styles.chartBarsRow}>
-                {summaryPoints.map((point) => {
+                {chartPoints.map((point) => {
                   const metricValue = point[chartMetric];
                   const barHeight =
                     chartMaxValue > 0
                       ? Math.max(16, Math.round((metricValue / chartMaxValue) * 120))
                       : 10;
+                  const isBestPoint =
+                    chartBestPoint?.id === point.id &&
+                    chartBestPoint[chartMetric] === metricValue &&
+                    metricValue > 0;
 
                   return (
                     <View key={point.id} style={styles.chartBarColumn}>
@@ -442,7 +524,13 @@ export default function ExerciseDetailScreen() {
                       </Text>
 
                       <View style={styles.chartTrack}>
-                        <View style={[styles.chartFill, { height: barHeight }]} />
+                        <View
+                          style={[
+                            styles.chartFill,
+                            isBestPoint && styles.chartFillBest,
+                            { height: barHeight },
+                          ]}
+                        />
                       </View>
 
                       <Text style={styles.chartLabel}>{point.label}</Text>
@@ -476,6 +564,9 @@ export default function ExerciseDetailScreen() {
                   <Text style={styles.historyDate}>
                     {new Date(point.completedAt).toLocaleDateString()}
                   </Text>
+                  <Text style={styles.historyRoutineName}>
+                    {point.routineName}
+                  </Text>
                   <Text style={styles.historySubtitle}>
                     {point.totalSets} set{point.totalSets === 1 ? '' : 's'} |{' '}
                     {point.totalReps} reps
@@ -488,6 +579,20 @@ export default function ExerciseDetailScreen() {
                   )}{' '}
                   {formatWeightUnit(weightUnit)}
                 </Text>
+              </View>
+
+              <View style={styles.historySetList}>
+                {point.sets.map((set) => (
+                  <View key={set.id} style={styles.historySetRow}>
+                    <Text style={styles.historySetLabel}>Set {set.setNumber}</Text>
+                    <Text style={styles.historySetValue}>
+                      {formatWeightNumber(
+                        convertWeightValue(set.weight, 'lb', weightUnit)
+                      )}{' '}
+                      {formatWeightUnit(weightUnit)} x {set.reps || '-'}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.historyStatsRow}>
@@ -529,6 +634,15 @@ export default function ExerciseDetailScreen() {
                   <Text style={styles.historyNoteText}>{point.note}</Text>
                 </View>
               ) : null}
+
+              <Pressable
+                style={styles.historyDetailsButton}
+                onPress={() => router.push(`/workout/history/${point.id}`)}
+              >
+                <Text style={styles.historyDetailsButtonText}>
+                  View Full Workout
+                </Text>
+              </Pressable>
             </View>
           ))
       )}
@@ -849,6 +963,32 @@ const styles = StyleSheet.create({
   metricChipTextSelected: {
     color: '#4da6ff',
   },
+  chartRangeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  chartRangeChip: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  chartRangeChipSelected: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  chartRangeChipText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chartRangeChipTextSelected: {
+    color: '#4da6ff',
+  },
   chartCard: {
     backgroundColor: '#161616',
     borderWidth: 1,
@@ -897,6 +1037,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  chartInsightRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  chartInsightPill: {
+    flex: 1,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    padding: 10,
+  },
+  chartInsightLabel: {
+    color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chartInsightValue: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   chartBarsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -927,6 +1093,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#4da6ff',
   },
+  chartFillBest: {
+    backgroundColor: '#9fd0ff',
+  },
   chartLabel: {
     color: '#aaaaaa',
     fontSize: 11,
@@ -954,6 +1123,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 4,
   },
+  historyRoutineName: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
   historySubtitle: {
     color: '#aaaaaa',
     fontSize: 12,
@@ -961,6 +1136,30 @@ const styles = StyleSheet.create({
   historyWeight: {
     color: '#4da6ff',
     fontSize: 15,
+    fontWeight: '700',
+  },
+  historySetList: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    marginBottom: 10,
+  },
+  historySetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  historySetLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  historySetValue: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '700',
   },
   historyStatsRow: {
@@ -1005,6 +1204,20 @@ const styles = StyleSheet.create({
     color: '#dddddd',
     fontSize: 13,
     lineHeight: 20,
+  },
+  historyDetailsButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  historyDetailsButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   targetGroup: {
     marginBottom: 12,

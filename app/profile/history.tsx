@@ -1,5 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
@@ -8,6 +17,11 @@ import { WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import WorkoutHistoryCard from '../../components/WorkoutHistoryCard';
 import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
+import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
+import {
+  buildWorkoutShareMessage,
+  createRoutineFromWorkout,
+} from '../../utils/workoutQuickActions';
 
 type HistoryFilter = 'all' | 'routine' | 'empty';
 type HistoryDateFilter = 'all' | '7d' | '30d' | '90d';
@@ -27,6 +41,54 @@ export default function ProfileWorkoutHistoryScreen() {
     const savedSettings = await loadSettings();
     setWorkouts(savedWorkouts);
     setWeightUnit(savedSettings.weightUnit);
+  };
+
+  const handleStartAgain = (workout: SavedWorkoutSession) => {
+    router.push({
+      pathname: '/workout/session/empty',
+      params: {
+        templateWorkoutId: workout.id,
+      },
+    });
+  };
+
+  const handleShareWorkout = async (workout: SavedWorkoutSession) => {
+    try {
+      await Share.share({
+        message: buildWorkoutShareMessage(workout, weightUnit),
+      });
+    } catch {
+      Alert.alert('Share failed', 'Unable to open the share sheet right now.');
+    }
+  };
+
+  const handleSaveAsRoutine = async (workout: SavedWorkoutSession) => {
+    if (workout.exercises.length === 0) {
+      Alert.alert(
+        'No exercises',
+        'Add at least one exercise before saving this workout as a routine.'
+      );
+      return;
+    }
+
+    const exerciseLibrary = await loadExerciseLibrary();
+    const newRoutine = await createRoutineFromWorkout(
+      workout,
+      exerciseLibrary,
+      weightUnit
+    );
+
+    Alert.alert(
+      'Routine saved',
+      `"${newRoutine.name}" was added to your routines.`,
+      [
+        { text: 'Stay Here', style: 'cancel' },
+        {
+          text: 'View Routine',
+          onPress: () => router.push(`/routine/${newRoutine.id}`),
+        },
+      ]
+    );
   };
 
   useFocusEffect(
@@ -113,6 +175,9 @@ export default function ProfileWorkoutHistoryScreen() {
               workout={item}
               weightUnit={weightUnit}
               onPress={() => router.push(`/workout/history/${item.id}`)}
+              onStartAgain={() => handleStartAgain(item)}
+              onShare={() => handleShareWorkout(item)}
+              onSaveAsRoutine={() => handleSaveAsRoutine(item)}
             />
           )}
           ListHeaderComponent={

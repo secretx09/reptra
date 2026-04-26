@@ -24,6 +24,7 @@ import {
   formatWeightNumber,
   formatWeightWithUnit,
 } from '../../../utils/weightUnits';
+import { buildWorkoutShareMessage } from '../../../utils/workoutQuickActions';
 
 export default function WorkoutSummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -123,31 +124,9 @@ export default function WorkoutSummaryScreen() {
   const handleShareWorkout = async () => {
     if (!workout) return;
 
-    const summaryLines = [
-      `${workout.routineName}`,
-      `${formattedDate} at ${formattedTime}`,
-      formattedDuration ? `Duration: ${formattedDuration}` : '',
-      `${workout.exercises.length} exercises`,
-      `${totalSets} sets`,
-      `${totalReps} reps`,
-      `Heaviest: ${formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}`,
-      `Volume: ${formatWeightNumber(convertedVolume)} ${weightUnit}`,
-      '',
-      ...workout.exercises.map((exercise) => {
-        const setSummary = exercise.sets
-          .map(
-            (set) =>
-              `${formatWeightWithUnit(set.weight, weightUnit, sourceWeightUnit)} x ${set.reps || '-'}`
-          )
-          .join(', ');
-
-        return `${exercise.exerciseName}: ${setSummary || 'No sets'}`;
-      }),
-    ].filter(Boolean);
-
     try {
       await Share.share({
-        message: summaryLines.join('\n'),
+        message: buildWorkoutShareMessage(workout, weightUnit),
       });
     } catch {
       Alert.alert('Share failed', 'Unable to open the share sheet right now.');
@@ -176,6 +155,56 @@ export default function WorkoutSummaryScreen() {
   const convertedVolume = convertVolumeValue(totalVolume, 'lb', weightUnit);
   const sourceWeightUnit = workout.weightUnit ?? 'lb';
   const prHighlights = detectWorkoutPRs(workout, workouts);
+  const bestSet = workout.exercises
+    .flatMap((exercise) =>
+      exercise.sets.map((set) => {
+        const weight = convertWeightValue(
+          Number(set.weight) || 0,
+          sourceWeightUnit,
+          'lb'
+        );
+        const reps = Number(set.reps) || 0;
+
+        return {
+          exerciseName: exercise.exerciseName,
+          weight,
+          reps,
+          volume: weight * reps,
+        };
+      })
+    )
+    .sort((a, b) => b.volume - a.volume)[0];
+  const exerciseVolumeSummaries = workout.exercises
+    .map((exercise) => {
+      const volume = exercise.sets.reduce((sum, set) => {
+        const weight = convertWeightValue(
+          Number(set.weight) || 0,
+          sourceWeightUnit,
+          'lb'
+        );
+        const reps = Number(set.reps) || 0;
+
+        return sum + weight * reps;
+      }, 0);
+
+      return {
+        exerciseName: exercise.exerciseName,
+        volume,
+      };
+    })
+    .sort((a, b) => b.volume - a.volume);
+  const topVolumeExercise = exerciseVolumeSummaries[0];
+  const nameSuggestions = [
+    `${workout.routineName} - ${formattedDate}`,
+    workout.routineId ? `${workout.routineName} Run` : 'Custom Workout',
+    formattedDuration ? `${formattedDuration} Session` : 'Logged Workout',
+  ].filter((suggestion, index, suggestions) => {
+    const trimmedSuggestion = suggestion.trim();
+    return (
+      trimmedSuggestion.length > 0 &&
+      suggestions.findIndex((item) => item.trim() === trimmedSuggestion) === index
+    );
+  });
 
   return (
     <>
@@ -208,6 +237,21 @@ export default function WorkoutSummaryScreen() {
                     setNameSaved(false);
                   }}
                 />
+
+                <View style={styles.nameSuggestionRow}>
+                  {nameSuggestions.map((suggestion) => (
+                    <Pressable
+                      key={suggestion}
+                      style={styles.nameSuggestionChip}
+                      onPress={() => {
+                        setWorkoutName(suggestion);
+                        setNameSaved(false);
+                      }}
+                    >
+                      <Text style={styles.nameSuggestionText}>{suggestion}</Text>
+                    </Pressable>
+                  ))}
+                </View>
 
                 <Pressable
                   style={styles.nameButton}
@@ -247,6 +291,45 @@ export default function WorkoutSummaryScreen() {
                     {formatWeightNumber(convertedVolume)}
                   </Text>
                   <Text style={styles.summaryLabel}>Total Volume</Text>
+                </View>
+              </View>
+
+              <View style={styles.highlightCard}>
+                <Text style={styles.highlightTitle}>Session Highlights</Text>
+
+                <View style={styles.highlightRow}>
+                  <Text style={styles.highlightLabel}>Best Set</Text>
+                  <Text style={styles.highlightValue}>
+                    {bestSet && bestSet.volume > 0
+                      ? `${bestSet.exerciseName}: ${formatWeightNumber(
+                          convertWeightValue(bestSet.weight, 'lb', weightUnit)
+                        )} ${weightUnit} x ${bestSet.reps}`
+                      : 'No loaded sets'}
+                  </Text>
+                </View>
+
+                <View style={styles.highlightRow}>
+                  <Text style={styles.highlightLabel}>Top Volume</Text>
+                  <Text style={styles.highlightValue}>
+                    {topVolumeExercise && topVolumeExercise.volume > 0
+                      ? `${topVolumeExercise.exerciseName}: ${formatWeightNumber(
+                          convertVolumeValue(
+                            topVolumeExercise.volume,
+                            'lb',
+                            weightUnit
+                          )
+                        )} ${weightUnit}`
+                      : 'No volume yet'}
+                  </Text>
+                </View>
+
+                <View style={styles.highlightRow}>
+                  <Text style={styles.highlightLabel}>Average Reps/Set</Text>
+                  <Text style={styles.highlightValue}>
+                    {totalSets > 0
+                      ? formatWeightNumber(totalReps / totalSets)
+                      : '0'}
+                  </Text>
                 </View>
               </View>
 
@@ -364,6 +447,13 @@ export default function WorkoutSummaryScreen() {
                   <Text style={styles.setValue}>{set.reps || '-'} reps</Text>
                 </View>
               ))}
+
+              {item.note?.trim() ? (
+                <View style={styles.exerciseNoteBox}>
+                  <Text style={styles.exerciseNoteLabel}>Note</Text>
+                  <Text style={styles.exerciseNoteText}>{item.note.trim()}</Text>
+                </View>
+              ) : null}
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -431,6 +521,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 10,
   },
+  nameSuggestionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  nameSuggestionChip: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  nameSuggestionText: {
+    color: '#dddddd',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   nameButton: {
     backgroundColor: '#16324d',
     borderWidth: 1,
@@ -472,6 +581,39 @@ const styles = StyleSheet.create({
     color: '#8f8f8f',
     fontSize: 12,
     fontWeight: '600',
+  },
+  highlightCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+  },
+  highlightTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  highlightRow: {
+    backgroundColor: '#101010',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  highlightLabel: {
+    color: '#8f8f8f',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  highlightValue: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   prCard: {
     backgroundColor: '#101c29',
@@ -655,6 +797,23 @@ const styles = StyleSheet.create({
   setValue: {
     color: '#aaaaaa',
     fontSize: 14,
+  },
+  exerciseNoteBox: {
+    backgroundColor: '#161616',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 4,
+  },
+  exerciseNoteLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  exerciseNoteText: {
+    color: '#dddddd',
+    fontSize: 13,
+    lineHeight: 20,
   },
   listContent: {
     paddingBottom: 24,
