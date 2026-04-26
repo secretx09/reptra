@@ -71,9 +71,11 @@ export default function WorkoutSessionScreen() {
           defaultWeight: exercise.defaultWeight ?? '',
           defaultReps: exercise.defaultReps ?? '',
           defaultRestSeconds: exercise.defaultRestSeconds ?? '',
+          note: exercise.note ?? '',
         }))
       );
       const initialExerciseSets: Record<string, WorkoutSet[]> = {};
+      const initialExerciseNotes: Record<string, string> = {};
       const initialRestConfigs: Record<string, number> = {};
       const initialRestEditorInputs: Record<string, string> = {};
 
@@ -92,6 +94,7 @@ export default function WorkoutSessionScreen() {
               }))
             : [];
 
+        initialExerciseNotes[exercise.id] = exercise.note ?? '';
         initialRestConfigs[exercise.id] =
           Number.isInteger(parsedRestSeconds) && parsedRestSeconds > 0
             ? parsedRestSeconds
@@ -105,6 +108,7 @@ export default function WorkoutSessionScreen() {
       setRoutine(found);
       setSessionExercises(normalizedExercises);
       setExerciseSets(initialExerciseSets);
+      setExerciseNotes(initialExerciseNotes);
       setExerciseRestConfigs(initialRestConfigs);
       setRestEditorInputs(initialRestEditorInputs);
     };
@@ -234,6 +238,7 @@ export default function WorkoutSessionScreen() {
       defaultWeight: '',
       defaultReps: '',
       defaultRestSeconds: '',
+      note: '',
       supersetGroupId: null,
     };
 

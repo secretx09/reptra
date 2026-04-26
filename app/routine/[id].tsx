@@ -277,6 +277,13 @@ export default function RoutineDetailScreen() {
                   </View>
                 )}
               </View>
+
+              {!!item.note?.trim() && (
+                <View style={styles.exerciseNoteBox}>
+                  <Text style={styles.exerciseNoteLabel}>Note</Text>
+                  <Text style={styles.exerciseNoteText}>{item.note.trim()}</Text>
+                </View>
+              )}
             </View>
           )}
           ListFooterComponent={
@@ -509,6 +516,25 @@ const styles = StyleSheet.create({
     color: '#dddddd',
     fontSize: 12,
     fontWeight: '600',
+  },
+  exerciseNoteBox: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  exerciseNoteLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  exerciseNoteText: {
+    color: '#dddddd',
+    fontSize: 13,
+    lineHeight: 19,
   },
   deleteButton: {
     backgroundColor: '#2a1111',

@@ -55,6 +55,7 @@ export default function EditRoutineScreen() {
             defaultWeight: exercise.defaultWeight ?? '',
             defaultReps: exercise.defaultReps ?? '',
             defaultRestSeconds: exercise.defaultRestSeconds ?? '',
+            note: exercise.note ?? '',
           }))
         );
 
@@ -136,6 +137,7 @@ export default function EditRoutineScreen() {
         defaultWeight: '',
         defaultReps: '',
         defaultRestSeconds: '',
+        note: '',
         supersetGroupId: null,
       },
     ]);
@@ -167,7 +169,12 @@ export default function EditRoutineScreen() {
 
   const handleUpdateExerciseDefault = (
     exerciseId: string,
-    field: 'defaultSets' | 'defaultWeight' | 'defaultReps' | 'defaultRestSeconds',
+    field:
+      | 'defaultSets'
+      | 'defaultWeight'
+      | 'defaultReps'
+      | 'defaultRestSeconds'
+      | 'note',
     value: string
   ) => {
     setEditedExercises((prev) =>
@@ -198,6 +205,7 @@ export default function EditRoutineScreen() {
       return {
         ...exercise,
         defaultRestSeconds: parsedRestSeconds ? parsedRestSeconds.toString() : '',
+        note: exercise.note?.trim() ?? '',
       };
     });
 
@@ -441,6 +449,17 @@ export default function EditRoutineScreen() {
                       />
                     </View>
                   </View>
+
+                  <TextInput
+                    style={styles.exerciseNoteInput}
+                    placeholder="Exercise note..."
+                    placeholderTextColor="#777777"
+                    value={item.note ?? ''}
+                    onChangeText={(value) =>
+                      handleUpdateExerciseDefault(item.id, 'note', value)
+                    }
+                    multiline
+                  />
 
                   {index > 0 && (
                     <Pressable
@@ -828,6 +847,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
     fontSize: 13,
+  },
+  exerciseNoteInput: {
+    backgroundColor: '#121212',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    minHeight: 64,
+    textAlignVertical: 'top',
+    fontSize: 13,
+    marginTop: 10,
   },
   removeButton: {
     backgroundColor: '#2a1111',

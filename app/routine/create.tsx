@@ -95,6 +95,7 @@ export default function CreateRoutineScreen() {
         defaultWeight: '',
         defaultReps: '',
         defaultRestSeconds: '',
+        note: '',
         supersetGroupId: null,
       },
     ]);
@@ -116,7 +117,12 @@ export default function CreateRoutineScreen() {
 
   const handleUpdateExerciseDefault = (
     exerciseId: string,
-    field: 'defaultSets' | 'defaultWeight' | 'defaultReps' | 'defaultRestSeconds',
+    field:
+      | 'defaultSets'
+      | 'defaultWeight'
+      | 'defaultReps'
+      | 'defaultRestSeconds'
+      | 'note',
     value: string
   ) => {
     setSelectedExercises((prev) =>
@@ -145,6 +151,7 @@ export default function CreateRoutineScreen() {
       return {
         ...exercise,
         defaultRestSeconds: parsedRestSeconds ? parsedRestSeconds.toString() : '',
+        note: exercise.note?.trim() ?? '',
       };
     });
 
@@ -341,6 +348,17 @@ export default function CreateRoutineScreen() {
                         }
                       />
                     </View>
+
+                    <TextInput
+                      style={styles.exerciseNoteInput}
+                      placeholder="Exercise note..."
+                      placeholderTextColor="#777777"
+                      value={exercise.note ?? ''}
+                      onChangeText={(value) =>
+                        handleUpdateExerciseDefault(exercise.id, 'note', value)
+                      }
+                      multiline
+                    />
 
                     <View style={styles.exerciseActionRow}>
                       {index > 0 && (
@@ -650,6 +668,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
     fontSize: 14,
+  },
+  exerciseNoteInput: {
+    backgroundColor: '#161616',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    minHeight: 64,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    marginTop: 10,
   },
   exerciseActionRow: {
     flexDirection: 'row',

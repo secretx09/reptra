@@ -22,6 +22,7 @@ export interface RoutineExerciseWithDefaults extends Exercise {
   defaultWeight: string;
   defaultReps: string;
   defaultRestSeconds: string;
+  note?: string;
   supersetGroupId?: string | null;
 }
 

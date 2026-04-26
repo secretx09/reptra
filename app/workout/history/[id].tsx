@@ -235,6 +235,7 @@ export default function WorkoutHistoryDetailScreen() {
           defaultWeight,
           defaultReps: firstSet?.reps || '',
           defaultRestSeconds: '',
+          note: savedExercise.note?.trim() ?? '',
           supersetGroupId: null,
         };
       }
