@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +27,7 @@ const selectableMuscleGroups = baseMuscleGroups.filter((group) => group !== 'All
 
 export default function EditCustomExerciseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [name, setName] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('Chest');
@@ -35,6 +37,28 @@ export default function EditCustomExerciseScreen() {
   const [demoUrl, setDemoUrl] = useState('');
   const [demoTitle, setDemoTitle] = useState('');
   const [demoSource, setDemoSource] = useState('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const scrollToFocusedField = (y: number) => {
+    const scroll = () => scrollViewRef.current?.scrollTo({ y, animated: true });
+
+    setTimeout(scroll, 100);
+    setTimeout(scroll, 320);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -121,7 +145,15 @@ export default function EditCustomExerciseScreen() {
       <Stack.Screen options={{ title: 'Edit Exercise' }} />
 
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.content,
+            isKeyboardVisible && styles.contentKeyboardOpen,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
           <Text style={styles.title}>Edit Custom Exercise</Text>
           <Text style={styles.subtitle}>
             Update the details used across the exercise library and future routines.
@@ -170,15 +202,6 @@ export default function EditCustomExerciseScreen() {
             onChangeText={setEquipment}
           />
 
-          <TextInput
-            style={styles.multilineInput}
-            placeholder="Instructions (one step per line)"
-            placeholderTextColor="#888888"
-            value={instructionsInput}
-            onChangeText={setInstructionsInput}
-            multiline
-          />
-
           <View style={styles.mediaCard}>
             <Text style={styles.mediaTitle}>Demo Media</Text>
             <Text style={styles.mediaSubtitle}>
@@ -218,6 +241,7 @@ export default function EditCustomExerciseScreen() {
               autoCapitalize="none"
               value={demoUrl}
               onChangeText={setDemoUrl}
+              onFocus={() => scrollToFocusedField(260)}
             />
 
             <TextInput
@@ -226,6 +250,7 @@ export default function EditCustomExerciseScreen() {
               placeholderTextColor="#888888"
               value={demoTitle}
               onChangeText={setDemoTitle}
+              onFocus={() => scrollToFocusedField(330)}
             />
 
             <TextInput
@@ -234,8 +259,19 @@ export default function EditCustomExerciseScreen() {
               placeholderTextColor="#888888"
               value={demoSource}
               onChangeText={setDemoSource}
+              onFocus={() => scrollToFocusedField(390)}
             />
           </View>
+
+          <TextInput
+            style={styles.multilineInput}
+            placeholder="Instructions (one step per line)"
+            placeholderTextColor="#888888"
+            value={instructionsInput}
+            onChangeText={setInstructionsInput}
+            onFocus={() => scrollToFocusedField(560)}
+            multiline
+          />
 
           <Pressable style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save Changes</Text>
@@ -254,6 +290,9 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 32,
+  },
+  contentKeyboardOpen: {
+    paddingBottom: 260,
   },
   title: {
     color: '#ffffff',
