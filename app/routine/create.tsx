@@ -32,6 +32,7 @@ export default function CreateRoutineScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [routineName, setRoutineName] = useState('');
+  const [routineNote, setRoutineNote] = useState('');
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
@@ -160,6 +161,7 @@ export default function CreateRoutineScreen() {
       name: routineName.trim(),
       createdAt: new Date().toISOString(),
       isPinned,
+      note: routineNote.trim(),
       exercises: normalizedExercises,
     };
 
@@ -209,6 +211,15 @@ export default function CreateRoutineScreen() {
           placeholderTextColor="#888888"
           value={routineName}
           onChangeText={setRoutineName}
+        />
+
+        <TextInput
+          style={styles.routineNoteInput}
+          placeholder="Routine note or goal..."
+          placeholderTextColor="#888888"
+          value={routineNote}
+          onChangeText={setRoutineNote}
+          multiline
         />
 
         <View style={styles.summaryCard}>
@@ -509,6 +520,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
     fontSize: 16,
+  },
+  routineNoteInput: {
+    backgroundColor: '#1c1c1c',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 76,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+    fontSize: 15,
   },
   summaryCard: {
     backgroundColor: '#171717',

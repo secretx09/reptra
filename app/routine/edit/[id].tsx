@@ -34,6 +34,7 @@ export default function EditRoutineScreen() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [routineName, setRoutineName] = useState('');
+  const [routineNote, setRoutineNote] = useState('');
   const [editedExercises, setEditedExercises] = useState<
     RoutineExerciseWithDefaults[]
   >([]);
@@ -63,9 +64,11 @@ export default function EditRoutineScreen() {
           ...foundRoutine,
           name: foundRoutine.name ?? '',
           isPinned: foundRoutine.isPinned ?? false,
+          note: foundRoutine.note ?? '',
           exercises: normalizedExercises,
         });
         setRoutineName(foundRoutine.name ?? '');
+        setRoutineNote(foundRoutine.note ?? '');
         setIsPinned(foundRoutine.isPinned ?? false);
         setEditedExercises(normalizedExercises);
       }
@@ -213,6 +216,7 @@ export default function EditRoutineScreen() {
       ...routine,
       name: routineName.trim(),
       isPinned,
+      note: routineNote.trim(),
       exercises: normalizedExercises,
     };
 
@@ -262,6 +266,16 @@ export default function EditRoutineScreen() {
               placeholderTextColor="#888888"
               value={routineName}
               onChangeText={setRoutineName}
+            />
+
+            <Text style={styles.label}>Routine Note</Text>
+            <TextInput
+              style={styles.routineNoteInput}
+              placeholder="Routine note or goal..."
+              placeholderTextColor="#888888"
+              value={routineNote}
+              onChangeText={setRoutineNote}
+              multiline
             />
 
             <Pressable
@@ -623,6 +637,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    marginBottom: 16,
+    fontSize: 15,
+  },
+  routineNoteInput: {
+    backgroundColor: '#171717',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 76,
+    textAlignVertical: 'top',
     marginBottom: 16,
     fontSize: 15,
   },

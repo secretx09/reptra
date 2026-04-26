@@ -5,6 +5,7 @@ export interface Routine {
   name: string;
   createdAt: string;
   isPinned?: boolean;
+  note?: string;
 }
 
 export interface RoutineExercise {
@@ -31,5 +32,6 @@ export interface RoutineWithExercises {
   name: string;
   createdAt: string;
   isPinned?: boolean;
+  note?: string;
   exercises: RoutineExerciseWithDefaults[];
 }

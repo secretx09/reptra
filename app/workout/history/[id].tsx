@@ -246,6 +246,7 @@ export default function WorkoutHistoryDetailScreen() {
       name: routineName,
       createdAt: new Date().toISOString(),
       isPinned: false,
+      note: workout.note?.trim() ?? '',
       exercises: routineExercises,
     };
 

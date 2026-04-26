@@ -721,6 +721,13 @@ export default function WorkoutSessionScreen() {
             {sessionExercises.length === 1 ? '' : 's'}
           </Text>
 
+          {!!routine.note?.trim() && (
+            <View style={styles.routineNoteCard}>
+              <Text style={styles.routineNoteLabel}>Routine Note</Text>
+              <Text style={styles.routineNoteText}>{routine.note.trim()}</Text>
+            </View>
+          )}
+
           <View style={styles.addExerciseSection}>
             <Pressable
               style={styles.addExerciseTrigger}
@@ -871,6 +878,25 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 13,
     marginBottom: 14,
+  },
+  routineNoteCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  routineNoteLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+  routineNoteText: {
+    color: '#dddddd',
+    fontSize: 14,
+    lineHeight: 20,
   },
   addExerciseSection: {
     marginBottom: 14,
