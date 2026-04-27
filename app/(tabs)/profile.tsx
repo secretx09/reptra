@@ -5,19 +5,23 @@ import { router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadWorkouts } from '../../storage/workouts';
+import { Exercise } from '../../types/exercise';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { AppTheme } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
+import { calculateAdvancedProfileStats } from '../../utils/calculateAdvancedProfileStats';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
+import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [theme, setTheme] = useState<AppTheme>('graphite');
   const palette = getThemePalette(theme);
 
@@ -31,10 +35,16 @@ export default function ProfileScreen() {
     setProgressPhotos(savedPhotos);
   };
 
+  const fetchExerciseLibrary = async () => {
+    const loadedExercises = await loadExerciseLibrary();
+    setExerciseLibrary(loadedExercises);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
       fetchProgressPhotos();
+      fetchExerciseLibrary();
       const fetchSettings = async () => {
         const settings = await loadSettings();
         setTheme(settings.theme);
@@ -61,6 +71,10 @@ export default function ProfileScreen() {
   const weeklyChart = useMemo(() => {
     return calculateWeeklyChart(workouts);
   }, [workouts]);
+
+  const advancedStats = useMemo(() => {
+    return calculateAdvancedProfileStats(workouts, exerciseLibrary);
+  }, [exerciseLibrary, workouts]);
 
   const totalTrainingTime = formatWorkoutDuration(
     profileStats.totalDurationMinutes
@@ -178,6 +192,66 @@ export default function ProfileScreen() {
 
                 <Text style={styles.secondaryActionMeta}>{totalWorkouts}</Text>
               </Pressable>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Consistency</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Streaks and weekly rhythm
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.profileInsightGrid}>
+                <View style={styles.profileInsightItem}>
+                  <Text style={styles.profileInsightValue}>
+                    {advancedStats.currentStreak}
+                  </Text>
+                  <Text style={styles.profileInsightLabel}>Current Streak</Text>
+                </View>
+
+                <View style={styles.profileInsightItem}>
+                  <Text style={styles.profileInsightValue}>
+                    {advancedStats.longestStreak}
+                  </Text>
+                  <Text style={styles.profileInsightLabel}>Best Streak</Text>
+                </View>
+
+                <View style={styles.profileInsightItem}>
+                  <Text style={styles.profileInsightValue}>
+                    {advancedStats.averageWorkoutsPerWeek}
+                  </Text>
+                  <Text style={styles.profileInsightLabel}>Avg / Week</Text>
+                </View>
+
+                <View style={styles.profileInsightItem}>
+                  <Text style={styles.profileInsightValue}>
+                    {advancedStats.uniqueTrainingDays}
+                  </Text>
+                  <Text style={styles.profileInsightLabel}>Training Days</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <Text style={styles.profileInsightTitle}>Training Focus</Text>
+              <View style={styles.focusRow}>
+                <View style={styles.focusItem}>
+                  <Text style={styles.focusLabel}>Favorite Exercise</Text>
+                  <Text style={styles.focusValue}>
+                    {advancedStats.favoriteExercise}
+                  </Text>
+                </View>
+
+                <View style={styles.focusItem}>
+                  <Text style={styles.focusLabel}>Most Trained</Text>
+                  <Text style={styles.focusValue}>
+                    {advancedStats.mostTrainedMuscleGroup}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             <View style={styles.progressPhotosCard}>
@@ -477,6 +551,78 @@ const styles = StyleSheet.create({
   secondaryActionMeta: {
     color: '#4da6ff',
     fontSize: 20,
+    fontWeight: '700',
+  },
+  profileInsightCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  profileInsightHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  profileInsightTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  profileInsightSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+  },
+  profileInsightGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  profileInsightItem: {
+    width: '48%',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  profileInsightValue: {
+    color: '#4da6ff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  profileInsightLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  focusRow: {
+    gap: 10,
+    marginTop: 8,
+  },
+  focusItem: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+  },
+  focusLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+  focusValue: {
+    color: '#ffffff',
+    fontSize: 15,
     fontWeight: '700',
   },
   progressPhotosCard: {

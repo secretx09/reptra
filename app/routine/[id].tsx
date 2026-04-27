@@ -22,6 +22,8 @@ import { WeightUnit } from '../../types/settings';
 import {
   getSupersetBlocks,
   getSupersetDisplayMap,
+  getSupersetInstructionText,
+  getSupersetSummaryLine,
 } from '../../utils/routineSupersets';
 import { formatRestTimerLabel } from '../../utils/restTimer';
 import { formatWeightUnit } from '../../utils/weightUnits';
@@ -157,16 +159,14 @@ export default function RoutineDetailScreen() {
               {supersetBlocks.some((block) => block.label !== '') && (
                 <View style={styles.supersetOverviewCard}>
                   <Text style={styles.supersetOverviewTitle}>Superset Layout</Text>
+                  <Text style={styles.supersetOverviewText}>
+                    {getSupersetInstructionText()}
+                  </Text>
                   {supersetBlocks
                     .filter((block) => block.label !== '')
                     .map((block) => (
                       <Text key={block.id} style={styles.supersetOverviewLine}>
-                        {`Superset ${block.label}: ${block.exercises
-                          .map(
-                            (exercise) =>
-                              `${supersetDisplayMap[exercise.id]?.slotLabel} ${exercise.name}`
-                          )
-                          .join(' + ')}`}
+                        {getSupersetSummaryLine(block, supersetDisplayMap)}
                       </Text>
                     ))}
                 </View>
@@ -356,6 +356,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 6,
+  },
+  supersetOverviewText: {
+    color: '#9dbbda',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
   },
   supersetOverviewLine: {
     color: '#d8ecff',

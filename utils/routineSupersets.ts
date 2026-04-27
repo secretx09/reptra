@@ -176,3 +176,16 @@ export const getSupersetBlocks = (
 
   return blocks;
 };
+
+export const getSupersetInstructionText = () =>
+  'Complete each exercise in the group back-to-back, then rest after the final exercise.';
+
+export const getSupersetSummaryLine = (
+  block: SupersetBlock,
+  displayMap: Record<string, SupersetDisplayMeta>
+) =>
+  `Superset ${block.label}: ${block.exercises
+    .map(
+      (exercise) => `${displayMap[exercise.id]?.slotLabel ?? ''} ${exercise.name}`
+    )
+    .join(' + ')}`;

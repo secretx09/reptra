@@ -200,6 +200,13 @@ export default function WorkoutScreen() {
 
       <Pressable
         style={styles.secondaryButton}
+        onPress={() => router.push('/routine/templates')}
+      >
+        <Text style={styles.secondaryButtonText}>Browse Routine Templates</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.secondaryButton}
         onPress={() => router.push('/exercise/create')}
       >
         <Text style={styles.secondaryButtonText}>Create Custom Exercise</Text>

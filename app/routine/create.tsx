@@ -22,6 +22,8 @@ import { getMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrar
 import {
   getSupersetDisplayMap,
   getSupersetBlocks,
+  getSupersetInstructionText,
+  getSupersetSummaryLine,
   normalizeSupersetExercises,
   toggleSupersetWithPrevious,
 } from '../../utils/routineSupersets';
@@ -252,16 +254,13 @@ export default function CreateRoutineScreen() {
             <Text style={styles.supersetSummaryText}>
               {supersetBlocks.length} superset
               {supersetBlocks.length === 1 ? '' : 's'} built into this routine.
+              {' '}
+              {getSupersetInstructionText()}
             </Text>
 
             {supersetBlocks.map((block) => (
               <Text key={block.id} style={styles.supersetSummaryLine}>
-                {`Superset ${block.label}: ${block.exercises
-                  .map(
-                    (exercise) =>
-                      `${supersetDisplayMap[exercise.id]?.slotLabel} ${exercise.name}`
-                  )
-                  .join(' + ')}`}
+                {getSupersetSummaryLine(block, supersetDisplayMap)}
               </Text>
             ))}
           </View>
