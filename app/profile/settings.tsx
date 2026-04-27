@@ -12,6 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
+import { loadCustomExercises } from '../../storage/customExercises';
+import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
+import { loadProgressPhotos } from '../../storage/progressPhotos';
+import { loadRoutines } from '../../storage/routines';
+import { loadWorkouts } from '../../storage/workouts';
 import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 import { buildAppDataExport } from '../../utils/exportAppData';
 import { resetAppData } from '../../utils/resetAppData';
@@ -19,6 +24,14 @@ import { formatRestTimerLabel, parseRestTimerInput } from '../../utils/restTimer
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [dataSnapshot, setDataSnapshot] = useState({
+    workouts: 0,
+    routines: 0,
+    customExercises: 0,
+    progressPhotos: 0,
+    favoriteExercises: 0,
+    lastWorkoutLabel: 'No workouts yet',
+  });
   const [defaultRestTimerInput, setDefaultRestTimerInput] = useState(
     defaultSettings.defaultRestTimerSeconds.toString()
   );
@@ -27,8 +40,37 @@ export default function ProfileSettingsScreen() {
     useCallback(() => {
       const fetchSettings = async () => {
         const savedSettings = await loadSettings();
+        const [
+          savedWorkouts,
+          savedRoutines,
+          savedCustomExercises,
+          savedPhotos,
+          savedFavoriteIds,
+        ] = await Promise.all([
+          loadWorkouts(),
+          loadRoutines(),
+          loadCustomExercises(),
+          loadProgressPhotos(),
+          loadFavoriteExerciseIds(),
+        ]);
+        const latestWorkout = savedWorkouts[0];
+
         setSettings(savedSettings);
         setDefaultRestTimerInput(savedSettings.defaultRestTimerSeconds.toString());
+        setDataSnapshot({
+          workouts: savedWorkouts.length,
+          routines: savedRoutines.length,
+          customExercises: savedCustomExercises.length,
+          progressPhotos: savedPhotos.length,
+          favoriteExercises: savedFavoriteIds.length,
+          lastWorkoutLabel: latestWorkout
+            ? new Date(latestWorkout.completedAt).toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })
+            : 'No workouts yet',
+        });
       };
 
       fetchSettings();
@@ -265,6 +307,40 @@ export default function ProfileSettingsScreen() {
               Export your local Reptra data as a JSON backup you can save or send.
             </Text>
 
+            <View style={styles.dataSnapshotCard}>
+              <Text style={styles.dataSnapshotTitle}>Local Data Snapshot</Text>
+              <View style={styles.dataSnapshotGrid}>
+                <View style={styles.dataSnapshotItem}>
+                  <Text style={styles.dataSnapshotValue}>
+                    {dataSnapshot.workouts}
+                  </Text>
+                  <Text style={styles.dataSnapshotLabel}>Workouts</Text>
+                </View>
+                <View style={styles.dataSnapshotItem}>
+                  <Text style={styles.dataSnapshotValue}>
+                    {dataSnapshot.routines}
+                  </Text>
+                  <Text style={styles.dataSnapshotLabel}>Routines</Text>
+                </View>
+                <View style={styles.dataSnapshotItem}>
+                  <Text style={styles.dataSnapshotValue}>
+                    {dataSnapshot.customExercises}
+                  </Text>
+                  <Text style={styles.dataSnapshotLabel}>Custom</Text>
+                </View>
+                <View style={styles.dataSnapshotItem}>
+                  <Text style={styles.dataSnapshotValue}>
+                    {dataSnapshot.progressPhotos}
+                  </Text>
+                  <Text style={styles.dataSnapshotLabel}>Photos</Text>
+                </View>
+              </View>
+              <Text style={styles.dataSnapshotFooter}>
+                Favorites: {dataSnapshot.favoriteExercises} • Last workout:{' '}
+                {dataSnapshot.lastWorkoutLabel}
+              </Text>
+            </View>
+
             <Pressable style={styles.exportButton} onPress={handleExportData}>
               <Text style={styles.exportButtonText}>Export Data</Text>
             </Pressable>
@@ -401,6 +477,51 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  dataSnapshotCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+  },
+  dataSnapshotTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  dataSnapshotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  dataSnapshotItem: {
+    width: '48%',
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  dataSnapshotValue: {
+    color: '#4da6ff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  dataSnapshotLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dataSnapshotFooter: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
   },
   exportButton: {
     backgroundColor: '#16324d',

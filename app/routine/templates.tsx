@@ -1,7 +1,6 @@
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -10,60 +9,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { routineTemplates, RoutineTemplate } from '../../data/routineTemplates';
-import { loadRoutines, saveRoutines } from '../../storage/routines';
 import { Exercise } from '../../types/exercise';
-import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../types/routine';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
-
-function buildRoutineName(baseName: string, routines: RoutineWithExercises[]) {
-  const existingNames = new Set(
-    routines.map((routine) => routine.name.trim().toLowerCase())
-  );
-
-  if (!existingNames.has(baseName.toLowerCase())) {
-    return baseName;
-  }
-
-  let copyNumber = 2;
-  let nextName = `${baseName} ${copyNumber}`;
-
-  while (existingNames.has(nextName.toLowerCase())) {
-    copyNumber += 1;
-    nextName = `${baseName} ${copyNumber}`;
-  }
-
-  return nextName;
-}
-
-function createTemplateExercise(
-  exercise: Exercise,
-  index: number
-): RoutineExerciseWithDefaults {
-  return {
-    ...exercise,
-    defaultSets: '3',
-    defaultWeight: '',
-    defaultReps: index === 0 ? '5' : '8',
-    defaultRestSeconds: '',
-    note: '',
-    supersetGroupId: null,
-  };
-}
 
 export default function RoutineTemplatesScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
-  const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       const fetchData = async () => {
-        const [loadedExercises, savedRoutines] = await Promise.all([
-          loadExerciseLibrary(),
-          loadRoutines(),
-        ]);
+        const loadedExercises = await loadExerciseLibrary();
 
         setExerciseLibrary(loadedExercises);
-        setRoutines(savedRoutines);
       };
 
       fetchData();
@@ -80,39 +37,6 @@ export default function RoutineTemplatesScreen() {
     template.exerciseIds
       .map((exerciseId) => exerciseById.get(exerciseId))
       .filter((exercise): exercise is Exercise => Boolean(exercise));
-
-  const handleCreateTemplateRoutine = async (template: RoutineTemplate) => {
-    const templateExercises = getTemplateExercises(template);
-
-    if (templateExercises.length === 0) {
-      Alert.alert(
-        'Template unavailable',
-        'The exercises for this template could not be found.'
-      );
-      return;
-    }
-
-    const newRoutine: RoutineWithExercises = {
-      id: new Date().toISOString(),
-      name: buildRoutineName(template.name, routines),
-      createdAt: new Date().toISOString(),
-      isPinned: false,
-      note: template.description,
-      exercises: templateExercises.map(createTemplateExercise),
-    };
-
-    const updatedRoutines = [...routines, newRoutine];
-    await saveRoutines(updatedRoutines);
-    setRoutines(updatedRoutines);
-
-    Alert.alert('Template added', `"${newRoutine.name}" is ready.`, [
-      {
-        text: 'Open Routine',
-        onPress: () => router.replace(`/routine/${newRoutine.id}`),
-      },
-      { text: 'Stay Here', style: 'cancel' },
-    ]);
-  };
 
   return (
     <>
@@ -159,7 +83,7 @@ export default function RoutineTemplatesScreen() {
 
                 <Pressable
                   style={styles.useButton}
-                  onPress={() => handleCreateTemplateRoutine(item)}
+                  onPress={() => router.push(`/routine/template/${item.id}`)}
                 >
                   <Text style={styles.useButtonText}>Use Template</Text>
                 </Pressable>

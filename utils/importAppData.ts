@@ -1,4 +1,5 @@
 import { saveCustomExercises } from '../storage/customExercises';
+import { saveFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { saveProgressPhotos } from '../storage/progressPhotos';
 import { saveRoutines } from '../storage/routines';
 import { defaultSettings, saveSettings } from '../storage/settings';
@@ -20,6 +21,7 @@ type AppDataImportPayload = {
   routines?: RoutineWithExercises[];
   customExercises?: Exercise[];
   progressPhotos?: ProgressPhoto[];
+  favoriteExerciseIds?: string[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -76,6 +78,9 @@ export function parseAppDataImport(jsonInput: string) {
     routines: payload.routines,
     customExercises: payload.customExercises,
     progressPhotos: payload.progressPhotos,
+    favoriteExerciseIds: Array.isArray(payload.favoriteExerciseIds)
+      ? payload.favoriteExerciseIds.filter((id) => typeof id === 'string')
+      : [],
   };
 }
 
@@ -87,4 +92,5 @@ export async function importAppData(jsonInput: string) {
   await saveRoutines(parsed.routines);
   await saveCustomExercises(parsed.customExercises);
   await saveProgressPhotos(parsed.progressPhotos);
+  await saveFavoriteExerciseIds(parsed.favoriteExerciseIds);
 }

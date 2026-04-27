@@ -1,17 +1,26 @@
 import { loadCustomExercises } from '../storage/customExercises';
+import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines } from '../storage/routines';
 import { loadSettings } from '../storage/settings';
 import { loadWorkouts } from '../storage/workouts';
 
 export async function buildAppDataExport() {
-  const [settings, workouts, routines, customExercises, progressPhotos] =
+  const [
+    settings,
+    workouts,
+    routines,
+    customExercises,
+    progressPhotos,
+    favoriteExerciseIds,
+  ] =
     await Promise.all([
       loadSettings(),
       loadWorkouts(),
       loadRoutines(),
       loadCustomExercises(),
       loadProgressPhotos(),
+      loadFavoriteExerciseIds(),
     ]);
 
   return {
@@ -23,5 +32,6 @@ export async function buildAppDataExport() {
     routines,
     customExercises,
     progressPhotos,
+    favoriteExerciseIds,
   };
 }

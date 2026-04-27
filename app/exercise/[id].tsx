@@ -5,6 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { loadSettings } from '../../storage/settings';
 import { deleteCustomExerciseById } from '../../storage/customExercises';
+import {
+  loadFavoriteExerciseIds,
+  toggleFavoriteExerciseId,
+} from '../../storage/favoriteExercises';
 import { loadWorkouts } from '../../storage/workouts';
 import { Exercise } from '../../types/exercise';
 import { WeightUnit } from '../../types/settings';
@@ -106,13 +110,16 @@ export default function ExerciseDetailScreen() {
   const [activeTab, setActiveTab] = useState<ExerciseTab>('summary');
   const [chartMetric, setChartMetric] = useState<ChartMetricKey>('bestWeight');
   const [chartRange, setChartRange] = useState<ChartRangeKey>('6');
+  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       const savedWorkouts = await loadWorkouts();
       const loadedExercises = await loadExerciseLibrary();
+      const savedFavoriteIds = await loadFavoriteExerciseIds();
       setWorkouts(savedWorkouts);
       setExerciseLibrary(loadedExercises);
+      setFavoriteExerciseIds(savedFavoriteIds);
     };
 
     fetchData();
@@ -121,8 +128,12 @@ export default function ExerciseDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       const fetchSettings = async () => {
-        const savedSettings = await loadSettings();
+        const [savedSettings, savedFavoriteIds] = await Promise.all([
+          loadSettings(),
+          loadFavoriteExerciseIds(),
+        ]);
         setWeightUnit(savedSettings.weightUnit);
+        setFavoriteExerciseIds(savedFavoriteIds);
       };
 
       fetchSettings();
@@ -134,6 +145,7 @@ export default function ExerciseDetailScreen() {
   const secondaryMuscles = exercise?.secondaryMuscles ?? [];
   const instructions = exercise?.instructions ?? [];
   const demoMedia = exercise?.demoMedia;
+  const isFavorite = id ? favoriteExerciseIds.includes(id) : false;
 
   const historyPoints = useMemo(() => {
     if (!id) {
@@ -305,6 +317,13 @@ export default function ExerciseDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!exercise) return;
+
+    const updatedFavoriteIds = await toggleFavoriteExerciseId(exercise.id);
+    setFavoriteExerciseIds(updatedFavoriteIds);
   };
 
   const renderDemoCard = () => (
@@ -742,6 +761,23 @@ export default function ExerciseDetailScreen() {
             {exercise.muscleGroup} | {exercise.equipment}
           </Text>
 
+          <Pressable
+            style={[
+              styles.favoriteButton,
+              isFavorite && styles.favoriteButtonActive,
+            ]}
+            onPress={handleToggleFavorite}
+          >
+            <Text
+              style={[
+                styles.favoriteButtonText,
+                isFavorite && styles.favoriteButtonTextActive,
+              ]}
+            >
+              {isFavorite ? 'Favorite Exercise' : 'Add to Favorites'}
+            </Text>
+          </Pressable>
+
           {exercise.isCustom ? (
             <View style={styles.customActionRow}>
               <Pressable
@@ -810,7 +846,28 @@ const styles = StyleSheet.create({
   meta: {
     color: '#aaaaaa',
     fontSize: 16,
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  favoriteButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  favoriteButtonActive: {
+    backgroundColor: '#211a08',
+    borderColor: '#d2a640',
+  },
+  favoriteButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  favoriteButtonTextActive: {
+    color: '#ffd36b',
   },
   customActionRow: {
     flexDirection: 'row',

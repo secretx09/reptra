@@ -10,18 +10,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { Exercise } from '../../types/exercise';
+import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { getMuscleGroups, loadExerciseLibrary } from '../../utils/exerciseLibrary';
 
 export default function ExerciseLibraryScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       const fetchExerciseLibrary = async () => {
-        const loadedExercises = await loadExerciseLibrary();
+        const [loadedExercises, savedFavoriteIds] = await Promise.all([
+          loadExerciseLibrary(),
+          loadFavoriteExerciseIds(),
+        ]);
         setExerciseLibrary(loadedExercises);
+        setFavoriteExerciseIds(savedFavoriteIds);
       };
 
       fetchExerciseLibrary();
@@ -35,6 +42,10 @@ export default function ExerciseLibraryScreen() {
 
   const filteredExercises = useMemo(() => {
     return exerciseLibrary.filter((exercise) => {
+      if (showFavoritesOnly && !favoriteExerciseIds.includes(exercise.id)) {
+        return false;
+      }
+
       const matchesSearch = exercise.name
         .toLowerCase()
         .includes(searchText.toLowerCase());
@@ -45,7 +56,13 @@ export default function ExerciseLibraryScreen() {
 
       return matchesSearch && matchesMuscleGroup;
     });
-  }, [exerciseLibrary, searchText, selectedMuscleGroup]);
+  }, [
+    exerciseLibrary,
+    favoriteExerciseIds,
+    searchText,
+    selectedMuscleGroup,
+    showFavoritesOnly,
+  ]);
 
   return (
     <>
@@ -67,11 +84,19 @@ export default function ExerciseLibraryScreen() {
                 </Text>
               </View>
 
-              {item.isCustom ? (
-                <View style={styles.customBadge}>
-                  <Text style={styles.customBadgeText}>Custom</Text>
-                </View>
-              ) : null}
+              <View style={styles.badgeColumn}>
+                {item.isCustom ? (
+                  <View style={styles.customBadge}>
+                    <Text style={styles.customBadgeText}>Custom</Text>
+                  </View>
+                ) : null}
+
+                {favoriteExerciseIds.includes(item.id) ? (
+                  <View style={styles.favoriteBadge}>
+                    <Text style={styles.favoriteBadgeText}>Fav</Text>
+                  </View>
+                ) : null}
+              </View>
             </Pressable>
           )}
           ListHeaderComponent={
@@ -86,6 +111,25 @@ export default function ExerciseLibraryScreen() {
                 onPress={() => router.push('/exercise/create')}
               >
                 <Text style={styles.createButtonText}>+ Create Custom Exercise</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.favoriteFilterButton,
+                  showFavoritesOnly && styles.favoriteFilterButtonActive,
+                ]}
+                onPress={() => setShowFavoritesOnly((current) => !current)}
+              >
+                <Text
+                  style={[
+                    styles.favoriteFilterButtonText,
+                    showFavoritesOnly && styles.favoriteFilterButtonTextActive,
+                  ]}
+                >
+                  {showFavoritesOnly
+                    ? 'Showing Favorite Exercises'
+                    : 'Show Favorite Exercises'}
+                </Text>
               </Pressable>
 
               <TextInput
@@ -166,6 +210,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  favoriteFilterButton: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  favoriteFilterButtonActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  favoriteFilterButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  favoriteFilterButtonTextActive: {
+    color: '#4da6ff',
+  },
   input: {
     backgroundColor: '#171717',
     color: '#ffffff',
@@ -218,6 +283,10 @@ const styles = StyleSheet.create({
   exerciseInfo: {
     flex: 1,
   },
+  badgeColumn: {
+    gap: 6,
+    alignItems: 'flex-end',
+  },
   exerciseName: {
     color: '#ffffff',
     fontSize: 16,
@@ -238,6 +307,19 @@ const styles = StyleSheet.create({
   },
   customBadgeText: {
     color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  favoriteBadge: {
+    backgroundColor: '#211a08',
+    borderWidth: 1,
+    borderColor: '#d2a640',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  favoriteBadgeText: {
+    color: '#ffd36b',
     fontSize: 12,
     fontWeight: '700',
   },

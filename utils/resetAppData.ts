@@ -5,6 +5,7 @@ const RESET_KEYS = [
   'routines',
   'progressPhotos',
   'customExercises',
+  'favoriteExercises',
   'appSettings',
 ];
 

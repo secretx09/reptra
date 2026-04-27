@@ -13,6 +13,7 @@ import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
 import { calculateAdvancedProfileStats } from '../../utils/calculateAdvancedProfileStats';
+import { calculateProfileMilestones } from '../../utils/calculateProfileMilestones';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
@@ -75,6 +76,14 @@ export default function ProfileScreen() {
   const advancedStats = useMemo(() => {
     return calculateAdvancedProfileStats(workouts, exerciseLibrary);
   }, [exerciseLibrary, workouts]);
+
+  const milestones = useMemo(() => {
+    return calculateProfileMilestones(
+      workouts,
+      exercisePRs,
+      advancedStats.currentStreak
+    );
+  }, [advancedStats.currentStreak, exercisePRs, workouts]);
 
   const totalTrainingTime = formatWorkoutDuration(
     profileStats.totalDurationMinutes
@@ -251,6 +260,52 @@ export default function ProfileScreen() {
                     {advancedStats.mostTrainedMuscleGroup}
                   </Text>
                 </View>
+              </View>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Milestones</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Local badges from your saved training data
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.milestoneList}>
+                {milestones.map((milestone) => (
+                  <View
+                    key={milestone.id}
+                    style={[
+                      styles.milestoneItem,
+                      milestone.unlocked && styles.milestoneItemUnlocked,
+                    ]}
+                  >
+                    <View style={styles.milestoneTextWrap}>
+                      <Text
+                        style={[
+                          styles.milestoneTitle,
+                          milestone.unlocked && styles.milestoneTitleUnlocked,
+                        ]}
+                      >
+                        {milestone.title}
+                      </Text>
+                      <Text style={styles.milestoneDescription}>
+                        {milestone.description}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.milestoneProgress,
+                        milestone.unlocked && styles.milestoneProgressUnlocked,
+                      ]}
+                    >
+                      {milestone.unlocked ? 'Unlocked' : milestone.progress}
+                    </Text>
+                  </View>
+                ))}
               </View>
             </View>
 
@@ -624,6 +679,49 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  milestoneList: {
+    gap: 10,
+  },
+  milestoneItem: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  milestoneItemUnlocked: {
+    backgroundColor: '#101c29',
+    borderColor: '#294969',
+  },
+  milestoneTextWrap: {
+    flex: 1,
+  },
+  milestoneTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  milestoneTitleUnlocked: {
+    color: '#4da6ff',
+  },
+  milestoneDescription: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  milestoneProgress: {
+    color: '#8f8f8f',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  milestoneProgressUnlocked: {
+    color: '#4da6ff',
   },
   progressPhotosCard: {
     backgroundColor: '#171717',

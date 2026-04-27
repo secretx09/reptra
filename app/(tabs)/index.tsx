@@ -13,12 +13,15 @@ import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
+import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
+import { Exercise } from '../../types/exercise';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
+import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
 
 function formatShortDate(dateString: string) {
@@ -33,23 +36,36 @@ export default function HomeScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
+  const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
   const palette = getThemePalette(theme);
 
   useFocusEffect(
     useCallback(() => {
       const fetchData = async () => {
-        const [settings, savedWorkouts, savedRoutines, savedPhotos] =
+        const [
+          settings,
+          savedWorkouts,
+          savedRoutines,
+          savedPhotos,
+          loadedExercises,
+          savedFavoriteIds,
+        ] =
           await Promise.all([
             loadSettings(),
             loadWorkouts(),
             loadRoutines(),
             loadProgressPhotos(),
+            loadExerciseLibrary(),
+            loadFavoriteExerciseIds(),
           ]);
 
         setTheme(settings.theme);
         setWorkouts(savedWorkouts);
         setRoutines(savedRoutines);
         setProgressPhotos(savedPhotos);
+        setExerciseLibrary(loadedExercises);
+        setFavoriteExerciseIds(savedFavoriteIds);
       };
 
       fetchData();
@@ -68,6 +84,9 @@ export default function HomeScreen() {
   );
   const pinnedRoutine = routines.find((routine) => routine.isPinned) ?? routines[0];
   const latestPhoto = progressPhotos[0];
+  const favoriteExercises = exerciseLibrary
+    .filter((exercise) => favoriteExerciseIds.includes(exercise.id))
+    .slice(0, 3);
 
   return (
     <SafeAreaView
@@ -168,6 +187,43 @@ export default function HomeScreen() {
                 Build your first routine from a preset
               </Text>
             </Pressable>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Favorite Exercises</Text>
+              <Text style={styles.cardSubtitle}>Fast access to movements you care about</Text>
+            </View>
+
+            <Pressable onPress={() => router.push('/exercise')}>
+              <Text style={styles.linkText}>Library</Text>
+            </Pressable>
+          </View>
+
+          {favoriteExercises.length > 0 ? (
+            <View style={styles.favoriteExerciseList}>
+              {favoriteExercises.map((exercise) => (
+                <Pressable
+                  key={exercise.id}
+                  style={styles.favoriteExerciseRow}
+                  onPress={() => router.push(`/exercise/${exercise.id}`)}
+                >
+                  <View style={styles.favoriteExerciseText}>
+                    <Text style={styles.activityTitle}>{exercise.name}</Text>
+                    <Text style={styles.activityMeta}>
+                      {exercise.muscleGroup} • {exercise.equipment}
+                    </Text>
+                  </View>
+                  <Text style={styles.favoriteExerciseArrow}>Open</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>
+              Favorite a few exercises from their detail pages and they will show up here.
+            </Text>
           )}
         </View>
 
@@ -361,6 +417,28 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '600',
+  },
+  favoriteExerciseList: {
+    gap: 10,
+  },
+  favoriteExerciseRow: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  favoriteExerciseText: {
+    flex: 1,
+  },
+  favoriteExerciseArrow: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
   },
   emptyText: {
     color: '#aaaaaa',

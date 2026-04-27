@@ -12,6 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
 import { loadRoutines } from '../../../storage/routines';
+import {
+  isTemplateWorkoutDraftId,
+  loadTemplateWorkoutDraft,
+} from '../../../storage/templateWorkoutDrafts';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
 import { Exercise } from '../../../types/exercise';
 import { RoutineExerciseWithDefaults, RoutineWithExercises } from '../../../types/routine';
@@ -58,14 +62,17 @@ export default function WorkoutSessionScreen() {
     const fetchRoutine = async () => {
       const routines = await loadRoutines();
       const found = routines.find((r) => r.id === id) || null;
+      const templateDraft =
+        !found && id ? await loadTemplateWorkoutDraft(id) : null;
+      const routineToLoad = found ?? templateDraft;
 
-      if (!found) {
+      if (!routineToLoad) {
         setRoutine(null);
         return;
       }
 
       const normalizedExercises = normalizeSupersetExercises(
-        found.exercises.map((exercise) => ({
+        routineToLoad.exercises.map((exercise) => ({
           ...exercise,
           defaultSets: exercise.defaultSets ?? '',
           defaultWeight: exercise.defaultWeight ?? '',
@@ -105,7 +112,7 @@ export default function WorkoutSessionScreen() {
             : '';
       });
 
-      setRoutine(found);
+      setRoutine(routineToLoad);
       setSessionExercises(normalizedExercises);
       setExerciseSets(initialExerciseSets);
       setExerciseNotes(initialExerciseNotes);
@@ -495,7 +502,7 @@ export default function WorkoutSessionScreen() {
 
     const newWorkout: SavedWorkoutSession = {
       id: new Date().toISOString(),
-      routineId: routine.id,
+      routineId: isTemplateWorkoutDraftId(routine.id) ? null : routine.id,
       routineName: routine.name,
       weightUnit,
       startedAt,
