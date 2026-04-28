@@ -33,15 +33,15 @@ export default function RoutineDetailScreen() {
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
 
-  const fetchRoutine = async () => {
+  const fetchRoutine = useCallback(async () => {
     const routines = await loadRoutines();
     const foundRoutine = routines.find((item) => item.id === id) || null;
     setRoutine(foundRoutine);
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchRoutine();
-  }, [id]);
+  }, [fetchRoutine]);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,7 +52,7 @@ export default function RoutineDetailScreen() {
       };
 
       fetchData();
-    }, [id])
+    }, [fetchRoutine])
   );
 
   const handleDeleteRoutine = () => {

@@ -21,9 +21,12 @@ import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 import { buildAppDataExport } from '../../utils/exportAppData';
 import { resetAppData } from '../../utils/resetAppData';
 import { formatRestTimerLabel, parseRestTimerInput } from '../../utils/restTimer';
+import { isSupabaseConfigured } from '../../services/supabase';
+import { getCurrentUser } from '../../services/auth';
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [dataSnapshot, setDataSnapshot] = useState({
     workouts: 0,
     routines: 0,
@@ -54,8 +57,10 @@ export default function ProfileSettingsScreen() {
           loadFavoriteExerciseIds(),
         ]);
         const latestWorkout = savedWorkouts[0];
+        const currentUser = await getCurrentUser();
 
         setSettings(savedSettings);
+        setAccountEmail(currentUser?.email ?? null);
         setDefaultRestTimerInput(savedSettings.defaultRestTimerSeconds.toString());
         setDataSnapshot({
           workouts: savedWorkouts.length,
@@ -128,7 +133,7 @@ export default function ProfileSettingsScreen() {
         title: 'Reptra Export',
         message: exportJson,
       });
-    } catch (error) {
+    } catch {
       Alert.alert(
         'Export failed',
         'We could not prepare your export right now. Please try again.'
@@ -156,7 +161,7 @@ export default function ProfileSettingsScreen() {
                 'Data reset',
                 'All local Reptra data has been cleared from this device.'
               );
-            } catch (error) {
+            } catch {
               Alert.alert(
                 'Reset failed',
                 'We could not clear your local data right now. Please try again.'
@@ -179,6 +184,47 @@ export default function ProfileSettingsScreen() {
         >
           <Text style={styles.title}>Settings</Text>
           <Text style={styles.subtitle}>Customize how Reptra feels as you train.</Text>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Cloud Sync</Text>
+            <Text style={styles.sectionDescription}>
+              Supabase is being added safely while local storage keeps working.
+            </Text>
+
+            <View
+              style={[
+                styles.backendStatusCard,
+                isSupabaseConfigured() && styles.backendStatusCardReady,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.backendStatusTitle,
+                  isSupabaseConfigured() && styles.backendStatusTitleReady,
+                ]}
+              >
+                {isSupabaseConfigured()
+                  ? 'Supabase Configured'
+                  : 'Supabase Not Connected Yet'}
+              </Text>
+              <Text style={styles.backendStatusText}>
+                {isSupabaseConfigured()
+                  ? accountEmail
+                    ? `Signed in as ${accountEmail}. Sync tools are coming next.`
+                    : 'Supabase is configured. Sign in to prepare for cloud sync.'
+                  : 'Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your local env file when your project is ready.'}
+              </Text>
+            </View>
+
+            <Pressable
+              style={styles.accountButton}
+              onPress={() => router.push('/account' as never)}
+            >
+              <Text style={styles.accountButtonText}>
+                {accountEmail ? 'Manage Account' : 'Open Account'}
+              </Text>
+            </Pressable>
+          </View>
 
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Units</Text>
@@ -405,6 +451,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 14,
+  },
+  backendStatusCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  backendStatusCardReady: {
+    backgroundColor: '#101c29',
+    borderColor: '#294969',
+  },
+  backendStatusTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  backendStatusTitleReady: {
+    color: '#4da6ff',
+  },
+  backendStatusText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  accountButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  accountButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   optionsColumn: {
     gap: 10,

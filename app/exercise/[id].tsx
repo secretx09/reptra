@@ -294,7 +294,7 @@ export default function ExerciseDetailScreen() {
 
     try {
       await WebBrowser.openBrowserAsync(demoMedia.url);
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to open demo', 'Please try again in a moment.');
     }
   };

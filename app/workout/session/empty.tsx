@@ -8,7 +8,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadSettings } from '../../../storage/settings';
 import { Exercise } from '../../../types/exercise';
@@ -19,7 +19,6 @@ import {
   SavedExerciseLog,
 } from '../../../types/workout';
 import { loadWorkouts, saveWorkouts } from '../../../storage/workouts';
-import { useLocalSearchParams } from 'expo-router';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
 import {
   formatRestTimerCountdown,
