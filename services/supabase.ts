@@ -16,6 +16,10 @@ export function getSupabaseUrl() {
   return supabaseUrl;
 }
 
+export function getSupabaseAnonKey() {
+  return supabaseAnonKey;
+}
+
 export function getSupabaseClient() {
   if (!isSupabaseConfigured()) {
     return null;

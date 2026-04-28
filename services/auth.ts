@@ -1,4 +1,9 @@
-import { getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from './supabase';
+import {
+  getSupabaseAnonKey,
+  getSupabaseClient,
+  getSupabaseUrl,
+  isSupabaseConfigured,
+} from './supabase';
 
 export interface AuthResult {
   ok: boolean;
@@ -26,14 +31,20 @@ export async function testSupabaseConnection(): Promise<AuthResult> {
   }
 
   const supabaseUrl = getSupabaseUrl();
+  const supabaseAnonKey = getSupabaseAnonKey();
 
   try {
-    const response = await fetch(`${supabaseUrl}/auth/v1/health`);
+    const response = await fetch(`${supabaseUrl}/auth/v1/health`, {
+      headers: {
+        apikey: supabaseAnonKey as string,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+    });
 
     if (!response.ok) {
       return {
         ok: false,
-        message: `Supabase responded with ${response.status}. Check the project URL.`,
+        message: `Supabase responded with ${response.status}. Check the project URL and publishable key.`,
       };
     }
 
