@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import {
   getSupabaseAnonKey,
   getSupabaseClient,
@@ -8,6 +9,10 @@ import {
 export interface AuthResult {
   ok: boolean;
   message: string;
+}
+
+export function getAuthRedirectUrl() {
+  return Linking.createURL('auth/callback');
 }
 
 function getAuthErrorMessage(error: unknown) {
@@ -119,6 +124,7 @@ export async function signUpWithEmail(
       email,
       password,
       options: {
+        emailRedirectTo: getAuthRedirectUrl(),
         data: {
           display_name: displayName?.trim() || null,
         },
@@ -145,6 +151,40 @@ export async function signUpWithEmail(
       message: data.session
         ? 'Account created and signed in.'
         : 'Account created. Check your email if confirmation is enabled.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: getAuthErrorMessage(error),
+    };
+  }
+}
+
+export async function exchangeAuthCodeForSession(
+  code: string
+): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      return {
+        ok: false,
+        message: error.message,
+      };
+    }
+
+    return {
+      ok: true,
+      message: 'Email confirmed and account session restored.',
     };
   } catch (error) {
     return {

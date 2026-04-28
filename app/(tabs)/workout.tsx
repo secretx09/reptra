@@ -445,18 +445,18 @@ const styles = StyleSheet.create({
   },
   overviewRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 6,
     marginBottom: 12,
-    flexWrap: 'wrap',
   },
   overviewCard: {
-    width: '23%',
+    flex: 1,
+    minWidth: 0,
     backgroundColor: '#171717',
     borderWidth: 1,
     borderColor: '#2e2e2e',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     alignItems: 'center',
   },
   overviewValue: {
@@ -467,8 +467,9 @@ const styles = StyleSheet.create({
   },
   overviewLabel: {
     color: '#8f8f8f',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    textAlign: 'center',
   },
   filterMenuCard: {
     backgroundColor: '#171717',

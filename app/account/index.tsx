@@ -14,12 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { User } from '@supabase/supabase-js';
 import {
   getCurrentUser,
+  getAuthRedirectUrl,
   signInWithEmail,
   signOut,
   signUpWithEmail,
   testSupabaseConnection,
 } from '../../services/auth';
 import { isSupabaseConfigured } from '../../services/supabase';
+import { backupLocalDataToCloud } from '../../services/cloudBackup';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -31,6 +33,8 @@ export default function AccountScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('');
+  const [backupStatus, setBackupStatus] = useState('');
+  const authRedirectUrl = getAuthRedirectUrl();
 
   const fetchCurrentUser = useCallback(async () => {
     const user = await getCurrentUser();
@@ -99,6 +103,21 @@ export default function AccountScreen() {
     }
   };
 
+  const handleBackupLocalData = async () => {
+    setIsLoading(true);
+    setBackupStatus('Backing up local data...');
+    const result = await backupLocalDataToCloud();
+    setIsLoading(false);
+    setBackupStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Backup failed', result.message);
+      return;
+    }
+
+    Alert.alert('Backup complete', result.message);
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'Account' }} />
@@ -147,6 +166,14 @@ export default function AccountScreen() {
             ) : null}
           </View>
 
+          <View style={styles.redirectCard}>
+            <Text style={styles.redirectTitle}>Confirmation Redirect</Text>
+            <Text style={styles.redirectText}>
+              Add this URL in Supabase under Authentication URL Configuration.
+            </Text>
+            <Text style={styles.redirectUrl}>{authRedirectUrl}</Text>
+          </View>
+
           {currentUser ? (
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Signed In</Text>
@@ -155,6 +182,29 @@ export default function AccountScreen() {
                 Next session, we can use this account to start syncing local
                 workouts to Supabase.
               </Text>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Cloud Backup</Text>
+                <Text style={styles.backupText}>
+                  Upload your current local workouts, routines, custom exercises,
+                  settings, favorites, and progress photo metadata to Supabase.
+                  This does not download or overwrite anything yet.
+                </Text>
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleBackupLocalData}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Backup Local Data
+                  </Text>
+                </Pressable>
+
+                {backupStatus ? (
+                  <Text style={styles.backupStatus}>{backupStatus}</Text>
+                ) : null}
+              </View>
 
               <Pressable
                 style={styles.secondaryButton}
@@ -346,6 +396,32 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
   },
+  redirectCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  redirectTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  redirectText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+  redirectUrl: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 18,
@@ -363,6 +439,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     marginBottom: 8,
+  },
+  backupCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  backupTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  backupText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  backupStatus: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
   },
   modeRow: {
     flexDirection: 'row',
