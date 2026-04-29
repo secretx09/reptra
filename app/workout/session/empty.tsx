@@ -30,6 +30,7 @@ import {
   getMostRecentSetPrefill,
 } from '../../../utils/workoutHistory';
 import { getWeightPlaceholder } from '../../../utils/weightUnits';
+import { backupAfterWorkoutIfEnabled } from '../../../services/cloudAutoBackup';
 
 export default function EmptyWorkoutSessionScreen() {
   const { templateWorkoutId } = useLocalSearchParams<{ templateWorkoutId?: string }>();
@@ -431,6 +432,7 @@ export default function EmptyWorkoutSessionScreen() {
     const existingWorkouts = await loadWorkouts();
     const updatedWorkouts = [newWorkout, ...existingWorkouts];
     await saveWorkouts(updatedWorkouts);
+    void backupAfterWorkoutIfEnabled();
 
     router.replace(`/workout/summary/${newWorkout.id}` as never);
   };

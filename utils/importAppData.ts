@@ -45,6 +45,7 @@ function normalizeSettings(settings: AppDataImportPayload['settings']): AppSetti
           ? Number(legacyRestTimerSeconds)
           : defaultSettings.defaultRestTimerSeconds,
     theme: settings?.theme === 'midnight' ? 'midnight' : 'graphite',
+    autoBackupAfterWorkout: settings?.autoBackupAfterWorkout === true,
   };
 }
 

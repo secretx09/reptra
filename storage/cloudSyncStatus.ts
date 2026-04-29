@@ -66,3 +66,12 @@ export async function markCloudRestoreComplete(
     lastMessage: message,
   });
 }
+
+export async function markCloudDeleteComplete(message: string) {
+  const currentStatus = await loadCloudSyncStatus();
+
+  await saveCloudSyncStatus({
+    ...currentStatus,
+    lastMessage: message,
+  });
+}

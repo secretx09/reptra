@@ -7,6 +7,7 @@ export const defaultSettings: AppSettings = {
   weightUnit: 'lb',
   defaultRestTimerSeconds: 90,
   theme: 'graphite',
+  autoBackupAfterWorkout: false,
 };
 
 function normalizeDefaultRestTimerSeconds(value: unknown): number {
@@ -43,6 +44,7 @@ export async function loadSettings(): Promise<AppSettings> {
         parsed.defaultRestTimerSeconds ?? legacyDefaultRestTimerSeconds
       ),
       theme: parsed.theme === 'midnight' ? 'midnight' : 'graphite',
+      autoBackupAfterWorkout: parsed.autoBackupAfterWorkout === true,
     };
   } catch (error) {
     console.error('Failed to load settings:', error);

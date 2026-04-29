@@ -5,4 +5,5 @@ export interface AppSettings {
   weightUnit: WeightUnit;
   defaultRestTimerSeconds: number;
   theme: AppTheme;
+  autoBackupAfterWorkout: boolean;
 }

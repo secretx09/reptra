@@ -558,6 +558,16 @@ export default function AccountScreen() {
                 </Pressable>
 
                 <Pressable
+                  style={styles.secondaryButton}
+                  onPress={() => router.push('/account/cloud-records' as never)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    View Cloud Records
+                  </Text>
+                </Pressable>
+
+                <Pressable
                   style={styles.dangerButton}
                   onPress={handleRestoreCloudData}
                   disabled={isLoading || !cloudSummary?.totalRecords}

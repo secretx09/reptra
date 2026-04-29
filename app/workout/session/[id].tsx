@@ -38,6 +38,7 @@ import {
 } from '../../../utils/restTimer';
 import { getMostRecentSetPrefill } from '../../../utils/workoutHistory';
 import { getWeightPlaceholder } from '../../../utils/weightUnits';
+import { backupAfterWorkoutIfEnabled } from '../../../services/cloudAutoBackup';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -514,6 +515,7 @@ export default function WorkoutSessionScreen() {
     const existingWorkouts = await loadWorkouts();
     const updatedWorkouts = [newWorkout, ...existingWorkouts];
     await saveWorkouts(updatedWorkouts);
+    void backupAfterWorkoutIfEnabled();
 
     router.replace(`/workout/summary/${newWorkout.id}` as never);
   };

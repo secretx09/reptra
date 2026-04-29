@@ -120,6 +120,16 @@ export default function ProfileSettingsScreen() {
     await saveSettings(nextSettings);
   };
 
+  const handleToggleAutoBackupAfterWorkout = async () => {
+    const nextSettings = {
+      ...settings,
+      autoBackupAfterWorkout: !settings.autoBackupAfterWorkout,
+    };
+
+    setSettings(nextSettings);
+    await saveSettings(nextSettings);
+  };
+
   const handleSaveDefaultRestTimer = async () => {
     const parsedValue = parseRestTimerInput(defaultRestTimerInput);
 
@@ -254,6 +264,39 @@ export default function ProfileSettingsScreen() {
             </View>
 
             <Pressable
+              style={[
+                styles.autoBackupButton,
+                settings.autoBackupAfterWorkout && styles.autoBackupButtonActive,
+              ]}
+              onPress={handleToggleAutoBackupAfterWorkout}
+            >
+              <View style={styles.autoBackupTextColumn}>
+                <Text
+                  style={[
+                    styles.autoBackupTitle,
+                    settings.autoBackupAfterWorkout &&
+                      styles.autoBackupTitleActive,
+                  ]}
+                >
+                  Auto-backup after workouts
+                </Text>
+                <Text style={styles.autoBackupDescription}>
+                  {settings.autoBackupAfterWorkout
+                    ? 'On. Finished workouts will try to back up when you are signed in.'
+                    : 'Off. Use manual backup from the Account screen.'}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.autoBackupPill,
+                  settings.autoBackupAfterWorkout && styles.autoBackupPillActive,
+                ]}
+              >
+                {settings.autoBackupAfterWorkout ? 'On' : 'Off'}
+              </Text>
+            </Pressable>
+
+            <Pressable
               style={styles.accountButton}
               onPress={() => router.push('/account' as never)}
             >
@@ -261,6 +304,17 @@ export default function ProfileSettingsScreen() {
                 {accountEmail ? 'Manage Account' : 'Open Account'}
               </Text>
             </Pressable>
+
+            {accountEmail ? (
+              <Pressable
+                style={styles.cloudRecordsButton}
+                onPress={() => router.push('/account/cloud-records' as never)}
+              >
+                <Text style={styles.cloudRecordsButtonText}>
+                  View Cloud Records
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <View style={styles.sectionCard}>
@@ -542,6 +596,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'right',
   },
+  autoBackupButton: {
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    padding: 12,
+  },
+  autoBackupButtonActive: {
+    backgroundColor: '#101c29',
+    borderColor: '#294969',
+  },
+  autoBackupTextColumn: {
+    flex: 1,
+  },
+  autoBackupTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  autoBackupTitleActive: {
+    color: '#4da6ff',
+  },
+  autoBackupDescription: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  autoBackupPill: {
+    backgroundColor: '#1c1c1c',
+    borderRadius: 999,
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  autoBackupPillActive: {
+    backgroundColor: '#16324d',
+    color: '#4da6ff',
+  },
   accountButton: {
     backgroundColor: '#16324d',
     borderWidth: 1,
@@ -552,6 +653,20 @@ const styles = StyleSheet.create({
   },
   accountButtonText: {
     color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  cloudRecordsButton: {
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    marginTop: 10,
+    paddingVertical: 13,
+  },
+  cloudRecordsButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
   },
