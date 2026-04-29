@@ -131,7 +131,7 @@ export default function EditCustomExerciseScreen() {
 
   if (!exercise) {
     return (
-      <SafeAreaView style={styles.notFoundContainer}>
+      <SafeAreaView style={styles.notFoundContainer} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Custom exercise not found</Text>
         <Text style={styles.notFoundText}>
           This exercise may have been deleted.
@@ -144,7 +144,7 @@ export default function EditCustomExerciseScreen() {
     <>
       <Stack.Screen options={{ title: 'Edit Exercise' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={[

@@ -521,7 +521,7 @@ export default function WorkoutHistoryDetailScreen() {
 
   if (!workout) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Workout not found</Text>
         <Text style={styles.notFoundText}>
           This workout may have been deleted.
@@ -546,7 +546,7 @@ export default function WorkoutHistoryDetailScreen() {
     <>
       <Stack.Screen options={{ title: 'Workout Details' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={workout.exercises}
           keyExtractor={(item) => item.exerciseId}

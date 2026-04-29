@@ -103,7 +103,7 @@ export default function CreateCustomExerciseScreen() {
     <>
       <Stack.Screen options={{ title: 'Custom Exercise' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={[

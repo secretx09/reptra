@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,8 +22,50 @@ import {
 } from '../../services/auth';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { backupLocalDataToCloud } from '../../services/cloudBackup';
+import {
+  CloudBackupSummary,
+  getCloudBackupSummary,
+  restoreCloudDataToLocal,
+} from '../../services/cloudRestore';
+import { CloudProfile, getCloudProfile, updateCloudProfile } from '../../services/cloudProfile';
+import { loadCloudSyncStatus } from '../../storage/cloudSyncStatus';
+import { CloudSyncStatus } from '../../types/cloudSync';
+import { loadCustomExercises } from '../../storage/customExercises';
+import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
+import { loadProgressPhotos } from '../../storage/progressPhotos';
+import { loadRoutines } from '../../storage/routines';
+import { loadSettings } from '../../storage/settings';
+import { loadWorkouts } from '../../storage/workouts';
 
 type AuthMode = 'signIn' | 'signUp';
+
+interface LocalCloudPreview {
+  workouts: number;
+  routines: number;
+  customExercises: number;
+  progressPhotos: number;
+  favoriteExercises: number;
+  settings: number;
+  totalRecords: number;
+}
+
+const emptyLocalPreview: LocalCloudPreview = {
+  workouts: 0,
+  routines: 0,
+  customExercises: 0,
+  progressPhotos: 0,
+  favoriteExercises: 0,
+  settings: 1,
+  totalRecords: 1,
+};
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return 'Never';
+  }
+
+  return new Date(value).toLocaleString();
+}
 
 export default function AccountScreen() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -34,12 +76,77 @@ export default function AccountScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('');
   const [backupStatus, setBackupStatus] = useState('');
+  const [cloudSummary, setCloudSummary] = useState<CloudBackupSummary | null>(
+    null
+  );
+  const [localPreview, setLocalPreview] =
+    useState<LocalCloudPreview>(emptyLocalPreview);
+  const [cloudSyncStatus, setCloudSyncStatus] =
+    useState<CloudSyncStatus | null>(null);
+  const [cloudProfile, setCloudProfile] = useState<CloudProfile | null>(null);
+  const [profileDisplayName, setProfileDisplayName] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [profileStatus, setProfileStatus] = useState('');
+  const [restoreStatus, setRestoreStatus] = useState('');
   const authRedirectUrl = getAuthRedirectUrl();
 
-  const fetchCurrentUser = useCallback(async () => {
-    const user = await getCurrentUser();
-    setCurrentUser(user);
+  const fetchLocalPreview = useCallback(async () => {
+    const [
+      settings,
+      workouts,
+      routines,
+      customExercises,
+      progressPhotos,
+      favoriteExerciseIds,
+    ] = await Promise.all([
+      loadSettings(),
+      loadWorkouts(),
+      loadRoutines(),
+      loadCustomExercises(),
+      loadProgressPhotos(),
+      loadFavoriteExerciseIds(),
+    ]);
+
+    setLocalPreview({
+      workouts: workouts.length,
+      routines: routines.length,
+      customExercises: customExercises.length,
+      progressPhotos: progressPhotos.length,
+      favoriteExercises: favoriteExerciseIds.length,
+      settings: settings ? 1 : 0,
+      totalRecords:
+        workouts.length +
+        routines.length +
+        customExercises.length +
+        progressPhotos.length +
+        2,
+    });
   }, []);
+
+  const fetchCurrentUser = useCallback(async () => {
+    await fetchLocalPreview();
+    const syncStatus = await loadCloudSyncStatus();
+    const user = await getCurrentUser();
+
+    setCloudSyncStatus(syncStatus);
+    setCurrentUser(user);
+
+    if (user) {
+      const [summary, profileResult] = await Promise.all([
+        getCloudBackupSummary(),
+        getCloudProfile(),
+      ]);
+      setCloudSummary(summary);
+      setCloudProfile(profileResult.profile);
+      setProfileDisplayName(profileResult.profile?.display_name ?? '');
+      setProfileUsername(profileResult.profile?.username ?? '');
+    } else {
+      setCloudSummary(null);
+      setCloudProfile(null);
+      setProfileDisplayName('');
+      setProfileUsername('');
+    }
+  }, [fetchLocalPreview]);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,20 +222,82 @@ export default function AccountScreen() {
       return;
     }
 
+    const summary = await getCloudBackupSummary();
+    const syncStatus = await loadCloudSyncStatus();
+    setCloudSummary(summary);
+    setCloudSyncStatus(syncStatus);
     Alert.alert('Backup complete', result.message);
+  };
+
+  const handleRefreshCloudSummary = async () => {
+    setIsLoading(true);
+    const summary = await getCloudBackupSummary();
+    setIsLoading(false);
+    setCloudSummary(summary);
+
+    if (!summary.ok) {
+      Alert.alert('Cloud summary failed', summary.message);
+    }
+  };
+
+  const handleSaveCloudProfile = async () => {
+    setIsLoading(true);
+    setProfileStatus('Saving cloud profile...');
+    const result = await updateCloudProfile(profileDisplayName, profileUsername);
+    setIsLoading(false);
+    setProfileStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Profile update failed', result.message);
+      return;
+    }
+
+    setCloudProfile(result.profile);
+    Alert.alert('Profile saved', result.message);
+  };
+
+  const handleRestoreCloudData = () => {
+    Alert.alert(
+      'Restore cloud data?',
+      'This replaces local workouts, routines, custom exercises, settings, favorites, and progress photo metadata with the current Supabase backup.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            setRestoreStatus('Restoring cloud data...');
+            const result = await restoreCloudDataToLocal();
+            const syncStatus = await loadCloudSyncStatus();
+            setIsLoading(false);
+            setRestoreStatus(result.message);
+            setCloudSyncStatus(syncStatus);
+
+            if (!result.ok) {
+              Alert.alert('Restore failed', result.message);
+              return;
+            }
+
+            await fetchLocalPreview();
+            Alert.alert('Restore complete', result.message);
+          },
+        },
+      ]
+    );
   };
 
   return (
     <>
       <Stack.Screen options={{ title: 'Account' }} />
 
-      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.appName}>Reptra</Text>
           <Text style={styles.title}>Account</Text>
           <Text style={styles.subtitle}>
-            This is the first Supabase login layer. Local workouts still work even
-            if you are signed out.
+            Manage your login, cloud profile, and manual Supabase backup tools.
+            Local workouts still work even if you are signed out.
           </Text>
 
           <View
@@ -172,6 +341,12 @@ export default function AccountScreen() {
               Add this URL in Supabase under Authentication URL Configuration.
             </Text>
             <Text style={styles.redirectUrl}>{authRedirectUrl}</Text>
+            <Pressable
+              style={styles.setupButton}
+              onPress={() => router.push('/account/setup' as never)}
+            >
+              <Text style={styles.setupButtonText}>Open Setup Checklist</Text>
+            </Pressable>
           </View>
 
           {currentUser ? (
@@ -179,9 +354,131 @@ export default function AccountScreen() {
               <Text style={styles.sectionTitle}>Signed In</Text>
               <Text style={styles.signedInEmail}>{currentUser.email}</Text>
               <Text style={styles.sectionDescription}>
-                Next session, we can use this account to start syncing local
-                workouts to Supabase.
+                Manual sync tools are active. Backup uploads this device, while
+                restore replaces this device with the current cloud copy.
               </Text>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Cloud Profile</Text>
+                <Text style={styles.backupText}>
+                  This is the public-facing profile layer we can reuse later for
+                  friends, posts, and social features.
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Display name"
+                  placeholderTextColor="#777777"
+                  value={profileDisplayName}
+                  onChangeText={setProfileDisplayName}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  placeholderTextColor="#777777"
+                  autoCapitalize="none"
+                  value={profileUsername}
+                  onChangeText={setProfileUsername}
+                />
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleSaveCloudProfile}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>Save Cloud Profile</Text>
+                </Pressable>
+
+                {cloudProfile?.updated_at ? (
+                  <Text style={styles.backupStatus}>
+                    Profile updated: {formatDateTime(cloudProfile.updated_at)}
+                  </Text>
+                ) : null}
+
+                {profileStatus ? (
+                  <Text style={styles.backupStatus}>{profileStatus}</Text>
+                ) : null}
+              </View>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Sync Status</Text>
+                <Text style={styles.backupText}>
+                  Reptra is still local-first. These timestamps only track
+                  manual backup and restore actions on this device.
+                </Text>
+
+                <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Last backup</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {formatDateTime(cloudSyncStatus?.lastBackupAt ?? null)}
+                  </Text>
+                </View>
+                <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Backup records</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {cloudSyncStatus?.lastBackupRecordCount ?? 0}
+                  </Text>
+                </View>
+                <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Last restore</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {formatDateTime(cloudSyncStatus?.lastRestoreAt ?? null)}
+                  </Text>
+                </View>
+                <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Restore records</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {cloudSyncStatus?.lastRestoreRecordCount ?? 0}
+                  </Text>
+                </View>
+
+                {cloudSyncStatus?.lastMessage ? (
+                  <Text style={styles.backupStatus}>
+                    {cloudSyncStatus.lastMessage}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Local Backup Preview</Text>
+                <Text style={styles.backupText}>
+                  This is what Backup Local Data will upload from this device.
+                </Text>
+
+                <View style={styles.cloudSummaryGrid}>
+                  <View style={styles.cloudSummaryItem}>
+                    <Text style={styles.cloudSummaryValue}>
+                      {localPreview.workouts}
+                    </Text>
+                    <Text style={styles.cloudSummaryLabel}>Workouts</Text>
+                  </View>
+                  <View style={styles.cloudSummaryItem}>
+                    <Text style={styles.cloudSummaryValue}>
+                      {localPreview.routines}
+                    </Text>
+                    <Text style={styles.cloudSummaryLabel}>Routines</Text>
+                  </View>
+                  <View style={styles.cloudSummaryItem}>
+                    <Text style={styles.cloudSummaryValue}>
+                      {localPreview.customExercises}
+                    </Text>
+                    <Text style={styles.cloudSummaryLabel}>Custom</Text>
+                  </View>
+                  <View style={styles.cloudSummaryItem}>
+                    <Text style={styles.cloudSummaryValue}>
+                      {localPreview.progressPhotos}
+                    </Text>
+                    <Text style={styles.cloudSummaryLabel}>Photos</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.backupStatus}>
+                  Favorites: {localPreview.favoriteExercises} | Settings:{' '}
+                  {localPreview.settings} | Total records:{' '}
+                  {localPreview.totalRecords}
+                </Text>
+              </View>
 
               <View style={styles.backupCard}>
                 <Text style={styles.backupTitle}>Cloud Backup</Text>
@@ -203,6 +500,73 @@ export default function AccountScreen() {
 
                 {backupStatus ? (
                   <Text style={styles.backupStatus}>{backupStatus}</Text>
+                ) : null}
+              </View>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Cloud Backup Summary</Text>
+                <Text style={styles.backupText}>
+                  Check what is currently stored in Supabase before restoring.
+                </Text>
+
+                {cloudSummary ? (
+                  <View style={styles.cloudSummaryGrid}>
+                    <View style={styles.cloudSummaryItem}>
+                      <Text style={styles.cloudSummaryValue}>
+                        {cloudSummary.counts.workouts}
+                      </Text>
+                      <Text style={styles.cloudSummaryLabel}>Workouts</Text>
+                    </View>
+                    <View style={styles.cloudSummaryItem}>
+                      <Text style={styles.cloudSummaryValue}>
+                        {cloudSummary.counts.routines}
+                      </Text>
+                      <Text style={styles.cloudSummaryLabel}>Routines</Text>
+                    </View>
+                    <View style={styles.cloudSummaryItem}>
+                      <Text style={styles.cloudSummaryValue}>
+                        {cloudSummary.counts.customExercises}
+                      </Text>
+                      <Text style={styles.cloudSummaryLabel}>Custom</Text>
+                    </View>
+                    <View style={styles.cloudSummaryItem}>
+                      <Text style={styles.cloudSummaryValue}>
+                        {cloudSummary.counts.progressPhotos}
+                      </Text>
+                      <Text style={styles.cloudSummaryLabel}>Photos</Text>
+                    </View>
+                  </View>
+                ) : null}
+
+                <Text style={styles.backupStatus}>
+                  {cloudSummary?.message ?? 'No cloud summary loaded yet.'}
+                </Text>
+
+                {cloudSummary?.lastUpdatedAt ? (
+                  <Text style={styles.backupStatus}>
+                    Last cloud update:{' '}
+                    {new Date(cloudSummary.lastUpdatedAt).toLocaleString()}
+                  </Text>
+                ) : null}
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleRefreshCloudSummary}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>Refresh Summary</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.dangerButton}
+                  onPress={handleRestoreCloudData}
+                  disabled={isLoading || !cloudSummary?.totalRecords}
+                >
+                  <Text style={styles.dangerButtonText}>Restore From Cloud</Text>
+                </Pressable>
+
+                {restoreStatus ? (
+                  <Text style={styles.backupStatus}>{restoreStatus}</Text>
                 ) : null}
               </View>
 
@@ -422,6 +786,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 18,
   },
+  setupButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  setupButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 18,
@@ -465,6 +843,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 10,
+  },
+  syncStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#252525',
+    paddingVertical: 9,
+  },
+  syncStatusLabel: {
+    color: '#aaaaaa',
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  syncStatusValue: {
+    color: '#ffffff',
+    flex: 1.4,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  cloudSummaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  cloudSummaryItem: {
+    width: '48%',
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  cloudSummaryValue: {
+    color: '#4da6ff',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  cloudSummaryLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
   },
   modeRow: {
     flexDirection: 'row',

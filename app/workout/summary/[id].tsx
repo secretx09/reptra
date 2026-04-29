@@ -172,7 +172,7 @@ export default function WorkoutSummaryScreen() {
 
   if (!workout) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Workout summary not found</Text>
         <Text style={styles.notFoundText}>
           This workout may have been deleted.
@@ -247,7 +247,7 @@ export default function WorkoutSummaryScreen() {
     <>
       <Stack.Screen options={{ title: 'Workout Summary' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={workout.exercises}
           keyExtractor={(item) => item.exerciseId}

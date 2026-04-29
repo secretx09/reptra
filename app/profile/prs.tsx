@@ -32,7 +32,7 @@ export default function AllPRsScreen() {
     <>
       <Stack.Screen options={{ title: 'All PRs' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={exercisePRs}
           keyExtractor={(item) => item.exerciseId}

@@ -520,7 +520,7 @@ export default function WorkoutSessionScreen() {
 
   if (!routine) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFound}>Routine not found</Text>
       </SafeAreaView>
     );
@@ -716,7 +716,7 @@ export default function WorkoutSessionScreen() {
     <>
       <Stack.Screen options={{ title: 'Workout Session' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}

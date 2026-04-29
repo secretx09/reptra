@@ -43,7 +43,7 @@ export default function AuthCallbackScreen() {
     <>
       <Stack.Screen options={{ title: 'Auth Callback' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <View style={styles.card}>
           <Text style={styles.appName}>Reptra</Text>
           <Text style={styles.title}>Account Confirmation</Text>

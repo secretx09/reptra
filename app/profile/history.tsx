@@ -166,7 +166,7 @@ export default function ProfileWorkoutHistoryScreen() {
     <>
       <Stack.Screen options={{ title: 'Workout History' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={filteredWorkouts}
           keyExtractor={(item) => item.id}

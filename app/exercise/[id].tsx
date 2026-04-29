@@ -741,7 +741,7 @@ export default function ExerciseDetailScreen() {
 
   if (!exercise) {
     return (
-      <SafeAreaView style={styles.notFoundContainer}>
+      <SafeAreaView style={styles.notFoundContainer} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Exercise not found</Text>
         <Text style={styles.notFoundText}>
           We could not find that exercise.
@@ -754,7 +754,7 @@ export default function ExerciseDetailScreen() {
     <>
       <Stack.Screen options={{ title: exercise.name }} />
 
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>{exercise.name}</Text>
           <Text style={styles.meta}>

@@ -436,7 +436,7 @@ export default function EmptyWorkoutSessionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <View style={styles.topBar}>
         <View style={styles.topBarText}>
           <Text style={styles.title}>Empty Workout</Text>

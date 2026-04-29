@@ -105,7 +105,7 @@ export default function ProgressPhotosScreen() {
     <>
       <Stack.Screen options={{ title: 'Progress Photos' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={photos}
           keyExtractor={(item) => item.id}

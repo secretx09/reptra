@@ -73,7 +73,7 @@ export default function ImportDataScreen() {
     <>
       <Stack.Screen options={{ title: 'Import Data' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>Import Data</Text>
           <Text style={styles.subtitle}>

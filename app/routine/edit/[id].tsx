@@ -234,7 +234,7 @@ export default function EditRoutineScreen() {
 
   if (!routine) {
     return (
-      <SafeAreaView style={styles.notFoundContainer}>
+      <SafeAreaView style={styles.notFoundContainer} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Routine not found</Text>
         <Text style={styles.notFoundText}>
           This routine may have been deleted.
@@ -244,7 +244,7 @@ export default function EditRoutineScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <View style={styles.topBar}>
         <View style={styles.topBarText}>
           <Text style={styles.title}>Edit Routine</Text>

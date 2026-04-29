@@ -224,7 +224,7 @@ export default function RoutineTemplatePreviewScreen() {
 
   if (!template || !templateRoutine) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Template not found</Text>
         <Text style={styles.notFoundText}>
           This template may have been removed.
@@ -237,7 +237,7 @@ export default function RoutineTemplatePreviewScreen() {
     <>
       <Stack.Screen options={{ title: template.name }} />
 
-      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.appName}>Reptra</Text>
           <Text style={styles.title}>{templateRoutine.name}</Text>

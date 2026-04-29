@@ -42,7 +42,7 @@ export default function RoutineTemplatesScreen() {
     <>
       <Stack.Screen options={{ title: 'Routine Templates' }} />
 
-      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={routineTemplates}
           keyExtractor={(item) => item.id}

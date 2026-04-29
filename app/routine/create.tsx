@@ -193,7 +193,7 @@ export default function CreateRoutineScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <View style={styles.topRow}>
         <Text style={styles.title}>Build Your Routine</Text>
 

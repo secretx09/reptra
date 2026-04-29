@@ -23,10 +23,24 @@ import { resetAppData } from '../../utils/resetAppData';
 import { formatRestTimerLabel, parseRestTimerInput } from '../../utils/restTimer';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { getCurrentUser } from '../../services/auth';
+import { loadCloudSyncStatus } from '../../storage/cloudSyncStatus';
+import { CloudSyncStatus } from '../../types/cloudSync';
+import { getCloudBackupSummary } from '../../services/cloudRestore';
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return 'Never';
+  }
+
+  return new Date(value).toLocaleString();
+}
 
 export default function ProfileSettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] =
+    useState<CloudSyncStatus | null>(null);
+  const [cloudRecordCount, setCloudRecordCount] = useState(0);
   const [dataSnapshot, setDataSnapshot] = useState({
     workouts: 0,
     routines: 0,
@@ -58,9 +72,13 @@ export default function ProfileSettingsScreen() {
         ]);
         const latestWorkout = savedWorkouts[0];
         const currentUser = await getCurrentUser();
+        const syncStatus = await loadCloudSyncStatus();
+        const cloudSummary = currentUser ? await getCloudBackupSummary() : null;
 
         setSettings(savedSettings);
         setAccountEmail(currentUser?.email ?? null);
+        setCloudSyncStatus(syncStatus);
+        setCloudRecordCount(cloudSummary?.totalRecords ?? 0);
         setDefaultRestTimerInput(savedSettings.defaultRestTimerSeconds.toString());
         setDataSnapshot({
           workouts: savedWorkouts.length,
@@ -177,7 +195,7 @@ export default function ProfileSettingsScreen() {
     <>
       <Stack.Screen options={{ title: 'Settings' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -210,10 +228,29 @@ export default function ProfileSettingsScreen() {
               <Text style={styles.backendStatusText}>
                 {isSupabaseConfigured()
                   ? accountEmail
-                    ? `Signed in as ${accountEmail}. Sync tools are coming next.`
+                    ? `Signed in as ${accountEmail}. Manual backup and restore are ready.`
                     : 'Supabase is configured. Sign in to prepare for cloud sync.'
                   : 'Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your local env file when your project is ready.'}
               </Text>
+            </View>
+
+            <View style={styles.syncMiniCard}>
+              <View style={styles.syncMiniRow}>
+                <Text style={styles.syncMiniLabel}>Cloud records</Text>
+                <Text style={styles.syncMiniValue}>{cloudRecordCount}</Text>
+              </View>
+              <View style={styles.syncMiniRow}>
+                <Text style={styles.syncMiniLabel}>Last backup</Text>
+                <Text style={styles.syncMiniValue}>
+                  {formatDateTime(cloudSyncStatus?.lastBackupAt ?? null)}
+                </Text>
+              </View>
+              <View style={styles.syncMiniRow}>
+                <Text style={styles.syncMiniLabel}>Last restore</Text>
+                <Text style={styles.syncMiniValue}>
+                  {formatDateTime(cloudSyncStatus?.lastRestoreAt ?? null)}
+                </Text>
+              </View>
             </View>
 
             <Pressable
@@ -382,7 +419,7 @@ export default function ProfileSettingsScreen() {
                 </View>
               </View>
               <Text style={styles.dataSnapshotFooter}>
-                Favorites: {dataSnapshot.favoriteExercises} • Last workout:{' '}
+                Favorites: {dataSnapshot.favoriteExercises} | Last workout:{' '}
                 {dataSnapshot.lastWorkoutLabel}
               </Text>
             </View>
@@ -477,6 +514,33 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 13,
     lineHeight: 19,
+  },
+  syncMiniCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  syncMiniRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  syncMiniLabel: {
+    color: '#aaaaaa',
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  syncMiniValue: {
+    color: '#ffffff',
+    flex: 1.2,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
   },
   accountButton: {
     backgroundColor: '#16324d',

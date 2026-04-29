@@ -121,7 +121,7 @@ export default function RoutineDetailScreen() {
 
   if (!routine) {
     return (
-      <SafeAreaView style={styles.notFoundContainer}>
+      <SafeAreaView style={styles.notFoundContainer} edges={['left', 'right', 'bottom']}>
         <Text style={styles.notFoundTitle}>Routine not found</Text>
         <Text style={styles.notFoundText}>
           This routine may have been deleted.
@@ -137,7 +137,7 @@ export default function RoutineDetailScreen() {
     <>
       <Stack.Screen options={{ title: routine.name }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={routine.exercises}
           keyExtractor={(item: Exercise) => item.id}

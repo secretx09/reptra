@@ -68,7 +68,7 @@ export default function ExerciseLibraryScreen() {
     <>
       <Stack.Screen options={{ title: 'All Exercises' }} />
 
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <FlatList
           data={filteredExercises}
           keyExtractor={(item) => item.id}

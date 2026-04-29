@@ -1,5 +1,6 @@
 import { buildAppDataExport } from '../utils/exportAppData';
 import { Json } from '../types/supabase';
+import { markCloudBackupComplete } from '../storage/cloudSyncStatus';
 import { getCurrentUser } from './auth';
 import { getSupabaseClient } from './supabase';
 
@@ -125,11 +126,15 @@ export async function backupLocalDataToCloud(): Promise<CloudBackupResult> {
     };
   }
 
+  const message = `Backed up ${records.length} local record${
+    records.length === 1 ? '' : 's'
+  } to Supabase.`;
+
+  await markCloudBackupComplete(records.length, message);
+
   return {
     ok: true,
-    message: `Backed up ${records.length} local record${
-      records.length === 1 ? '' : 's'
-    } to Supabase.`,
+    message,
     recordCount: records.length,
   };
 }

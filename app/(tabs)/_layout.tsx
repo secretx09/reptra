@@ -30,6 +30,7 @@ export default function TabsLayout() {
         },
         headerTintColor: palette.text,
         headerShadowVisible: false,
+        headerTitleAlign: 'center',
         headerTitleStyle: {
           fontWeight: '700',
         },
