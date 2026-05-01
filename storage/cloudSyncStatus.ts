@@ -6,8 +6,10 @@ const CLOUD_SYNC_STATUS_KEY = 'cloudSyncStatus';
 export const defaultCloudSyncStatus: CloudSyncStatus = {
   lastBackupAt: null,
   lastRestoreAt: null,
+  lastMergeAt: null,
   lastBackupRecordCount: 0,
   lastRestoreRecordCount: 0,
+  lastMergeRecordCount: 0,
   lastMessage: null,
 };
 
@@ -24,8 +26,10 @@ export async function loadCloudSyncStatus(): Promise<CloudSyncStatus> {
     return {
       lastBackupAt: parsed.lastBackupAt ?? null,
       lastRestoreAt: parsed.lastRestoreAt ?? null,
+      lastMergeAt: parsed.lastMergeAt ?? null,
       lastBackupRecordCount: Number(parsed.lastBackupRecordCount) || 0,
       lastRestoreRecordCount: Number(parsed.lastRestoreRecordCount) || 0,
+      lastMergeRecordCount: Number(parsed.lastMergeRecordCount) || 0,
       lastMessage: parsed.lastMessage ?? null,
     };
   } catch (error) {
@@ -72,6 +76,17 @@ export async function markCloudDeleteComplete(message: string) {
 
   await saveCloudSyncStatus({
     ...currentStatus,
+    lastMessage: message,
+  });
+}
+
+export async function markCloudMergeComplete(recordCount: number, message: string) {
+  const currentStatus = await loadCloudSyncStatus();
+
+  await saveCloudSyncStatus({
+    ...currentStatus,
+    lastMergeAt: new Date().toISOString(),
+    lastMergeRecordCount: recordCount,
     lastMessage: message,
   });
 }

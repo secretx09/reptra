@@ -25,6 +25,7 @@ import { backupLocalDataToCloud } from '../../services/cloudBackup';
 import {
   CloudBackupSummary,
   getCloudBackupSummary,
+  mergeCloudDataIntoLocal,
   restoreCloudDataToLocal,
 } from '../../services/cloudRestore';
 import { CloudProfile, getCloudProfile, updateCloudProfile } from '../../services/cloudProfile';
@@ -67,6 +68,50 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function getSyncComparison(
+  localPreview: LocalCloudPreview,
+  cloudSummary: CloudBackupSummary | null
+) {
+  if (!cloudSummary) {
+    return {
+      title: 'Cloud comparison unavailable',
+      message: 'Refresh your cloud summary to compare local and cloud data.',
+    };
+  }
+
+  const cloudTotal = cloudSummary.totalRecords;
+  const localTotal = localPreview.totalRecords;
+
+  if (cloudTotal === 0) {
+    return {
+      title: 'Cloud backup empty',
+      message: 'Run Backup Local Data to create your first Supabase backup.',
+    };
+  }
+
+  if (cloudTotal === localTotal) {
+    return {
+      title: 'Counts look matched',
+      message:
+        'Local and cloud record counts match. This is a good quick sync sanity check.',
+    };
+  }
+
+  if (localTotal > cloudTotal) {
+    return {
+      title: 'Local has more records',
+      message:
+        'Backup Local Data will push the extra local records to Supabase.',
+    };
+  }
+
+  return {
+    title: 'Cloud has more records',
+    message:
+      'Merge Cloud Into This Device can add missing cloud records without replacing local data.',
+  };
+}
+
 export default function AccountScreen() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('signIn');
@@ -88,7 +133,9 @@ export default function AccountScreen() {
   const [profileUsername, setProfileUsername] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
+  const [mergeStatus, setMergeStatus] = useState('');
   const authRedirectUrl = getAuthRedirectUrl();
+  const syncComparison = getSyncComparison(localPreview, cloudSummary);
 
   const fetchLocalPreview = useCallback(async () => {
     const [
@@ -287,6 +334,36 @@ export default function AccountScreen() {
     );
   };
 
+  const handleMergeCloudData = () => {
+    Alert.alert(
+      'Merge cloud data?',
+      'This adds cloud workouts, routines, custom exercises, favorites, and progress photo metadata that are missing on this device. Existing local data will not be replaced.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Merge',
+          onPress: async () => {
+            setIsLoading(true);
+            setMergeStatus('Merging cloud data...');
+            const result = await mergeCloudDataIntoLocal();
+            const syncStatus = await loadCloudSyncStatus();
+            setIsLoading(false);
+            setMergeStatus(result.message);
+            setCloudSyncStatus(syncStatus);
+
+            if (!result.ok) {
+              Alert.alert('Merge failed', result.message);
+              return;
+            }
+
+            await fetchLocalPreview();
+            Alert.alert('Merge complete', result.message);
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'Account' }} />
@@ -427,9 +504,21 @@ export default function AccountScreen() {
                   </Text>
                 </View>
                 <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Last merge</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {formatDateTime(cloudSyncStatus?.lastMergeAt ?? null)}
+                  </Text>
+                </View>
+                <View style={styles.syncStatusRow}>
                   <Text style={styles.syncStatusLabel}>Restore records</Text>
                   <Text style={styles.syncStatusValue}>
                     {cloudSyncStatus?.lastRestoreRecordCount ?? 0}
+                  </Text>
+                </View>
+                <View style={styles.syncStatusRow}>
+                  <Text style={styles.syncStatusLabel}>Merge added</Text>
+                  <Text style={styles.syncStatusValue}>
+                    {cloudSyncStatus?.lastMergeRecordCount ?? 0}
                   </Text>
                 </View>
 
@@ -478,6 +567,29 @@ export default function AccountScreen() {
                   {localPreview.settings} | Total records:{' '}
                   {localPreview.totalRecords}
                 </Text>
+              </View>
+
+              <View style={styles.comparisonCard}>
+                <Text style={styles.comparisonTitle}>
+                  {syncComparison.title}
+                </Text>
+                <Text style={styles.comparisonText}>
+                  {syncComparison.message}
+                </Text>
+                <View style={styles.comparisonRow}>
+                  <View style={styles.comparisonStat}>
+                    <Text style={styles.comparisonValue}>
+                      {localPreview.totalRecords}
+                    </Text>
+                    <Text style={styles.comparisonLabel}>Local</Text>
+                  </View>
+                  <View style={styles.comparisonStat}>
+                    <Text style={styles.comparisonValue}>
+                      {cloudSummary?.totalRecords ?? 0}
+                    </Text>
+                    <Text style={styles.comparisonLabel}>Cloud</Text>
+                  </View>
+                </View>
               </View>
 
               <View style={styles.backupCard}>
@@ -566,6 +678,20 @@ export default function AccountScreen() {
                     View Cloud Records
                   </Text>
                 </Pressable>
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleMergeCloudData}
+                  disabled={isLoading || !cloudSummary?.totalRecords}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Merge Cloud Into This Device
+                  </Text>
+                </Pressable>
+
+                {mergeStatus ? (
+                  <Text style={styles.backupStatus}>{mergeStatus}</Text>
+                ) : null}
 
                 <Pressable
                   style={styles.dangerButton}
@@ -897,6 +1023,49 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   cloudSummaryLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  comparisonCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  comparisonTitle: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  comparisonText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  comparisonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  comparisonStat: {
+    flex: 1,
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 10,
+    padding: 10,
+  },
+  comparisonValue: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  comparisonLabel: {
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '700',

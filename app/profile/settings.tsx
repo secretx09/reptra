@@ -261,6 +261,12 @@ export default function ProfileSettingsScreen() {
                   {formatDateTime(cloudSyncStatus?.lastRestoreAt ?? null)}
                 </Text>
               </View>
+              <View style={styles.syncMiniRow}>
+                <Text style={styles.syncMiniLabel}>Last merge</Text>
+                <Text style={styles.syncMiniValue}>
+                  {formatDateTime(cloudSyncStatus?.lastMergeAt ?? null)}
+                </Text>
+              </View>
             </View>
 
             <Pressable

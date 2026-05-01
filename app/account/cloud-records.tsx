@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,8 @@ export default function CloudRecordsScreen() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [selectedType, setSelectedType] = useState('All');
 
   const groupedCounts = useMemo(() => {
     return records.reduce<Record<string, number>>((acc, record) => {
@@ -36,6 +39,27 @@ export default function CloudRecordsScreen() {
       return acc;
     }, {});
   }, [records]);
+
+  const typeFilters = useMemo(() => {
+    const labels = records.map((record) => formatCloudRecordType(record.recordType));
+    return ['All', ...Array.from(new Set(labels))];
+  }, [records]);
+
+  const filteredRecords = useMemo(() => {
+    const normalizedSearch = searchText.trim().toLowerCase();
+
+    return records.filter((record) => {
+      const typeLabel = formatCloudRecordType(record.recordType);
+      const matchesType = selectedType === 'All' || typeLabel === selectedType;
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        record.title.toLowerCase().includes(normalizedSearch) ||
+        record.localId.toLowerCase().includes(normalizedSearch) ||
+        typeLabel.toLowerCase().includes(normalizedSearch);
+
+      return matchesType && matchesSearch;
+    });
+  }, [records, searchText, selectedType]);
 
   const fetchRecords = useCallback(async () => {
     setIsLoading(true);
@@ -159,7 +183,46 @@ export default function CloudRecordsScreen() {
             device data stays untouched.
           </Text>
 
-          {records.map((record) => (
+          {records.length > 0 ? (
+            <View style={styles.filterCard}>
+              <Text style={styles.filterTitle}>Find Records</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search title, type, or local ID"
+                placeholderTextColor="#777777"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterPillRow}
+              >
+                {typeFilters.map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[
+                      styles.filterPill,
+                      selectedType === type && styles.filterPillActive,
+                    ]}
+                    onPress={() => setSelectedType(type)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        selectedType === type && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {type}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {filteredRecords.map((record) => (
             <View key={record.id} style={styles.recordCard}>
               <View style={styles.recordHeader}>
                 <Text style={styles.recordType}>
@@ -173,6 +236,15 @@ export default function CloudRecordsScreen() {
               <Text style={styles.recordId}>Local ID: {record.localId}</Text>
             </View>
           ))}
+
+          {records.length > 0 && filteredRecords.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>No matching records</Text>
+              <Text style={styles.emptyText}>
+                Try a different search or switch the record type filter.
+              </Text>
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </>
@@ -310,6 +382,54 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 14,
     marginTop: 10,
+  },
+  filterCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+  },
+  filterTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  searchInput: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    color: '#ffffff',
+    fontSize: 14,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  filterPillRow: {
+    gap: 8,
+  },
+  filterPill: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterPillActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  filterPillText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  filterPillTextActive: {
+    color: '#4da6ff',
   },
   recordCard: {
     backgroundColor: '#171717',

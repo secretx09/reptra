@@ -1,10 +1,14 @@
-import { saveCustomExercises } from '../storage/customExercises';
+import { loadCustomExercises, saveCustomExercises } from '../storage/customExercises';
 import { saveFavoriteExerciseIds } from '../storage/favoriteExercises';
-import { saveProgressPhotos } from '../storage/progressPhotos';
-import { saveRoutines } from '../storage/routines';
+import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
+import { loadProgressPhotos, saveProgressPhotos } from '../storage/progressPhotos';
+import { loadRoutines, saveRoutines } from '../storage/routines';
 import { saveSettings } from '../storage/settings';
-import { saveWorkouts } from '../storage/workouts';
-import { markCloudRestoreComplete } from '../storage/cloudSyncStatus';
+import { loadWorkouts, saveWorkouts } from '../storage/workouts';
+import {
+  markCloudMergeComplete,
+  markCloudRestoreComplete,
+} from '../storage/cloudSyncStatus';
 import { Exercise } from '../types/exercise';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
@@ -35,6 +39,18 @@ export interface CloudRestoreResult {
   ok: boolean;
   message: string;
   recordCount: number;
+}
+
+export interface CloudMergeResult {
+  ok: boolean;
+  message: string;
+  addedCounts: {
+    workouts: number;
+    routines: number;
+    customExercises: number;
+    progressPhotos: number;
+    favoriteExercises: number;
+  };
 }
 
 function fromJson<T>(value: Json): T {
@@ -200,5 +216,130 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
     ok: true,
     message,
     recordCount: records.length,
+  };
+}
+
+function mergeById<T extends { id: string }>(localItems: T[], cloudItems: T[]) {
+  const localIds = new Set(localItems.map((item) => item.id));
+  const missingCloudItems = cloudItems.filter((item) => !localIds.has(item.id));
+
+  return {
+    mergedItems: [...localItems, ...missingCloudItems],
+    addedCount: missingCloudItems.length,
+  };
+}
+
+export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
+  const result = await fetchCloudRecords();
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: result.message,
+      addedCounts: {
+        workouts: 0,
+        routines: 0,
+        customExercises: 0,
+        progressPhotos: 0,
+        favoriteExercises: 0,
+      },
+    };
+  }
+
+  const records = result.records;
+
+  if (records.length === 0) {
+    return {
+      ok: false,
+      message: 'No cloud backup records found to merge.',
+      addedCounts: {
+        workouts: 0,
+        routines: 0,
+        customExercises: 0,
+        progressPhotos: 0,
+        favoriteExercises: 0,
+      },
+    };
+  }
+
+  const [
+    localWorkouts,
+    localRoutines,
+    localCustomExercises,
+    localProgressPhotos,
+    localFavoriteExerciseIds,
+  ] = await Promise.all([
+    loadWorkouts(),
+    loadRoutines(),
+    loadCustomExercises(),
+    loadProgressPhotos(),
+    loadFavoriteExerciseIds(),
+  ]);
+
+  const cloudWorkouts = records
+    .filter((record) => record.record_type === 'workout')
+    .map((record) => fromJson<SavedWorkoutSession>(record.payload));
+  const cloudRoutines = records
+    .filter((record) => record.record_type === 'routine')
+    .map((record) => fromJson<RoutineWithExercises>(record.payload));
+  const cloudCustomExercises = records
+    .filter((record) => record.record_type === 'custom_exercise')
+    .map((record) => fromJson<Exercise>(record.payload));
+  const cloudProgressPhotos = records
+    .filter((record) => record.record_type === 'progress_photo')
+    .map((record) => fromJson<ProgressPhoto>(record.payload));
+  const cloudFavoriteRecord = records.find(
+    (record) => record.record_type === 'favorite_exercise'
+  );
+  const cloudFavoriteExerciseIds = cloudFavoriteRecord
+    ? fromJson<string[]>(cloudFavoriteRecord.payload)
+    : [];
+
+  const workoutMerge = mergeById(localWorkouts, cloudWorkouts);
+  const routineMerge = mergeById(localRoutines, cloudRoutines);
+  const customExerciseMerge = mergeById(
+    localCustomExercises,
+    cloudCustomExercises
+  );
+  const progressPhotoMerge = mergeById(localProgressPhotos, cloudProgressPhotos);
+  const mergedFavoriteExerciseIds = Array.from(
+    new Set([...localFavoriteExerciseIds, ...cloudFavoriteExerciseIds])
+  );
+  const addedFavoriteCount =
+    mergedFavoriteExerciseIds.length - localFavoriteExerciseIds.length;
+
+  await Promise.all([
+    saveWorkouts(workoutMerge.mergedItems),
+    saveRoutines(routineMerge.mergedItems),
+    saveCustomExercises(customExerciseMerge.mergedItems),
+    saveProgressPhotos(progressPhotoMerge.mergedItems),
+    saveFavoriteExerciseIds(mergedFavoriteExerciseIds),
+  ]);
+
+  const addedTotal =
+    workoutMerge.addedCount +
+    routineMerge.addedCount +
+    customExerciseMerge.addedCount +
+    progressPhotoMerge.addedCount +
+    addedFavoriteCount;
+  const message =
+    addedTotal === 0
+      ? 'Cloud merge finished. No missing local records were found.'
+      : `Cloud merge added ${addedTotal} missing local item${
+          addedTotal === 1 ? '' : 's'
+        } without replacing existing data.`;
+
+  await markCloudMergeComplete(addedTotal, message);
+
+  return {
+    ok: true,
+    message,
+    addedCounts: {
+      workouts: workoutMerge.addedCount,
+      routines: routineMerge.addedCount,
+      customExercises: customExerciseMerge.addedCount,
+      progressPhotos: progressPhotoMerge.addedCount,
+      favoriteExercises: addedFavoriteCount,
+    },
   };
 }
