@@ -29,12 +29,16 @@ import {
 } from '../../utils/routineSupersets';
 import { parseRestTimerInput } from '../../utils/restTimer';
 import { getWeightFieldLabel } from '../../utils/weightUnits';
+import { TrainingCategoryId } from '../../types/trainingSplit';
+import { getTrainingCategory, routineTrainingCategories } from '../../utils/trainingSplit';
 
 export default function CreateRoutineScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [routineName, setRoutineName] = useState('');
   const [routineNote, setRoutineNote] = useState('');
+  const [trainingCategory, setTrainingCategory] =
+    useState<TrainingCategoryId>('mixed');
   const [searchText, setSearchText] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All');
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
@@ -164,6 +168,7 @@ export default function CreateRoutineScreen() {
       createdAt: new Date().toISOString(),
       isPinned,
       note: routineNote.trim(),
+      trainingCategory,
       exercises: normalizedExercises,
     };
 
@@ -223,6 +228,38 @@ export default function CreateRoutineScreen() {
           onChangeText={setRoutineNote}
           multiline
         />
+
+        <View style={styles.categorySection}>
+          <Text style={styles.categoryTitle}>Routine Category</Text>
+          <Text style={styles.categoryDescription}>
+            This helps Reptra match routines to your planned workout days.
+          </Text>
+          <View style={styles.categoryChips}>
+            {routineTrainingCategories.map((category) => {
+              const isActive = trainingCategory === category.id;
+
+              return (
+                <Pressable
+                  key={category.id}
+                  style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                  onPress={() => setTrainingCategory(category.id)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      isActive && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {category.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.categorySelectedText}>
+            Selected: {getTrainingCategory(trainingCategory).label}
+          </Text>
+        </View>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Exercises Added</Text>
@@ -532,6 +569,57 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 12,
     fontSize: 15,
+  },
+  categorySection: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  categoryTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  categoryDescription: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  categoryChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  categoryChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  categoryChipText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryChipTextActive: {
+    color: '#4da6ff',
+  },
+  categorySelectedText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
   },
   summaryCard: {
     backgroundColor: '#171717',

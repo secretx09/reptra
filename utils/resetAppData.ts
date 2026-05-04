@@ -7,6 +7,7 @@ const RESET_KEYS = [
   'customExercises',
   'favoriteExercises',
   'appSettings',
+  'trainingSplitPlan',
 ];
 
 export async function resetAppData() {

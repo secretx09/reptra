@@ -1,4 +1,5 @@
 import { Exercise } from './exercise';
+import { TrainingCategoryId } from './trainingSplit';
 
 export interface Routine {
   id: string;
@@ -6,6 +7,7 @@ export interface Routine {
   createdAt: string;
   isPinned?: boolean;
   note?: string;
+  trainingCategory?: TrainingCategoryId;
 }
 
 export interface RoutineExercise {
@@ -33,5 +35,6 @@ export interface RoutineWithExercises {
   createdAt: string;
   isPinned?: boolean;
   note?: string;
+  trainingCategory?: TrainingCategoryId;
   exercises: RoutineExerciseWithDefaults[];
 }

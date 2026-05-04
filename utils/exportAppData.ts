@@ -3,6 +3,7 @@ import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines } from '../storage/routines';
 import { loadSettings } from '../storage/settings';
+import { loadTrainingSplitPlan } from '../storage/trainingSplit';
 import { loadWorkouts } from '../storage/workouts';
 
 export async function buildAppDataExport() {
@@ -13,6 +14,7 @@ export async function buildAppDataExport() {
     customExercises,
     progressPhotos,
     favoriteExerciseIds,
+    trainingSplitPlan,
   ] =
     await Promise.all([
       loadSettings(),
@@ -21,6 +23,7 @@ export async function buildAppDataExport() {
       loadCustomExercises(),
       loadProgressPhotos(),
       loadFavoriteExerciseIds(),
+      loadTrainingSplitPlan(),
     ]);
 
   return {
@@ -33,5 +36,6 @@ export async function buildAppDataExport() {
     customExercises,
     progressPhotos,
     favoriteExerciseIds,
+    trainingSplitPlan,
   };
 }

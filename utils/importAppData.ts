@@ -3,12 +3,15 @@ import { saveFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { saveProgressPhotos } from '../storage/progressPhotos';
 import { saveRoutines } from '../storage/routines';
 import { defaultSettings, saveSettings } from '../storage/settings';
+import { saveTrainingSplitPlan } from '../storage/trainingSplit';
 import { saveWorkouts } from '../storage/workouts';
 import { Exercise } from '../types/exercise';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
 import { AppSettings } from '../types/settings';
+import { TrainingSplitPlan } from '../types/trainingSplit';
 import { SavedWorkoutSession } from '../types/workout';
+import { defaultTrainingSplitPlan } from './trainingSplit';
 
 type AppDataImportPayload = {
   app?: string;
@@ -22,6 +25,7 @@ type AppDataImportPayload = {
   customExercises?: Exercise[];
   progressPhotos?: ProgressPhoto[];
   favoriteExerciseIds?: string[];
+  trainingSplitPlan?: TrainingSplitPlan;
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -82,6 +86,7 @@ export function parseAppDataImport(jsonInput: string) {
     favoriteExerciseIds: Array.isArray(payload.favoriteExerciseIds)
       ? payload.favoriteExerciseIds.filter((id) => typeof id === 'string')
       : [],
+    trainingSplitPlan: payload.trainingSplitPlan ?? defaultTrainingSplitPlan,
   };
 }
 
@@ -94,4 +99,5 @@ export async function importAppData(jsonInput: string) {
   await saveCustomExercises(parsed.customExercises);
   await saveProgressPhotos(parsed.progressPhotos);
   await saveFavoriteExerciseIds(parsed.favoriteExerciseIds);
+  await saveTrainingSplitPlan(parsed.trainingSplitPlan);
 }

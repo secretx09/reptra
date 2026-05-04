@@ -23,6 +23,7 @@ export async function loadRoutines(): Promise<RoutineWithExercises[]> {
     return parsedRoutines.map((routine) => ({
       ...routine,
       isPinned: routine.isPinned ?? false,
+      trainingCategory: routine.trainingCategory ?? 'mixed',
     }));
   } catch (error) {
     console.error('Failed to load routines:', error);

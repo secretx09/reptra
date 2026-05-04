@@ -15,10 +15,13 @@ import { User } from '@supabase/supabase-js';
 import {
   getCurrentUser,
   getAuthRedirectUrl,
+  resendConfirmationEmail,
+  sendPasswordResetEmail,
   signInWithEmail,
   signOut,
   signUpWithEmail,
   testSupabaseConnection,
+  updateCurrentUserPassword,
 } from '../../services/auth';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { backupLocalDataToCloud } from '../../services/cloudBackup';
@@ -28,7 +31,12 @@ import {
   mergeCloudDataIntoLocal,
   restoreCloudDataToLocal,
 } from '../../services/cloudRestore';
-import { CloudProfile, getCloudProfile, updateCloudProfile } from '../../services/cloudProfile';
+import {
+  checkUsernameAvailability,
+  CloudProfile,
+  getCloudProfile,
+  updateCloudProfile,
+} from '../../services/cloudProfile';
 import { loadCloudSyncStatus } from '../../storage/cloudSyncStatus';
 import { CloudSyncStatus } from '../../types/cloudSync';
 import { loadCustomExercises } from '../../storage/customExercises';
@@ -112,6 +120,45 @@ function getSyncComparison(
   };
 }
 
+function getProfileCompletionItems(
+  user: User | null,
+  profile: CloudProfile | null
+) {
+  const items = [
+    {
+      label: 'Email confirmed',
+      isComplete: Boolean(user?.email_confirmed_at),
+    },
+    {
+      label: 'Display name',
+      isComplete: Boolean(profile?.display_name),
+    },
+    {
+      label: 'Username',
+      isComplete: Boolean(profile?.username),
+    },
+    {
+      label: 'Bio',
+      isComplete: Boolean(profile?.bio),
+    },
+    {
+      label: 'Training focus',
+      isComplete: Boolean(profile?.training_focus),
+    },
+    {
+      label: 'Cloud profile saved',
+      isComplete: Boolean(profile?.updated_at),
+    },
+  ];
+  const completedCount = items.filter((item) => item.isComplete).length;
+
+  return {
+    items,
+    completedCount,
+    totalCount: items.length,
+  };
+}
+
 export default function AccountScreen() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('signIn');
@@ -131,11 +178,19 @@ export default function AccountScreen() {
   const [cloudProfile, setCloudProfile] = useState<CloudProfile | null>(null);
   const [profileDisplayName, setProfileDisplayName] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
+  const [profileBio, setProfileBio] = useState('');
+  const [profileTrainingFocus, setProfileTrainingFocus] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
+  const [usernameStatus, setUsernameStatus] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [securityStatus, setSecurityStatus] = useState('');
+  const [authEmailStatus, setAuthEmailStatus] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
   const [mergeStatus, setMergeStatus] = useState('');
   const authRedirectUrl = getAuthRedirectUrl();
   const syncComparison = getSyncComparison(localPreview, cloudSummary);
+  const profileCompletion = getProfileCompletionItems(currentUser, cloudProfile);
+  const cleanProfileUsername = profileUsername.trim().toLowerCase();
 
   const fetchLocalPreview = useCallback(async () => {
     const [
@@ -187,11 +242,15 @@ export default function AccountScreen() {
       setCloudProfile(profileResult.profile);
       setProfileDisplayName(profileResult.profile?.display_name ?? '');
       setProfileUsername(profileResult.profile?.username ?? '');
+      setProfileBio(profileResult.profile?.bio ?? '');
+      setProfileTrainingFocus(profileResult.profile?.training_focus ?? '');
     } else {
       setCloudSummary(null);
       setCloudProfile(null);
       setProfileDisplayName('');
       setProfileUsername('');
+      setProfileBio('');
+      setProfileTrainingFocus('');
     }
   }, [fetchLocalPreview]);
 
@@ -230,6 +289,69 @@ export default function AccountScreen() {
 
     await fetchCurrentUser();
     Alert.alert('Account', result.message);
+  };
+
+  const handleSendPasswordReset = async () => {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      Alert.alert('Missing email', 'Enter your email first.');
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await sendPasswordResetEmail(trimmedEmail);
+    setIsLoading(false);
+    setAuthEmailStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Password reset failed', result.message);
+      return;
+    }
+
+    Alert.alert('Password reset', result.message);
+  };
+
+  const handleResendConfirmation = async () => {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      Alert.alert('Missing email', 'Enter your email first.');
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await resendConfirmationEmail(trimmedEmail);
+    setIsLoading(false);
+    setAuthEmailStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Confirmation failed', result.message);
+      return;
+    }
+
+    Alert.alert('Confirmation email', result.message);
+  };
+
+  const handleUpdatePassword = async () => {
+    if (newPassword.length < 6) {
+      Alert.alert('Password too short', 'Use at least 6 characters.');
+      return;
+    }
+
+    setIsLoading(true);
+    setSecurityStatus('Updating password...');
+    const result = await updateCurrentUserPassword(newPassword);
+    setIsLoading(false);
+    setSecurityStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Password update failed', result.message);
+      return;
+    }
+
+    setNewPassword('');
+    Alert.alert('Password updated', result.message);
   };
 
   const handleSignOut = async () => {
@@ -290,7 +412,12 @@ export default function AccountScreen() {
   const handleSaveCloudProfile = async () => {
     setIsLoading(true);
     setProfileStatus('Saving cloud profile...');
-    const result = await updateCloudProfile(profileDisplayName, profileUsername);
+    const result = await updateCloudProfile(
+      profileDisplayName,
+      profileUsername,
+      profileBio,
+      profileTrainingFocus
+    );
     setIsLoading(false);
     setProfileStatus(result.message);
 
@@ -301,6 +428,18 @@ export default function AccountScreen() {
 
     setCloudProfile(result.profile);
     Alert.alert('Profile saved', result.message);
+  };
+
+  const handleCheckUsername = async () => {
+    setIsLoading(true);
+    setUsernameStatus('Checking username...');
+    const result = await checkUsernameAvailability(profileUsername);
+    setIsLoading(false);
+    setUsernameStatus(result.message);
+
+    if (!result.ok || !result.available) {
+      Alert.alert('Username check', result.message);
+    }
   };
 
   const handleRestoreCloudData = () => {
@@ -435,6 +574,89 @@ export default function AccountScreen() {
                 restore replaces this device with the current cloud copy.
               </Text>
 
+              <View style={styles.accountMetaCard}>
+                <View style={styles.accountMetaRow}>
+                  <Text style={styles.accountMetaLabel}>Email confirmed</Text>
+                  <Text style={styles.accountMetaValue}>
+                    {currentUser.email_confirmed_at ? 'Yes' : 'Not yet'}
+                  </Text>
+                </View>
+                <View style={styles.accountMetaRow}>
+                  <Text style={styles.accountMetaLabel}>Provider</Text>
+                  <Text style={styles.accountMetaValue}>
+                    {currentUser.app_metadata?.provider || 'email'}
+                  </Text>
+                </View>
+                <View style={styles.accountMetaRow}>
+                  <Text style={styles.accountMetaLabel}>Created</Text>
+                  <Text style={styles.accountMetaValue}>
+                    {formatDateTime(currentUser.created_at)}
+                  </Text>
+                </View>
+                <View style={styles.accountMetaRow}>
+                  <Text style={styles.accountMetaLabel}>Last sign in</Text>
+                  <Text style={styles.accountMetaValue}>
+                    {formatDateTime(currentUser.last_sign_in_at ?? null)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.profileCompletionCard}>
+                <Text style={styles.profileCompletionTitle}>
+                  Profile setup {profileCompletion.completedCount}/
+                  {profileCompletion.totalCount}
+                </Text>
+                <Text style={styles.profileCompletionText}>
+                  These pieces will matter more later when Reptra adds friends,
+                  social feed posts, and searchable profiles.
+                </Text>
+
+                {profileCompletion.items.map((item) => (
+                  <View key={item.label} style={styles.profileCompletionRow}>
+                    <Text
+                      style={[
+                        styles.profileCompletionDot,
+                        item.isComplete && styles.profileCompletionDotDone,
+                      ]}
+                    >
+                      {item.isComplete ? 'Ready' : 'Todo'}
+                    </Text>
+                    <Text style={styles.profileCompletionLabel}>
+                      {item.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.backupCard}>
+                <Text style={styles.backupTitle}>Account Security</Text>
+                <Text style={styles.backupText}>
+                  Use this after opening a password reset link, or anytime you
+                  are signed in and want to change your password.
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="New password"
+                  placeholderTextColor="#777777"
+                  secureTextEntry
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                />
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleUpdatePassword}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>Update Password</Text>
+                </Pressable>
+
+                {securityStatus ? (
+                  <Text style={styles.backupStatus}>{securityStatus}</Text>
+                ) : null}
+              </View>
+
               <View style={styles.backupCard}>
                 <Text style={styles.backupTitle}>Cloud Profile</Text>
                 <Text style={styles.backupText}>
@@ -459,6 +681,68 @@ export default function AccountScreen() {
                   onChangeText={setProfileUsername}
                 />
 
+                <View style={styles.handlePreviewCard}>
+                  <Text style={styles.handlePreviewLabel}>Profile username</Text>
+                  <Text style={styles.handlePreviewValue}>
+                    {cleanProfileUsername
+                      ? `@${cleanProfileUsername}`
+                      : '@username'}
+                  </Text>
+                  <Text style={styles.handlePreviewText}>
+                    Later, this can become the username people search for or
+                    use when signing in.
+                  </Text>
+                </View>
+
+                <TextInput
+                  style={[styles.input, styles.multilineInput]}
+                  placeholder="Bio"
+                  placeholderTextColor="#777777"
+                  multiline
+                  value={profileBio}
+                  onChangeText={setProfileBio}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Training focus"
+                  placeholderTextColor="#777777"
+                  value={profileTrainingFocus}
+                  onChangeText={setProfileTrainingFocus}
+                />
+
+                <View style={styles.publicProfilePreviewCard}>
+                  <Text style={styles.publicProfilePreviewLabel}>
+                    Public profile preview
+                  </Text>
+                  <Text style={styles.publicProfilePreviewName}>
+                    {profileDisplayName.trim() || 'Reptra Athlete'}
+                  </Text>
+                  <Text style={styles.publicProfilePreviewUsername}>
+                    {cleanProfileUsername
+                      ? `@${cleanProfileUsername}`
+                      : '@username'}
+                  </Text>
+                  <Text style={styles.publicProfilePreviewBio}>
+                    {profileBio.trim() ||
+                      'Add a short bio so future friends know what you are working toward.'}
+                  </Text>
+                  <Text style={styles.publicProfilePreviewFocus}>
+                    Focus:{' '}
+                    {profileTrainingFocus.trim() || 'Not set yet'}
+                  </Text>
+                </View>
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleCheckUsername}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Check Username
+                  </Text>
+                </Pressable>
+
                 <Pressable
                   style={styles.secondaryButton}
                   onPress={handleSaveCloudProfile}
@@ -466,6 +750,10 @@ export default function AccountScreen() {
                 >
                   <Text style={styles.secondaryButtonText}>Save Cloud Profile</Text>
                 </Pressable>
+
+                {usernameStatus ? (
+                  <Text style={styles.backupStatus}>{usernameStatus}</Text>
+                ) : null}
 
                 {cloudProfile?.updated_at ? (
                   <Text style={styles.backupStatus}>
@@ -770,6 +1058,17 @@ export default function AccountScreen() {
                 />
               ) : null}
 
+              <View style={styles.usernameFutureCard}>
+                <Text style={styles.usernameFutureTitle}>
+                  Username sign-in is coming later
+                </Text>
+                <Text style={styles.usernameFutureText}>
+                  For now, Supabase signs in with email and password. Your
+                  saved username is still useful for future profiles, friends,
+                  and searchable accounts.
+                </Text>
+              </View>
+
               <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -806,6 +1105,38 @@ export default function AccountScreen() {
                   </Text>
                 )}
               </Pressable>
+
+              <View style={styles.authHelpCard}>
+                <Text style={styles.authHelpTitle}>Need help signing in?</Text>
+                <Text style={styles.authHelpText}>
+                  Enter your email above, then send a reset link or resend your
+                  confirmation email.
+                </Text>
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleSendPasswordReset}
+                  disabled={!isSupabaseConfigured() || isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Send Password Reset
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleResendConfirmation}
+                  disabled={!isSupabaseConfigured() || isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Resend Confirmation Email
+                  </Text>
+                </Pressable>
+
+                {authEmailStatus ? (
+                  <Text style={styles.backupStatus}>{authEmailStatus}</Text>
+                ) : null}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -954,6 +1285,81 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 8,
   },
+  accountMetaCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  accountMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#252525',
+    paddingVertical: 8,
+  },
+  accountMetaLabel: {
+    color: '#aaaaaa',
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  accountMetaValue: {
+    color: '#ffffff',
+    flex: 1.4,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  profileCompletionCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  profileCompletionTitle: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  profileCompletionText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  profileCompletionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  profileCompletionDot: {
+    backgroundColor: '#2a1111',
+    borderRadius: 999,
+    color: '#ff8a8a',
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  profileCompletionDotDone: {
+    backgroundColor: '#16324d',
+    color: '#4da6ff',
+  },
+  profileCompletionLabel: {
+    color: '#ffffff',
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   backupCard: {
     backgroundColor: '#121212',
     borderWidth: 1,
@@ -979,6 +1385,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 10,
+  },
+  handlePreviewCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  handlePreviewLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  handlePreviewValue: {
+    color: '#4da6ff',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  handlePreviewText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  publicProfilePreviewCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+  },
+  publicProfilePreviewLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  publicProfilePreviewName: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  publicProfilePreviewUsername: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  publicProfilePreviewBio: {
+    color: '#d6d6d6',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  publicProfilePreviewFocus: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 18,
   },
   syncStatusRow: {
     flexDirection: 'row',
@@ -1107,6 +1578,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
   },
+  multilineInput: {
+    minHeight: 86,
+    textAlignVertical: 'top',
+  },
   primaryButton: {
     backgroundColor: '#4da6ff',
     borderRadius: 12,
@@ -1120,6 +1595,45 @@ const styles = StyleSheet.create({
     color: '#111111',
     fontSize: 15,
     fontWeight: '800',
+  },
+  authHelpCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
+  },
+  authHelpTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  authHelpText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  usernameFutureCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  usernameFutureTitle: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  usernameFutureText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
   },
   secondaryButton: {
     backgroundColor: '#16324d',

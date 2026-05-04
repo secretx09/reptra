@@ -1,5 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  FlatList,
+  TextInput,
+  ScrollView,
+} from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { loadSettings } from '../../storage/settings';
@@ -7,10 +15,18 @@ import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme } from '../../types/settings';
 import { loadRoutines } from '../../storage/routines';
 import { loadWorkouts } from '../../storage/workouts';
+import { loadTrainingSplitPlan } from '../../storage/trainingSplit';
 import RoutineCard from '../../components/RoutineCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getThemePalette } from '../../utils/appTheme';
 import { SavedWorkoutSession } from '../../types/workout';
+import { TrainingCategoryId, TrainingSplitPlan } from '../../types/trainingSplit';
+import {
+  defaultTrainingSplitPlan,
+  getTrainingCategory,
+  getTrainingDayForDate,
+  routineTrainingCategories,
+} from '../../utils/trainingSplit';
 
 function formatLastCompletedLabel(dateString: string) {
   const completedAt = new Date(dateString).getTime();
@@ -38,8 +54,14 @@ function formatLastCompletedLabel(dateString: string) {
 export default function WorkoutScreen() {
   const [routines, setRoutines] = useState<RoutineWithExercises[]>([]);
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
+  const [trainingSplitPlan, setTrainingSplitPlan] = useState<TrainingSplitPlan>(
+    defaultTrainingSplitPlan
+  );
   const [theme, setTheme] = useState<AppTheme>('graphite');
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<
+    'all' | 'today' | TrainingCategoryId
+  >('all');
   const [routineFilter, setRoutineFilter] = useState<
     'all' | 'pinned' | 'supersets' | 'standard'
   >('all');
@@ -59,15 +81,22 @@ export default function WorkoutScreen() {
     setWorkouts(savedWorkouts);
   };
 
+  const fetchTrainingSplitPlan = async () => {
+    const savedPlan = await loadTrainingSplitPlan();
+    setTrainingSplitPlan(savedPlan);
+  };
+
   useEffect(() => {
     fetchRoutines();
     fetchWorkouts();
+    fetchTrainingSplitPlan();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchRoutines();
       fetchWorkouts();
+      fetchTrainingSplitPlan();
       const fetchSettings = async () => {
         const settings = await loadSettings();
         setTheme(settings.theme);
@@ -79,8 +108,10 @@ export default function WorkoutScreen() {
 
   const filteredRoutines = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const todayCategoryId = getTrainingDayForDate(trainingSplitPlan).categoryId;
 
     const filtered = routines.filter((routine) => {
+      const routineCategory = routine.trainingCategory ?? 'mixed';
       const matchesSearch =
         normalizedQuery.length === 0 ||
         routine.name.toLowerCase().includes(normalizedQuery) ||
@@ -94,8 +125,12 @@ export default function WorkoutScreen() {
         (routineFilter === 'pinned' && Boolean(routine.isPinned)) ||
         (routineFilter === 'supersets' && hasSuperset) ||
         (routineFilter === 'standard' && !hasSuperset);
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        (categoryFilter === 'today' && routineCategory === todayCategoryId) ||
+        routineCategory === categoryFilter;
 
-      return matchesSearch && matchesFilter;
+      return matchesSearch && matchesFilter && matchesCategory;
     });
 
     return filtered.sort((a, b) => {
@@ -118,7 +153,7 @@ export default function WorkoutScreen() {
 
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [routines, searchQuery, routineFilter, sortOption]);
+  }, [categoryFilter, routines, searchQuery, routineFilter, sortOption, trainingSplitPlan]);
 
   const routineOverview = useMemo(() => {
     const supersetCount = routines.filter((routine) =>
@@ -180,9 +215,40 @@ export default function WorkoutScreen() {
     return activityMap;
   }, [workouts]);
 
+  const todayTrainingDay = getTrainingDayForDate(trainingSplitPlan);
+  const todayCategory = getTrainingCategory(todayTrainingDay.categoryId);
+  const todayMatchingRoutines = routines.filter(
+    (routine) => (routine.trainingCategory ?? 'mixed') === todayTrainingDay.categoryId
+  );
+
   const renderHeader = () => (
     <View style={styles.headerContent}>
       <Text style={styles.title}>Workout</Text>
+
+      <View style={styles.todayCard}>
+        <Text style={styles.todayEyebrow}>{"Today's plan"}</Text>
+        <Text style={styles.todayTitle}>
+          {todayCategory.id === 'rest'
+            ? 'Today is a rest day'
+            : `Today is ${todayCategory.label} Day`}
+        </Text>
+        <Text style={styles.todayText}>
+          {todayCategory.description}
+        </Text>
+        <Text style={styles.todayMeta}>
+          {todayCategory.id === 'rest'
+            ? 'No routines are required today.'
+            : `${todayMatchingRoutines.length} matching routine${
+                todayMatchingRoutines.length === 1 ? '' : 's'
+              }`}
+        </Text>
+        <Pressable
+          style={styles.planButton}
+          onPress={() => router.push('/workout/split-plan' as never)}
+        >
+          <Text style={styles.planButtonText}>Edit Weekly Split</Text>
+        </Pressable>
+      </View>
 
       <Pressable
         style={styles.primaryButton}
@@ -220,6 +286,42 @@ export default function WorkoutScreen() {
       </Pressable>
 
       <Text style={styles.sectionTitle}>Your Routines</Text>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryFilterRow}
+      >
+        {[
+          { label: 'All', value: 'all' },
+          { label: 'Today', value: 'today' },
+          ...routineTrainingCategories.map((category) => ({
+            label: category.label,
+            value: category.id,
+          })),
+        ].map((option) => {
+          const isActive = categoryFilter === option.value;
+
+          return (
+            <Pressable
+              key={option.value}
+              style={[styles.categoryFilterChip, isActive && styles.categoryFilterChipActive]}
+              onPress={() =>
+                setCategoryFilter(option.value as 'all' | 'today' | TrainingCategoryId)
+              }
+            >
+              <Text
+                style={[
+                  styles.categoryFilterChipText,
+                  isActive && styles.categoryFilterChipTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       <View style={styles.searchRow}>
         <TextInput
@@ -383,6 +485,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 16,
   },
+  todayCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+  },
+  todayEyebrow: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  todayTitle: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  todayText: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+  todayMeta: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  planButton: {
+    alignItems: 'center',
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 11,
+  },
+  planButtonText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   primaryButton: {
     backgroundColor: '#4da6ff',
     borderRadius: 12,
@@ -415,6 +563,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 8,
     marginBottom: 12,
+  },
+  categoryFilterRow: {
+    gap: 8,
+    paddingRight: 16,
+    marginBottom: 12,
+  },
+  categoryFilterChip: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  categoryFilterChipActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  categoryFilterChipText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryFilterChipTextActive: {
+    color: '#4da6ff',
   },
   searchInput: {
     flex: 1,

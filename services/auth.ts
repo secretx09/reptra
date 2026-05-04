@@ -160,6 +160,83 @@ export async function signUpWithEmail(
   }
 }
 
+export async function resendConfirmationEmail(
+  email: string
+): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+      },
+    });
+
+    if (error) {
+      return {
+        ok: false,
+        message: error.message,
+      };
+    }
+
+    return {
+      ok: true,
+      message: 'Confirmation email sent. Check your inbox.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: getAuthErrorMessage(error),
+    };
+  }
+}
+
+export async function sendPasswordResetEmail(
+  email: string
+): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getAuthRedirectUrl(),
+    });
+
+    if (error) {
+      return {
+        ok: false,
+        message: error.message,
+      };
+    }
+
+    return {
+      ok: true,
+      message:
+        'Password reset email sent. Open the link, return to Reptra, then set a new password while signed in.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: getAuthErrorMessage(error),
+    };
+  }
+}
+
 export async function exchangeAuthCodeForSession(
   code: string
 ): Promise<AuthResult> {
@@ -223,6 +300,42 @@ export async function signInWithEmail(
     return {
       ok: true,
       message: 'Signed in successfully.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: getAuthErrorMessage(error),
+    };
+  }
+}
+
+export async function updateCurrentUserPassword(
+  password: string
+): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
+
+    if (error) {
+      return {
+        ok: false,
+        message: error.message,
+      };
+    }
+
+    return {
+      ok: true,
+      message: 'Password updated successfully.',
     };
   } catch (error) {
     return {

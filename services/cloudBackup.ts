@@ -10,6 +10,7 @@ type CloudRecordType =
   | 'custom_exercise'
   | 'progress_photo'
   | 'settings'
+  | 'training_split'
   | 'favorite_exercise';
 
 interface CloudBackupRecord {
@@ -73,6 +74,13 @@ export async function backupLocalDataToCloud(): Promise<CloudBackupResult> {
   const now = new Date().toISOString();
   const records: CloudBackupRecord[] = [
     buildRecord(user.id, 'settings', 'settings', exportPayload.settings, now),
+    buildRecord(
+      user.id,
+      'training_split',
+      'training_split_plan',
+      exportPayload.trainingSplitPlan,
+      exportPayload.trainingSplitPlan.updatedAt || now
+    ),
     buildRecord(
       user.id,
       'favorite_exercise',

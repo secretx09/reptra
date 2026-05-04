@@ -29,6 +29,11 @@ import {
 } from '../../../utils/routineSupersets';
 import { parseRestTimerInput } from '../../../utils/restTimer';
 import { getWeightFieldLabel } from '../../../utils/weightUnits';
+import { TrainingCategoryId } from '../../../types/trainingSplit';
+import {
+  getTrainingCategory,
+  routineTrainingCategories,
+} from '../../../utils/trainingSplit';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +42,8 @@ export default function EditRoutineScreen() {
   const [routine, setRoutine] = useState<RoutineWithExercises | null>(null);
   const [routineName, setRoutineName] = useState('');
   const [routineNote, setRoutineNote] = useState('');
+  const [trainingCategory, setTrainingCategory] =
+    useState<TrainingCategoryId>('mixed');
   const [editedExercises, setEditedExercises] = useState<
     RoutineExerciseWithDefaults[]
   >([]);
@@ -67,10 +74,12 @@ export default function EditRoutineScreen() {
           name: foundRoutine.name ?? '',
           isPinned: foundRoutine.isPinned ?? false,
           note: foundRoutine.note ?? '',
+          trainingCategory: foundRoutine.trainingCategory ?? 'mixed',
           exercises: normalizedExercises,
         });
         setRoutineName(foundRoutine.name ?? '');
         setRoutineNote(foundRoutine.note ?? '');
+        setTrainingCategory(foundRoutine.trainingCategory ?? 'mixed');
         setIsPinned(foundRoutine.isPinned ?? false);
         setEditedExercises(normalizedExercises);
       }
@@ -219,6 +228,7 @@ export default function EditRoutineScreen() {
       name: routineName.trim(),
       isPinned,
       note: routineNote.trim(),
+      trainingCategory,
       exercises: normalizedExercises,
     };
 
@@ -279,6 +289,38 @@ export default function EditRoutineScreen() {
               onChangeText={setRoutineNote}
               multiline
             />
+
+            <View style={styles.categorySection}>
+              <Text style={styles.categoryTitle}>Routine Category</Text>
+              <Text style={styles.categoryDescription}>
+                Match this routine to your weekly split filters.
+              </Text>
+              <View style={styles.categoryChips}>
+                {routineTrainingCategories.map((category) => {
+                  const isActive = trainingCategory === category.id;
+
+                  return (
+                    <Pressable
+                      key={category.id}
+                      style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                      onPress={() => setTrainingCategory(category.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          isActive && styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {category.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={styles.categorySelectedText}>
+                Selected: {getTrainingCategory(trainingCategory).label}
+              </Text>
+            </View>
 
             <Pressable
               style={[styles.pinToggleCard, isPinned && styles.pinToggleCardActive]}
@@ -651,6 +693,57 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 16,
     fontSize: 15,
+  },
+  categorySection: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  categoryTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  categoryDescription: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  categoryChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  categoryChip: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: '#16324d',
+    borderColor: '#4da6ff',
+  },
+  categoryChipText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryChipTextActive: {
+    color: '#4da6ff',
+  },
+  categorySelectedText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
   },
   sectionTitle: {
     color: '#ffffff',

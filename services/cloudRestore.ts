@@ -4,6 +4,7 @@ import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadProgressPhotos, saveProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines, saveRoutines } from '../storage/routines';
 import { saveSettings } from '../storage/settings';
+import { saveTrainingSplitPlan } from '../storage/trainingSplit';
 import { loadWorkouts, saveWorkouts } from '../storage/workouts';
 import {
   markCloudMergeComplete,
@@ -13,6 +14,7 @@ import { Exercise } from '../types/exercise';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
 import { AppSettings } from '../types/settings';
+import { TrainingSplitPlan } from '../types/trainingSplit';
 import { SavedWorkoutSession } from '../types/workout';
 import { Database, Json } from '../types/supabase';
 import { getCurrentUser } from './auth';
@@ -31,6 +33,7 @@ export interface CloudBackupSummary {
     customExercises: number;
     progressPhotos: number;
     settings: number;
+    trainingSplit: number;
     favoriteExercises: number;
   };
 }
@@ -115,6 +118,7 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
         customExercises: 0,
         progressPhotos: 0,
         settings: 0,
+        trainingSplit: 0,
         favoriteExercises: 0,
       },
     };
@@ -142,6 +146,9 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
         (record) => record.record_type === 'progress_photo'
       ).length,
       settings: records.filter((record) => record.record_type === 'settings').length,
+      trainingSplit: records.filter(
+        (record) => record.record_type === 'training_split'
+      ).length,
       favoriteExercises: records.filter(
         (record) => record.record_type === 'favorite_exercise'
       ).length,
@@ -176,6 +183,9 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
   const favoritesRecord = records.find(
     (record) => record.record_type === 'favorite_exercise'
   );
+  const trainingSplitRecord = records.find(
+    (record) => record.record_type === 'training_split'
+  );
 
   await saveWorkouts(
     records
@@ -204,6 +214,12 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
 
   if (favoritesRecord) {
     await saveFavoriteExerciseIds(fromJson<string[]>(favoritesRecord.payload));
+  }
+
+  if (trainingSplitRecord) {
+    await saveTrainingSplitPlan(
+      fromJson<TrainingSplitPlan>(trainingSplitRecord.payload)
+    );
   }
 
   const message = `Restored ${records.length} cloud record${

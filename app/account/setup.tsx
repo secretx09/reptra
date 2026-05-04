@@ -7,7 +7,9 @@ import { getSupabaseUrl, isSupabaseConfigured } from '../../services/supabase';
 const schemaSteps = [
   'Open Supabase, then go to SQL Editor.',
   'Paste and run the contents of reptra/supabase/schema.sql.',
-  'Make sure Authentication > URL Configuration includes the Expo redirect below.',
+  'Make sure Authentication > URL Configuration includes the Expo redirect below for confirmation and password reset emails.',
+  'The profile policy also allows signed-in users to check public usernames for availability.',
+  'The profiles table includes display name, username, bio, and training focus for future social features.',
   'Restart Expo after changing .env values.',
 ];
 

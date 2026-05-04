@@ -54,6 +54,10 @@ function getRecordTitle(record: CloudRecord) {
     return 'App settings';
   }
 
+  if (record.record_type === 'training_split') {
+    return 'Weekly training split';
+  }
+
   return (
     getStringField(payload, 'routineName') ||
     getStringField(payload, 'name') ||
@@ -75,6 +79,8 @@ function getRecordTypeLabel(recordType: CloudRecord['record_type']) {
       return 'Routine';
     case 'settings':
       return 'Settings';
+    case 'training_split':
+      return 'Training Split';
     case 'workout':
       return 'Workout';
     default:

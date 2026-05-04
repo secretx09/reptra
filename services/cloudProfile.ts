@@ -10,6 +10,32 @@ export interface CloudProfileResult {
   profile: CloudProfile | null;
 }
 
+export interface UsernameAvailabilityResult {
+  ok: boolean;
+  available: boolean;
+  message: string;
+}
+
+const usernamePattern = /^[a-z0-9_]{3,24}$/;
+
+function normalizeUsername(username: string) {
+  return username.trim().toLowerCase();
+}
+
+function getProfileErrorMessage(message: string) {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('duplicate') || lowerMessage.includes('unique')) {
+    return 'That username is already taken. Try a different one.';
+  }
+
+  if (lowerMessage.includes('row-level security')) {
+    return 'Supabase blocked this profile request. Re-run the latest schema.sql policies if you added username checks.';
+  }
+
+  return message;
+}
+
 export async function getCloudProfile(): Promise<CloudProfileResult> {
   const supabase = getSupabaseClient();
 
@@ -80,7 +106,9 @@ export async function getCloudProfile(): Promise<CloudProfileResult> {
 
 export async function updateCloudProfile(
   displayName: string,
-  username: string
+  username: string,
+  bio = '',
+  trainingFocus = ''
 ): Promise<CloudProfileResult> {
   const supabase = getSupabaseClient();
 
@@ -103,8 +131,9 @@ export async function updateCloudProfile(
   }
 
   const cleanDisplayName = displayName.trim();
-  const cleanUsername = username.trim().toLowerCase();
-  const usernamePattern = /^[a-z0-9_]{3,24}$/;
+  const cleanUsername = normalizeUsername(username);
+  const cleanBio = bio.trim();
+  const cleanTrainingFocus = trainingFocus.trim();
 
   if (cleanUsername && !usernamePattern.test(cleanUsername)) {
     return {
@@ -118,7 +147,9 @@ export async function updateCloudProfile(
     .from('profiles')
     .upsert({
       id: user.id,
+      bio: cleanBio || null,
       display_name: cleanDisplayName || null,
+      training_focus: cleanTrainingFocus || null,
       username: cleanUsername || null,
       updated_at: new Date().toISOString(),
     })
@@ -128,7 +159,7 @@ export async function updateCloudProfile(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getProfileErrorMessage(error.message),
       profile: null,
     };
   }
@@ -137,5 +168,76 @@ export async function updateCloudProfile(
     ok: true,
     message: 'Cloud profile updated.',
     profile: data,
+  };
+}
+
+export async function checkUsernameAvailability(
+  username: string
+): Promise<UsernameAvailabilityResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      available: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      available: false,
+      message: 'Sign in before checking a username.',
+    };
+  }
+
+  const cleanUsername = normalizeUsername(username);
+
+  if (!cleanUsername) {
+    return {
+      ok: false,
+      available: false,
+      message: 'Enter a username first.',
+    };
+  }
+
+  if (!usernamePattern.test(cleanUsername)) {
+    return {
+      ok: false,
+      available: false,
+      message:
+        'Username must be 3-24 characters using letters, numbers, or underscores.',
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username')
+    .eq('username', cleanUsername)
+    .maybeSingle();
+
+  if (error) {
+    return {
+      ok: false,
+      available: false,
+      message: getProfileErrorMessage(error.message),
+    };
+  }
+
+  if (!data || data.id === user.id) {
+    return {
+      ok: true,
+      available: true,
+      message: `@${cleanUsername} is available.`,
+    };
+  }
+
+  return {
+    ok: true,
+    available: false,
+    message: `@${cleanUsername} is already taken.`,
   };
 }
