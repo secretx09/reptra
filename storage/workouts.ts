@@ -23,6 +23,8 @@ export async function loadWorkouts(): Promise<SavedWorkoutSession[]> {
     return parsedWorkouts.map((workout) => ({
       ...workout,
       note: workout.note ?? '',
+      feedCaption: workout.feedCaption ?? '',
+      visibility: workout.visibility ?? 'private',
     }));
   } catch (error) {
     console.error('Failed to load workouts:', error);

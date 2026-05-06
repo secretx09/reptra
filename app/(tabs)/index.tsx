@@ -18,11 +18,15 @@ import { Exercise } from '../../types/exercise';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme } from '../../types/settings';
-import { SavedWorkoutSession } from '../../types/workout';
+import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
+import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
+import { formatWorkoutDuration } from '../../utils/formatDuration';
+
+type FeedFilter = 'all' | WorkoutVisibility;
 
 function formatShortDate(dateString: string) {
   return new Date(dateString).toLocaleDateString([], {
@@ -38,6 +42,7 @@ export default function HomeScreen() {
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
+  const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
   const palette = getThemePalette(theme);
 
   useFocusEffect(
@@ -87,6 +92,21 @@ export default function HomeScreen() {
   const favoriteExercises = exerciseLibrary
     .filter((exercise) => favoriteExerciseIds.includes(exercise.id))
     .slice(0, 3);
+  const feedWorkouts = useMemo(() => {
+    return [...workouts]
+      .sort(
+        (a, b) =>
+          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      )
+      .filter((workout) => {
+        const visibility = workout.visibility ?? 'private';
+        return feedFilter === 'all' || visibility === feedFilter;
+      })
+      .slice(0, 5);
+  }, [feedFilter, workouts]);
+  const sharedWorkoutCount = workouts.filter(
+    (workout) => (workout.visibility ?? 'private') !== 'private'
+  ).length;
 
   return (
     <SafeAreaView
@@ -257,11 +277,109 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.socialCard}>
-          <Text style={styles.cardTitle}>Social Feed Later</Text>
-          <Text style={styles.emptyText}>
-            This tab will eventually become Reptra&apos;s feed. For now, it is your
-            personal launch pad.
-          </Text>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Feed Preview</Text>
+              <Text style={styles.cardSubtitle}>
+                Local-only now, social-ready later
+              </Text>
+            </View>
+
+            <Text style={styles.feedCountText}>{sharedWorkoutCount} shared</Text>
+          </View>
+
+          <View style={styles.feedFilterRow}>
+            {(['all', 'private', 'friends', 'public'] as FeedFilter[]).map(
+              (filter) => {
+                const isSelected = feedFilter === filter;
+
+                return (
+                  <Pressable
+                    key={filter}
+                    style={[
+                      styles.feedFilterChip,
+                      isSelected && styles.feedFilterChipSelected,
+                    ]}
+                    onPress={() => setFeedFilter(filter)}
+                  >
+                    <Text
+                      style={[
+                        styles.feedFilterChipText,
+                        isSelected && styles.feedFilterChipTextSelected,
+                      ]}
+                    >
+                      {filter}
+                    </Text>
+                  </Pressable>
+                );
+              }
+            )}
+          </View>
+
+          {feedWorkouts.length > 0 ? (
+            <View style={styles.feedList}>
+              {feedWorkouts.map((workout) => {
+                const summary = calculateWorkoutSummary(workout);
+                const duration = formatWorkoutDuration(workout.durationMinutes);
+                const linkedPhoto = progressPhotos.find(
+                  (photo) => photo.workoutId === workout.id
+                );
+
+                return (
+                  <Pressable
+                    key={workout.id}
+                    style={styles.feedCard}
+                    onPress={() => router.push(`/workout/history/${workout.id}`)}
+                  >
+                    <View style={styles.feedCardTopRow}>
+                      <View style={styles.feedAvatar}>
+                        <Text style={styles.feedAvatarText}>R</Text>
+                      </View>
+
+                      <View style={styles.feedTitleWrap}>
+                        <Text style={styles.feedTitle}>{workout.routineName}</Text>
+                        <Text style={styles.feedMeta}>
+                          {formatShortDate(workout.completedAt)} -{' '}
+                          {workout.visibility ?? 'private'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {workout.feedCaption?.trim() ? (
+                      <Text style={styles.feedCaption}>
+                        {workout.feedCaption.trim()}
+                      </Text>
+                    ) : (
+                      <Text style={styles.feedCaptionMuted}>
+                        No caption yet. Add one from the workout summary or
+                        detail page.
+                      </Text>
+                    )}
+
+                    {linkedPhoto ? (
+                      <Image
+                        source={{ uri: linkedPhoto.imageUri }}
+                        style={styles.feedPhoto}
+                      />
+                    ) : null}
+
+                    <View style={styles.feedStatRow}>
+                      <Text style={styles.feedStat}>{summary.totalSets} sets</Text>
+                      <Text style={styles.feedStat}>{summary.totalReps} reps</Text>
+                      <Text style={styles.feedStat}>
+                        {duration || `${workout.exercises.length} exercises`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>
+              No workouts match this feed filter yet. Save feed settings from a
+              workout summary or history detail to preview them here.
+            </Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -374,6 +492,120 @@ const styles = StyleSheet.create({
     borderColor: '#252525',
     borderRadius: 16,
     padding: 14,
+  },
+  feedCountText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  feedFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  feedFilterChip: {
+    flex: 1,
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 999,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  feedFilterChipSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  feedFilterChipText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  feedFilterChipTextSelected: {
+    color: '#111111',
+  },
+  feedList: {
+    gap: 10,
+  },
+  feedCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 14,
+    padding: 12,
+  },
+  feedCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  feedAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedAvatarText: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  feedTitleWrap: {
+    flex: 1,
+  },
+  feedTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  feedMeta: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  feedCaption: {
+    color: '#ffffff',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  feedCaptionMuted: {
+    color: '#777777',
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  feedPhoto: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+    backgroundColor: '#101010',
+    marginBottom: 10,
+  },
+  feedStatRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  feedStat: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   cardHeaderRow: {
     flexDirection: 'row',

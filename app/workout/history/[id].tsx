@@ -22,7 +22,12 @@ import {
   deleteWorkoutById,
   updateWorkoutById,
 } from '../../../storage/workouts';
-import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
+import {
+  SavedExerciseLog,
+  SavedWorkoutSession,
+  WorkoutSet,
+  WorkoutVisibility,
+} from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
 import { getMuscleGroups, loadExerciseLibrary } from '../../../utils/exerciseLibrary';
@@ -49,6 +54,9 @@ export default function WorkoutHistoryDetailScreen() {
   const [workoutNameDraft, setWorkoutNameDraft] = useState('');
   const [isEditingWorkoutNote, setIsEditingWorkoutNote] = useState(false);
   const [workoutNoteDraft, setWorkoutNoteDraft] = useState('');
+  const [feedCaptionDraft, setFeedCaptionDraft] = useState('');
+  const [workoutVisibilityDraft, setWorkoutVisibilityDraft] =
+    useState<WorkoutVisibility>('private');
   const [editingExerciseNoteId, setEditingExerciseNoteId] = useState<string | null>(
     null
   );
@@ -80,6 +88,8 @@ export default function WorkoutHistoryDetailScreen() {
         setIsEditingWorkoutName(false);
         setWorkoutNoteDraft(foundWorkout?.note ?? '');
         setIsEditingWorkoutNote(false);
+        setFeedCaptionDraft(foundWorkout?.feedCaption ?? '');
+        setWorkoutVisibilityDraft(foundWorkout?.visibility ?? 'private');
         setEditingExerciseNoteId(null);
         setExerciseNoteDraft('');
         setEditingSetKey(null);
@@ -255,6 +265,23 @@ export default function WorkoutHistoryDetailScreen() {
     setWorkout(updatedWorkout);
     setWorkoutNoteDraft(updatedWorkout.note ?? '');
     setIsEditingWorkoutNote(false);
+  };
+
+  const handleSaveFeedSettings = async () => {
+    if (!workout) return;
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      feedCaption: feedCaptionDraft.trim(),
+      visibility: workoutVisibilityDraft,
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
+    Alert.alert('Feed preview saved', 'This workout feed preview was updated.');
   };
 
   const handleStartEditingExerciseNote = (exercise: SavedExerciseLog) => {
@@ -654,6 +681,58 @@ export default function WorkoutHistoryDetailScreen() {
                   </Text>
                 </Pressable>
               )}
+
+              <View style={styles.feedPreviewBox}>
+                <Text style={styles.workoutNoteTitle}>Feed Preview</Text>
+                <Text style={styles.feedPreviewHelp}>
+                  Local-only for now. This decides how the workout appears in
+                  the Home feed preview.
+                </Text>
+
+                <TextInput
+                  style={styles.feedCaptionInput}
+                  placeholder="Caption for this workout..."
+                  placeholderTextColor="#777777"
+                  value={feedCaptionDraft}
+                  onChangeText={setFeedCaptionDraft}
+                  multiline
+                />
+
+                <View style={styles.visibilityRow}>
+                  {(['private', 'friends', 'public'] as WorkoutVisibility[]).map(
+                    (visibility) => {
+                      const isSelected = workoutVisibilityDraft === visibility;
+
+                      return (
+                        <Pressable
+                          key={visibility}
+                          style={[
+                            styles.visibilityChip,
+                            isSelected && styles.visibilityChipSelected,
+                          ]}
+                          onPress={() => setWorkoutVisibilityDraft(visibility)}
+                        >
+                          <Text
+                            style={[
+                              styles.visibilityChipText,
+                              isSelected && styles.visibilityChipTextSelected,
+                            ]}
+                          >
+                            {visibility}
+                          </Text>
+                        </Pressable>
+                      );
+                    }
+                  )}
+                </View>
+
+                <Pressable
+                  style={styles.feedSaveButton}
+                  onPress={handleSaveFeedSettings}
+                >
+                  <Text style={styles.feedSaveButtonText}>Save Feed Preview</Text>
+                </Pressable>
+              </View>
 
               {linkedPhotos.length > 0 && (
                 <View style={styles.linkedPhotosCard}>
@@ -1083,6 +1162,73 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginTop: 12,
+  },
+  feedPreviewBox: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  feedPreviewHelp: {
+    color: '#9dbbda',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  feedCaptionInput: {
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 78,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  visibilityRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  visibilityChip: {
+    flex: 1,
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  visibilityChipSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  visibilityChipText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  visibilityChipTextSelected: {
+    color: '#111111',
+  },
+  feedSaveButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  feedSaveButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   workoutNoteHeader: {
     flexDirection: 'row',

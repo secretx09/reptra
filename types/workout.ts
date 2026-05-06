@@ -43,6 +43,8 @@ export interface SavedExerciseLog {
   sets: WorkoutSet[];
 }
 
+export type WorkoutVisibility = 'private' | 'friends' | 'public';
+
 export interface SavedWorkoutSession {
   id: string;
   routineId: string | null;
@@ -52,6 +54,8 @@ export interface SavedWorkoutSession {
   completedAt: string;
   durationMinutes?: number;
   note?: string;
+  feedCaption?: string;
+  visibility?: WorkoutVisibility;
   exercises: SavedExerciseLog[];
 }
 

@@ -17,7 +17,12 @@ import { loadProgressPhotos, saveProgressPhotos } from '../../../storage/progres
 import { loadWorkouts, updateWorkoutById } from '../../../storage/workouts';
 import { ProgressPhoto } from '../../../types/progressPhoto';
 import { WeightUnit } from '../../../types/settings';
-import { SavedExerciseLog, SavedWorkoutSession, WorkoutSet } from '../../../types/workout';
+import {
+  SavedExerciseLog,
+  SavedWorkoutSession,
+  WorkoutSet,
+  WorkoutVisibility,
+} from '../../../types/workout';
 import { calculateWorkoutSummary } from '../../../utils/calculateWorkoutSummary';
 import { detectWorkoutPRs } from '../../../utils/detectWorkoutPRs';
 import { formatWorkoutDuration } from '../../../utils/formatDuration';
@@ -38,6 +43,10 @@ export default function WorkoutSummaryScreen() {
   const [nameSaved, setNameSaved] = useState(true);
   const [workoutNote, setWorkoutNote] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
+  const [feedCaption, setFeedCaption] = useState('');
+  const [workoutVisibility, setWorkoutVisibility] =
+    useState<WorkoutVisibility>('private');
+  const [feedSettingsSaved, setFeedSettingsSaved] = useState(true);
   const [photoUri, setPhotoUri] = useState('');
   const [photoNote, setPhotoNote] = useState('');
   const [linkedPhotos, setLinkedPhotos] = useState<ProgressPhoto[]>([]);
@@ -57,6 +66,9 @@ export default function WorkoutSummaryScreen() {
         setNameSaved(true);
         setWorkoutNote(foundWorkout?.note ?? '');
         setNoteSaved(Boolean(foundWorkout?.note?.trim()));
+        setFeedCaption(foundWorkout?.feedCaption ?? '');
+        setWorkoutVisibility(foundWorkout?.visibility ?? 'private');
+        setFeedSettingsSaved(true);
         setWorkouts(savedWorkouts);
         setWeightUnit(savedSettings.weightUnit);
         setLinkedPhotos(savedPhotos.filter((photo) => photo.workoutId === id));
@@ -127,6 +139,27 @@ export default function WorkoutSummaryScreen() {
     );
     setNoteSaved(true);
     Alert.alert('Note saved', 'Your workout note was added to this workout.');
+  };
+
+  const handleSaveFeedSettings = async () => {
+    if (!workout) return;
+
+    const updatedWorkout: SavedWorkoutSession = {
+      ...workout,
+      feedCaption: feedCaption.trim(),
+      visibility: workoutVisibility,
+    };
+
+    await updateWorkoutById(workout.id, updatedWorkout);
+    setWorkout(updatedWorkout);
+    setWorkouts((prev) =>
+      prev.map((item) => (item.id === workout.id ? updatedWorkout : item))
+    );
+    setFeedSettingsSaved(true);
+    Alert.alert(
+      'Feed settings saved',
+      'This workout is ready for the future feed preview.'
+    );
   };
 
   const handleSaveProgressPhoto = async () => {
@@ -442,6 +475,66 @@ export default function WorkoutSummaryScreen() {
                 >
                   <Text style={styles.noteButtonText}>
                     {noteSaved ? 'Update Note' : 'Save Note'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.feedCard}>
+                <Text style={styles.noteTitle}>Feed Preview</Text>
+                <Text style={styles.photoHelpText}>
+                  This stays local for now. Later, these settings can power the
+                  real Reptra social feed.
+                </Text>
+
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Caption for this workout..."
+                  placeholderTextColor="#777777"
+                  value={feedCaption}
+                  onChangeText={(value) => {
+                    setFeedCaption(value);
+                    setFeedSettingsSaved(false);
+                  }}
+                  multiline
+                />
+
+                <View style={styles.visibilityRow}>
+                  {(['private', 'friends', 'public'] as WorkoutVisibility[]).map(
+                    (visibility) => {
+                      const isSelected = workoutVisibility === visibility;
+
+                      return (
+                        <Pressable
+                          key={visibility}
+                          style={[
+                            styles.visibilityChip,
+                            isSelected && styles.visibilityChipSelected,
+                          ]}
+                          onPress={() => {
+                            setWorkoutVisibility(visibility);
+                            setFeedSettingsSaved(false);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.visibilityChipText,
+                              isSelected && styles.visibilityChipTextSelected,
+                            ]}
+                          >
+                            {visibility}
+                          </Text>
+                        </Pressable>
+                      );
+                    }
+                  )}
+                </View>
+
+                <Pressable
+                  style={styles.noteButton}
+                  onPress={handleSaveFeedSettings}
+                >
+                  <Text style={styles.noteButtonText}>
+                    {feedSettingsSaved ? 'Update Feed Preview' : 'Save Feed Preview'}
                   </Text>
                 </Pressable>
               </View>
@@ -774,6 +867,14 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 16,
   },
+  feedCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+  },
   photoHelpText: {
     color: '#aaaaaa',
     fontSize: 13,
@@ -825,6 +926,33 @@ const styles = StyleSheet.create({
     color: '#4da6ff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  visibilityRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  visibilityChip: {
+    flex: 1,
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 999,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  visibilityChipSelected: {
+    backgroundColor: '#4da6ff',
+    borderColor: '#4da6ff',
+  },
+  visibilityChipText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  visibilityChipTextSelected: {
+    color: '#111111',
   },
   actionRow: {
     flexDirection: 'row',

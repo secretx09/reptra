@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import {
   getSupabaseAnonKey,
   getSupabaseClient,
@@ -11,8 +12,36 @@ export interface AuthResult {
   message: string;
 }
 
-export function getAuthRedirectUrl() {
+export interface ParsedAuthLink {
+  code: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  tokenHash: string | null;
+  type: string | null;
+  error: string | null;
+  errorDescription: string | null;
+}
+
+export function getProductionAuthRedirectUrl() {
+  return 'reptra://auth/callback';
+}
+
+export function getExpoGoAuthRedirectUrl() {
   return Linking.createURL('auth/callback');
+}
+
+export function getAuthRedirectUrl() {
+  const configuredRedirectUrl = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL;
+
+  if (configuredRedirectUrl) {
+    return configuredRedirectUrl;
+  }
+
+  if (Constants.appOwnership === 'expo') {
+    return getExpoGoAuthRedirectUrl();
+  }
+
+  return getProductionAuthRedirectUrl();
 }
 
 function getAuthErrorMessage(error: unknown) {
@@ -25,6 +54,53 @@ function getAuthErrorMessage(error: unknown) {
   }
 
   return 'Something went wrong while contacting Supabase.';
+}
+
+function getQueryPartsFromUrl(url: string) {
+  const parts: string[] = [];
+  const queryStart = url.indexOf('?');
+  const hashStart = url.indexOf('#');
+
+  if (queryStart >= 0) {
+    const queryEnd = hashStart >= 0 ? hashStart : url.length;
+    parts.push(url.slice(queryStart + 1, queryEnd));
+  }
+
+  if (hashStart >= 0) {
+    parts.push(url.slice(hashStart + 1));
+  }
+
+  return parts.filter(Boolean);
+}
+
+function readUrlParam(url: string, key: string) {
+  for (const part of getQueryPartsFromUrl(url)) {
+    const params = new URLSearchParams(part);
+    const value = params.get(key);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+export function parseAuthLink(url: string): ParsedAuthLink {
+  const trimmedUrl = url.trim();
+
+  return {
+    code: readUrlParam(trimmedUrl, 'code'),
+    accessToken: readUrlParam(trimmedUrl, 'access_token'),
+    refreshToken: readUrlParam(trimmedUrl, 'refresh_token'),
+    tokenHash:
+      readUrlParam(trimmedUrl, 'token_hash') ?? readUrlParam(trimmedUrl, 'token'),
+    type: readUrlParam(trimmedUrl, 'type'),
+    error: readUrlParam(trimmedUrl, 'error'),
+    errorDescription:
+      readUrlParam(trimmedUrl, 'error_description') ??
+      readUrlParam(trimmedUrl, 'errorDescription'),
+  };
 }
 
 export async function testSupabaseConnection(): Promise<AuthResult> {
@@ -150,7 +226,7 @@ export async function signUpWithEmail(
       ok: true,
       message: data.session
         ? 'Account created and signed in.'
-        : 'Account created. Check your email if confirmation is enabled.',
+        : 'Account created. Check your email if confirmation is enabled. Expo Go links only work on devices with Expo Go; production builds use the reptra:// callback.',
     };
   } catch (error) {
     return {
@@ -190,7 +266,8 @@ export async function resendConfirmationEmail(
 
     return {
       ok: true,
-      message: 'Confirmation email sent. Check your inbox.',
+      message:
+        'Confirmation email sent. Expo Go links only work on devices with Expo Go; production builds use the reptra:// callback.',
     };
   } catch (error) {
     return {
@@ -227,7 +304,7 @@ export async function sendPasswordResetEmail(
     return {
       ok: true,
       message:
-        'Password reset email sent. Open the link, return to Reptra, then set a new password while signed in.',
+        'Password reset email sent. Open the link, return to Reptra, then set a new password while signed in. Expo Go links only work on devices with Expo Go.',
     };
   } catch (error) {
     return {
@@ -261,7 +338,7 @@ export async function exchangeAuthCodeForSession(
 
     return {
       ok: true,
-      message: 'Email confirmed and account session restored.',
+      message: 'Auth link confirmed and account session restored.',
     };
   } catch (error) {
     return {
@@ -269,6 +346,93 @@ export async function exchangeAuthCodeForSession(
       message: getAuthErrorMessage(error),
     };
   }
+}
+
+export async function exchangeAuthLinkForSession(
+  authLink: string
+): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: 'Supabase is not configured yet.',
+    };
+  }
+
+  const parsedLink = parseAuthLink(authLink);
+
+  if (parsedLink.error || parsedLink.errorDescription) {
+    return {
+      ok: false,
+      message:
+        parsedLink.errorDescription ??
+        parsedLink.error ??
+        'Supabase returned an auth link error.',
+    };
+  }
+
+  if (parsedLink.code) {
+    return exchangeAuthCodeForSession(parsedLink.code);
+  }
+
+  if (parsedLink.accessToken && parsedLink.refreshToken) {
+    try {
+      const { error } = await supabase.auth.setSession({
+        access_token: parsedLink.accessToken,
+        refresh_token: parsedLink.refreshToken,
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          message: error.message,
+        };
+      }
+
+      return {
+        ok: true,
+        message: 'Auth link confirmed and account session restored.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: getAuthErrorMessage(error),
+      };
+    }
+  }
+
+  if (parsedLink.tokenHash && parsedLink.type) {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: parsedLink.tokenHash,
+        type: parsedLink.type as 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email',
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          message: error.message,
+        };
+      }
+
+      return {
+        ok: true,
+        message: 'Auth link confirmed and account session restored.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: getAuthErrorMessage(error),
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    message:
+      'No usable auth code was found in that link. Try copying the full email link, including everything after ? or #.',
+  };
 }
 
 export async function signInWithEmail(

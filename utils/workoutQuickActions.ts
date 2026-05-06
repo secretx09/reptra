@@ -36,6 +36,7 @@ export function buildWorkoutShareMessage(
     `${totalReps} reps`,
     `Heaviest: ${formatWeightWithUnit(String(heaviestWeight || 0), weightUnit, 'lb')}`,
     `Volume: ${formatWeightNumber(convertedVolume)} ${weightUnit}`,
+    workout.feedCaption?.trim() ? `Caption: ${workout.feedCaption.trim()}` : '',
     workout.note?.trim() ? `Note: ${workout.note.trim()}` : '',
     '',
     ...workout.exercises.map((exercise) => {

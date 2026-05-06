@@ -1,13 +1,19 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuthRedirectUrl } from '../../services/auth';
+import {
+  getAuthRedirectUrl,
+  getExpoGoAuthRedirectUrl,
+  getProductionAuthRedirectUrl,
+} from '../../services/auth';
 import { getSupabaseUrl, isSupabaseConfigured } from '../../services/supabase';
 
 const schemaSteps = [
   'Open Supabase, then go to SQL Editor.',
   'Paste and run the contents of reptra/supabase/schema.sql.',
-  'Make sure Authentication > URL Configuration includes the Expo redirect below for confirmation and password reset emails.',
+  'Make sure Authentication > URL Configuration includes the active redirect below for confirmation and password reset emails.',
+  'For real installed builds, also add reptra://auth/callback as an allowed redirect URL.',
+  'If Expo Go opens the email link but gets stuck, copy the full email link and paste it into Account > Need help signing in.',
   'The profile policy also allows signed-in users to check public usernames for availability.',
   'The profiles table includes display name, username, bio, and training focus for future social features.',
   'Restart Expo after changing .env values.',
@@ -15,6 +21,8 @@ const schemaSteps = [
 
 export default function AccountSetupScreen() {
   const redirectUrl = getAuthRedirectUrl();
+  const expoGoRedirectUrl = getExpoGoAuthRedirectUrl();
+  const productionRedirectUrl = getProductionAuthRedirectUrl();
   const projectUrl = getSupabaseUrl();
 
   return (
@@ -65,15 +73,41 @@ export default function AccountSetupScreen() {
           </View>
 
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Confirmation Redirect</Text>
+            <Text style={styles.sectionTitle}>Active Redirect</Text>
             <Text style={styles.sectionDescription}>
               Put this exact URL in Supabase Authentication URL Configuration
-              while testing in Expo Go.
+              for the environment currently running the app.
             </Text>
             <Text style={styles.urlText}>{redirectUrl}</Text>
             <Text style={styles.helperText}>
-              If your computer IP changes, this Expo redirect can change too.
-              Update Supabase with the new value shown here.
+              In Expo Go, this can be an exp:// URL that changes when your
+              computer IP changes.
+            </Text>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Production Redirect</Text>
+            <Text style={styles.sectionDescription}>
+              Add this stable app link before testing development builds or
+              shipping Reptra to real users.
+            </Text>
+            <Text style={styles.urlText}>{productionRedirectUrl}</Text>
+            <Text style={styles.helperText}>
+              Normal users without Expo Go need an installed Reptra build that
+              can open this reptra:// link.
+            </Text>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Expo Go Redirect</Text>
+            <Text style={styles.sectionDescription}>
+              Keep this allowed while testing with Expo Go.
+            </Text>
+            <Text style={styles.urlText}>{expoGoRedirectUrl}</Text>
+            <Text style={styles.helperText}>
+              This is only for development and is not a real public website. If
+              the email app opens Expo Go but never finishes, paste the full
+              email link into the Account help box.
             </Text>
           </View>
 

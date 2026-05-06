@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User } from '@supabase/supabase-js';
 import {
+  exchangeAuthLinkForSession,
   getCurrentUser,
   getAuthRedirectUrl,
   resendConfirmationEmail,
@@ -185,6 +186,7 @@ export default function AccountScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [securityStatus, setSecurityStatus] = useState('');
   const [authEmailStatus, setAuthEmailStatus] = useState('');
+  const [manualAuthLink, setManualAuthLink] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
   const [mergeStatus, setMergeStatus] = useState('');
   const authRedirectUrl = getAuthRedirectUrl();
@@ -331,6 +333,30 @@ export default function AccountScreen() {
     }
 
     Alert.alert('Confirmation email', result.message);
+  };
+
+  const handleConfirmPastedLink = async () => {
+    const trimmedLink = manualAuthLink.trim();
+
+    if (!trimmedLink) {
+      Alert.alert('Missing link', 'Paste the full email link first.');
+      return;
+    }
+
+    setIsLoading(true);
+    setAuthEmailStatus('Checking pasted auth link...');
+    const result = await exchangeAuthLinkForSession(trimmedLink);
+    setIsLoading(false);
+    setAuthEmailStatus(result.message);
+
+    if (!result.ok) {
+      Alert.alert('Auth link failed', result.message);
+      return;
+    }
+
+    setManualAuthLink('');
+    await fetchCurrentUser();
+    Alert.alert('Auth link confirmed', result.message);
   };
 
   const handleUpdatePassword = async () => {
@@ -552,9 +578,11 @@ export default function AccountScreen() {
           </View>
 
           <View style={styles.redirectCard}>
-            <Text style={styles.redirectTitle}>Confirmation Redirect</Text>
+            <Text style={styles.redirectTitle}>Auth Redirect</Text>
             <Text style={styles.redirectText}>
-              Add this URL in Supabase under Authentication URL Configuration.
+              Add this active URL in Supabase Authentication URL Configuration.
+              Expo Go links are only for development; installed builds use
+              reptra://auth/callback.
             </Text>
             <Text style={styles.redirectUrl}>{authRedirectUrl}</Text>
             <Pressable
@@ -1110,7 +1138,8 @@ export default function AccountScreen() {
                 <Text style={styles.authHelpTitle}>Need help signing in?</Text>
                 <Text style={styles.authHelpText}>
                   Enter your email above, then send a reset link or resend your
-                  confirmation email.
+                  confirmation email. If Expo Go gets stuck opening the link,
+                  paste the full email link here instead.
                 </Text>
 
                 <Pressable
@@ -1130,6 +1159,26 @@ export default function AccountScreen() {
                 >
                   <Text style={styles.secondaryButtonText}>
                     Resend Confirmation Email
+                  </Text>
+                </Pressable>
+
+                <TextInput
+                  style={[styles.input, styles.authLinkInput]}
+                  placeholder="Paste confirmation or reset link"
+                  placeholderTextColor="#777777"
+                  autoCapitalize="none"
+                  multiline
+                  value={manualAuthLink}
+                  onChangeText={setManualAuthLink}
+                />
+
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={handleConfirmPastedLink}
+                  disabled={!isSupabaseConfigured() || isLoading}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Confirm Pasted Link
                   </Text>
                 </Pressable>
 
@@ -1615,6 +1664,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 12,
+  },
+  authLinkInput: {
+    minHeight: 74,
+    textAlignVertical: 'top',
   },
   usernameFutureCard: {
     backgroundColor: '#101c29',
