@@ -41,6 +41,7 @@ import {
 import { loadCloudSyncStatus } from '../../storage/cloudSyncStatus';
 import { CloudSyncStatus } from '../../types/cloudSync';
 import { loadCustomExercises } from '../../storage/customExercises';
+import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
@@ -57,6 +58,7 @@ interface LocalCloudPreview {
   progressPhotos: number;
   favoriteExercises: number;
   fitnessGoals: number;
+  bodyMeasurements: number;
   settings: number;
   totalRecords: number;
 }
@@ -68,6 +70,7 @@ const emptyLocalPreview: LocalCloudPreview = {
   progressPhotos: 0,
   favoriteExercises: 0,
   fitnessGoals: 0,
+  bodyMeasurements: 0,
   settings: 1,
   totalRecords: 1,
 };
@@ -206,6 +209,7 @@ export default function AccountScreen() {
       progressPhotos,
       favoriteExerciseIds,
       fitnessGoals,
+      bodyMeasurements,
     ] = await Promise.all([
       loadSettings(),
       loadWorkouts(),
@@ -214,6 +218,7 @@ export default function AccountScreen() {
       loadProgressPhotos(),
       loadFavoriteExerciseIds(),
       loadFitnessGoals(),
+      loadBodyMeasurements(),
     ]);
 
     setLocalPreview({
@@ -223,6 +228,7 @@ export default function AccountScreen() {
       progressPhotos: progressPhotos.length,
       favoriteExercises: favoriteExerciseIds.length,
       fitnessGoals: fitnessGoals.length,
+      bodyMeasurements: bodyMeasurements.length,
       settings: settings ? 1 : 0,
       totalRecords:
         workouts.length +
@@ -230,6 +236,7 @@ export default function AccountScreen() {
         customExercises.length +
         progressPhotos.length +
         fitnessGoals.length +
+        bodyMeasurements.length +
         2,
     });
   }, []);
@@ -887,8 +894,9 @@ export default function AccountScreen() {
 
                 <Text style={styles.backupStatus}>
                   Favorites: {localPreview.favoriteExercises} | Goals:{' '}
-                  {localPreview.fitnessGoals} | Settings: {localPreview.settings} |
-                  Total records:{' '}
+                  {localPreview.fitnessGoals} | Body:{' '}
+                  {localPreview.bodyMeasurements} | Settings:{' '}
+                  {localPreview.settings} | Total records:{' '}
                   {localPreview.totalRecords}
                 </Text>
               </View>

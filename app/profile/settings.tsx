@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { defaultSettings, loadSettings, saveSettings } from '../../storage/settings';
 import { loadCustomExercises } from '../../storage/customExercises';
+import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
@@ -47,6 +48,7 @@ export default function ProfileSettingsScreen() {
     customExercises: 0,
     progressPhotos: 0,
     favoriteExercises: 0,
+    bodyMeasurements: 0,
     lastWorkoutLabel: 'No workouts yet',
   });
   const [defaultRestTimerInput, setDefaultRestTimerInput] = useState(
@@ -63,12 +65,14 @@ export default function ProfileSettingsScreen() {
           savedCustomExercises,
           savedPhotos,
           savedFavoriteIds,
+          savedBodyMeasurements,
         ] = await Promise.all([
           loadWorkouts(),
           loadRoutines(),
           loadCustomExercises(),
           loadProgressPhotos(),
           loadFavoriteExerciseIds(),
+          loadBodyMeasurements(),
         ]);
         const latestWorkout = savedWorkouts[0];
         const currentUser = await getCurrentUser();
@@ -86,6 +90,7 @@ export default function ProfileSettingsScreen() {
           customExercises: savedCustomExercises.length,
           progressPhotos: savedPhotos.length,
           favoriteExercises: savedFavoriteIds.length,
+          bodyMeasurements: savedBodyMeasurements.length,
           lastWorkoutLabel: latestWorkout
             ? new Date(latestWorkout.completedAt).toLocaleDateString([], {
                 month: 'short',
@@ -479,7 +484,8 @@ export default function ProfileSettingsScreen() {
                 </View>
               </View>
               <Text style={styles.dataSnapshotFooter}>
-                Favorites: {dataSnapshot.favoriteExercises} | Last workout:{' '}
+                Favorites: {dataSnapshot.favoriteExercises} | Body:{' '}
+                {dataSnapshot.bodyMeasurements} | Last workout:{' '}
                 {dataSnapshot.lastWorkoutLabel}
               </Text>
             </View>

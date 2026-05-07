@@ -1,4 +1,5 @@
 import { loadCustomExercises, saveCustomExercises } from '../storage/customExercises';
+import { loadBodyMeasurements, saveBodyMeasurements } from '../storage/bodyMeasurements';
 import { loadFitnessGoals, saveFitnessGoals } from '../storage/fitnessGoals';
 import { saveFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
@@ -12,6 +13,7 @@ import {
   markCloudRestoreComplete,
 } from '../storage/cloudSyncStatus';
 import { Exercise } from '../types/exercise';
+import { BodyMeasurement } from '../types/bodyMeasurement';
 import { FitnessGoal } from '../types/fitnessGoal';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
@@ -38,6 +40,7 @@ export interface CloudBackupSummary {
     trainingSplit: number;
     favoriteExercises: number;
     fitnessGoals: number;
+    bodyMeasurements: number;
   };
 }
 
@@ -57,6 +60,7 @@ export interface CloudMergeResult {
     progressPhotos: number;
     favoriteExercises: number;
     fitnessGoals: number;
+    bodyMeasurements: number;
   };
 }
 
@@ -125,6 +129,7 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
         trainingSplit: 0,
         favoriteExercises: 0,
         fitnessGoals: 0,
+        bodyMeasurements: 0,
       },
     };
   }
@@ -159,6 +164,9 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
       ).length,
       fitnessGoals: records.filter((record) => record.record_type === 'fitness_goal')
         .length,
+      bodyMeasurements: records.filter(
+        (record) => record.record_type === 'body_measurement'
+      ).length,
     },
   };
 }
@@ -219,6 +227,11 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
       .filter((record) => record.record_type === 'fitness_goal')
       .map((record) => fromJson<FitnessGoal>(record.payload))
   );
+  await saveBodyMeasurements(
+    records
+      .filter((record) => record.record_type === 'body_measurement')
+      .map((record) => fromJson<BodyMeasurement>(record.payload))
+  );
 
   if (settingsRecord) {
     await saveSettings(fromJson<AppSettings>(settingsRecord.payload));
@@ -271,6 +284,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         progressPhotos: 0,
         favoriteExercises: 0,
         fitnessGoals: 0,
+        bodyMeasurements: 0,
       },
     };
   }
@@ -288,6 +302,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         progressPhotos: 0,
         favoriteExercises: 0,
         fitnessGoals: 0,
+        bodyMeasurements: 0,
       },
     };
   }
@@ -299,6 +314,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     localProgressPhotos,
     localFavoriteExerciseIds,
     localFitnessGoals,
+    localBodyMeasurements,
   ] = await Promise.all([
     loadWorkouts(),
     loadRoutines(),
@@ -306,6 +322,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     loadProgressPhotos(),
     loadFavoriteExerciseIds(),
     loadFitnessGoals(),
+    loadBodyMeasurements(),
   ]);
 
   const cloudWorkouts = records
@@ -329,6 +346,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
   const cloudFitnessGoals = records
     .filter((record) => record.record_type === 'fitness_goal')
     .map((record) => fromJson<FitnessGoal>(record.payload));
+  const cloudBodyMeasurements = records
+    .filter((record) => record.record_type === 'body_measurement')
+    .map((record) => fromJson<BodyMeasurement>(record.payload));
 
   const workoutMerge = mergeById(localWorkouts, cloudWorkouts);
   const routineMerge = mergeById(localRoutines, cloudRoutines);
@@ -338,6 +358,10 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
   );
   const progressPhotoMerge = mergeById(localProgressPhotos, cloudProgressPhotos);
   const fitnessGoalMerge = mergeById(localFitnessGoals, cloudFitnessGoals);
+  const bodyMeasurementMerge = mergeById(
+    localBodyMeasurements,
+    cloudBodyMeasurements
+  );
   const mergedFavoriteExerciseIds = Array.from(
     new Set([...localFavoriteExerciseIds, ...cloudFavoriteExerciseIds])
   );
@@ -351,6 +375,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     saveProgressPhotos(progressPhotoMerge.mergedItems),
     saveFavoriteExerciseIds(mergedFavoriteExerciseIds),
     saveFitnessGoals(fitnessGoalMerge.mergedItems),
+    saveBodyMeasurements(bodyMeasurementMerge.mergedItems),
   ]);
 
   const addedTotal =
@@ -359,6 +384,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     customExerciseMerge.addedCount +
     progressPhotoMerge.addedCount +
     fitnessGoalMerge.addedCount +
+    bodyMeasurementMerge.addedCount +
     addedFavoriteCount;
   const message =
     addedTotal === 0
@@ -379,6 +405,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
       progressPhotos: progressPhotoMerge.addedCount,
       favoriteExercises: addedFavoriteCount,
       fitnessGoals: fitnessGoalMerge.addedCount,
+      bodyMeasurements: bodyMeasurementMerge.addedCount,
     },
   };
 }

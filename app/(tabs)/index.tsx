@@ -15,7 +15,9 @@ import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
+import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { Exercise } from '../../types/exercise';
+import { BodyMeasurement } from '../../types/bodyMeasurement';
 import { FitnessGoal } from '../../types/fitnessGoal';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
@@ -31,6 +33,7 @@ import {
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
+import { formatBodyWeight } from '../../utils/bodyMeasurements';
 
 type FeedFilter = 'all' | WorkoutVisibility;
 
@@ -50,6 +53,7 @@ export default function HomeScreen() {
   const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
   const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
+  const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const palette = getThemePalette(theme);
 
@@ -64,6 +68,7 @@ export default function HomeScreen() {
           loadedExercises,
           savedFavoriteIds,
           savedGoals,
+          savedMeasurements,
         ] =
           await Promise.all([
             loadSettings(),
@@ -73,6 +78,7 @@ export default function HomeScreen() {
             loadExerciseLibrary(),
             loadFavoriteExerciseIds(),
             loadFitnessGoals(),
+            loadBodyMeasurements(),
           ]);
 
         setTheme(settings.theme);
@@ -83,6 +89,7 @@ export default function HomeScreen() {
         setExerciseLibrary(loadedExercises);
         setFavoriteExerciseIds(savedFavoriteIds);
         setFitnessGoals(savedGoals);
+        setBodyMeasurements(savedMeasurements);
       };
 
       fetchData();
@@ -130,6 +137,7 @@ export default function HomeScreen() {
       .sort((a, b) => b.progressRatio - a.progressRatio);
   }, [fitnessGoals, prs, weightUnit, workouts]);
   const nextGoal = activeGoalProgress[0];
+  const latestBodyMeasurement = bodyMeasurements[0];
 
   return (
     <SafeAreaView
@@ -206,6 +214,43 @@ export default function HomeScreen() {
               No workouts yet. Start an empty workout or try a routine template.
             </Text>
           )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Body Check-In</Text>
+              <Text style={styles.cardSubtitle}>
+                Latest saved body progress snapshot
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => router.push('/profile/body-measurements' as never)}
+            >
+              <Text style={styles.linkText}>Open</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={styles.activityPanel}
+            onPress={() => router.push('/profile/body-measurements' as never)}
+          >
+            <Text style={styles.activityTitle}>
+              {latestBodyMeasurement
+                ? formatBodyWeight(
+                    latestBodyMeasurement.bodyWeight,
+                    weightUnit,
+                    'lb'
+                  )
+                : 'Add body check-in'}
+            </Text>
+            <Text style={styles.activityMeta}>
+              {latestBodyMeasurement
+                ? new Date(latestBodyMeasurement.measuredAt).toLocaleDateString()
+                : 'Track body weight and simple measurements'}
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.card}>

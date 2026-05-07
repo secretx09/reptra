@@ -5,7 +5,9 @@ import { router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
+import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadWorkouts } from '../../storage/workouts';
+import { BodyMeasurement } from '../../types/bodyMeasurement';
 import { Exercise } from '../../types/exercise';
 import { FitnessGoal } from '../../types/fitnessGoal';
 import { ProgressPhoto } from '../../types/progressPhoto';
@@ -24,12 +26,17 @@ import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
+import {
+  formatBodyWeight,
+  getBodyWeightTrend,
+} from '../../utils/bodyMeasurements';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
+  const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [theme, setTheme] = useState<AppTheme>('graphite');
   const palette = getThemePalette(theme);
@@ -54,12 +61,18 @@ export default function ProfileScreen() {
     setFitnessGoals(savedGoals);
   };
 
+  const fetchBodyMeasurements = async () => {
+    const savedMeasurements = await loadBodyMeasurements();
+    setBodyMeasurements(savedMeasurements);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
       fetchProgressPhotos();
       fetchExerciseLibrary();
       fetchFitnessGoals();
+      fetchBodyMeasurements();
       const fetchSettings = async () => {
         const settings = await loadSettings();
         setTheme(settings.theme);
@@ -116,6 +129,7 @@ export default function ProfileScreen() {
     profileStats.averageDurationMinutes
   );
   const recentProgressPhotos = progressPhotos.slice(0, 3);
+  const latestBodyMeasurement = bodyMeasurements[0];
 
   return (
     <SafeAreaView
@@ -239,6 +253,22 @@ export default function ProfileScreen() {
 
                 <Text style={styles.secondaryActionMeta}>
                   {goalProgress.length}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryActionButton}
+                onPress={() => router.push('/profile/body-measurements' as never)}
+              >
+                <View style={styles.secondaryActionTextWrap}>
+                  <Text style={styles.secondaryActionTitle}>Body Check-Ins</Text>
+                  <Text style={styles.secondaryActionSubtitle}>
+                    Track body weight and simple measurements over time
+                  </Text>
+                </View>
+
+                <Text style={styles.secondaryActionMeta}>
+                  {bodyMeasurements.length}
                 </Text>
               </Pressable>
             </View>
@@ -451,6 +481,41 @@ export default function ProfileScreen() {
                   </Text>
                 </>
               )}
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Body Progress</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Latest body check-in
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() =>
+                    router.push('/profile/body-measurements' as never)
+                  }
+                >
+                  <Text style={styles.profileInsightAction}>Open</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.bodyProgressCard}>
+                <Text style={styles.bodyProgressLabel}>Body Weight</Text>
+                <Text style={styles.bodyProgressValue}>
+                  {latestBodyMeasurement
+                    ? formatBodyWeight(
+                        latestBodyMeasurement.bodyWeight,
+                        weightUnit,
+                        'lb'
+                      )
+                    : '--'}
+                </Text>
+                <Text style={styles.bodyProgressText}>
+                  {getBodyWeightTrend(bodyMeasurements, weightUnit)}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.chartCard}>
@@ -784,6 +849,30 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#4da6ff',
     borderRadius: 999,
+  },
+  bodyProgressCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 14,
+  },
+  bodyProgressLabel: {
+    color: '#9dbbda',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  bodyProgressValue: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  bodyProgressText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
   },
   profileInsightGrid: {
     flexDirection: 'row',

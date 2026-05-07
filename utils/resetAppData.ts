@@ -9,6 +9,7 @@ const RESET_KEYS = [
   'appSettings',
   'trainingSplitPlan',
   'fitnessGoals',
+  'bodyMeasurements',
 ];
 
 export async function resetAppData() {

@@ -54,6 +54,10 @@ function getRecordTitle(record: CloudRecord) {
     return getStringField(payload, 'title') || 'Training goal';
   }
 
+  if (record.record_type === 'body_measurement') {
+    return 'Body check-in';
+  }
+
   if (record.record_type === 'settings') {
     return 'App settings';
   }
@@ -79,6 +83,8 @@ function getRecordTypeLabel(recordType: CloudRecord['record_type']) {
       return 'Favorites';
     case 'fitness_goal':
       return 'Fitness Goal';
+    case 'body_measurement':
+      return 'Body Measurement';
     case 'progress_photo':
       return 'Progress Photo';
     case 'routine':

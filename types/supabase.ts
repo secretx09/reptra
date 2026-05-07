@@ -49,7 +49,8 @@ export interface Database {
             | 'settings'
             | 'training_split'
             | 'favorite_exercise'
-            | 'fitness_goal';
+            | 'fitness_goal'
+            | 'body_measurement';
           local_id: string;
           payload: Json;
           updated_at: string;
@@ -66,7 +67,8 @@ export interface Database {
             | 'settings'
             | 'training_split'
             | 'favorite_exercise'
-            | 'fitness_goal';
+            | 'fitness_goal'
+            | 'body_measurement';
           local_id: string;
           payload: Json;
           updated_at?: string;

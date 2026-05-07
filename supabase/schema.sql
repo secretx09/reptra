@@ -29,7 +29,8 @@ create table if not exists public.cloud_records (
       'settings',
       'training_split',
       'favorite_exercise',
-      'fitness_goal'
+      'fitness_goal',
+      'body_measurement'
     )
   ),
   local_id text not null,
@@ -53,7 +54,8 @@ check (
     'settings',
     'training_split',
     'favorite_exercise',
-    'fitness_goal'
+    'fitness_goal',
+    'body_measurement'
   )
 );
 
