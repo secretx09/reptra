@@ -14,14 +14,20 @@ import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
+import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { Exercise } from '../../types/exercise';
+import { FitnessGoal } from '../../types/fitnessGoal';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
-import { AppTheme } from '../../types/settings';
+import { AppTheme, WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
+import {
+  calculateFitnessGoalProgress,
+  formatGoalValue,
+} from '../../utils/fitnessGoals';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
@@ -43,6 +49,8 @@ export default function HomeScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>([]);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
+  const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const palette = getThemePalette(theme);
 
   useFocusEffect(
@@ -55,6 +63,7 @@ export default function HomeScreen() {
           savedPhotos,
           loadedExercises,
           savedFavoriteIds,
+          savedGoals,
         ] =
           await Promise.all([
             loadSettings(),
@@ -63,14 +72,17 @@ export default function HomeScreen() {
             loadProgressPhotos(),
             loadExerciseLibrary(),
             loadFavoriteExerciseIds(),
+            loadFitnessGoals(),
           ]);
 
         setTheme(settings.theme);
+        setWeightUnit(settings.weightUnit);
         setWorkouts(savedWorkouts);
         setRoutines(savedRoutines);
         setProgressPhotos(savedPhotos);
         setExerciseLibrary(loadedExercises);
         setFavoriteExerciseIds(savedFavoriteIds);
+        setFitnessGoals(savedGoals);
       };
 
       fetchData();
@@ -107,6 +119,17 @@ export default function HomeScreen() {
   const sharedWorkoutCount = workouts.filter(
     (workout) => (workout.visibility ?? 'private') !== 'private'
   ).length;
+  const activeGoalProgress = useMemo(() => {
+    return calculateFitnessGoalProgress(
+      fitnessGoals,
+      workouts,
+      prs,
+      weightUnit
+    )
+      .filter((progress) => progress.goal.status === 'active')
+      .sort((a, b) => b.progressRatio - a.progressRatio);
+  }, [fitnessGoals, prs, weightUnit, workouts]);
+  const nextGoal = activeGoalProgress[0];
 
   return (
     <SafeAreaView
@@ -205,6 +228,70 @@ export default function HomeScreen() {
               <Text style={styles.activityTitle}>Browse templates</Text>
               <Text style={styles.activityMeta}>
                 Build your first routine from a preset
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Next Goal</Text>
+              <Text style={styles.cardSubtitle}>
+                A target to keep your training pointed forward
+              </Text>
+            </View>
+
+            <Pressable onPress={() => router.push('/profile/goals' as never)}>
+              <Text style={styles.linkText}>Goals</Text>
+            </Pressable>
+          </View>
+
+          {nextGoal ? (
+            <Pressable
+              style={styles.goalPanel}
+              onPress={() => router.push('/profile/goals' as never)}
+            >
+              <View style={styles.goalPanelTopRow}>
+                <View style={styles.goalPanelTextWrap}>
+                  <Text style={styles.activityTitle}>{nextGoal.goal.title}</Text>
+                  <Text style={styles.activityMeta}>
+                    {formatGoalValue(
+                      nextGoal.displayedCurrentValue,
+                      nextGoal.goal.metric,
+                      weightUnit
+                    )}{' '}
+                    /{' '}
+                    {formatGoalValue(
+                      nextGoal.displayedTargetValue,
+                      nextGoal.goal.metric,
+                      weightUnit
+                    )}
+                  </Text>
+                </View>
+
+                <Text style={styles.goalPanelPercent}>
+                  {nextGoal.progressPercent}%
+                </Text>
+              </View>
+
+              <View style={styles.goalPanelTrack}>
+                <View
+                  style={[
+                    styles.goalPanelFill,
+                    { width: `${nextGoal.progressRatio * 100}%` },
+                  ]}
+                />
+              </View>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.activityPanel}
+              onPress={() => router.push('/profile/goals' as never)}
+            >
+              <Text style={styles.activityTitle}>Create your first goal</Text>
+              <Text style={styles.activityMeta}>
+                Track workouts, PRs, reps, sets, or volume
               </Text>
             </Pressable>
           )}
@@ -638,6 +725,38 @@ const styles = StyleSheet.create({
     borderColor: '#252525',
     borderRadius: 12,
     padding: 12,
+  },
+  goalPanel: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+  },
+  goalPanelTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  goalPanelTextWrap: {
+    flex: 1,
+  },
+  goalPanelPercent: {
+    color: '#4da6ff',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  goalPanelTrack: {
+    height: 9,
+    backgroundColor: '#0d1722',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  goalPanelFill: {
+    height: '100%',
+    backgroundColor: '#4da6ff',
+    borderRadius: 999,
   },
   activityTitle: {
     color: '#ffffff',

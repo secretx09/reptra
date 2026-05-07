@@ -48,7 +48,8 @@ export interface Database {
             | 'progress_photo'
             | 'settings'
             | 'training_split'
-            | 'favorite_exercise';
+            | 'favorite_exercise'
+            | 'fitness_goal';
           local_id: string;
           payload: Json;
           updated_at: string;
@@ -64,7 +65,8 @@ export interface Database {
             | 'progress_photo'
             | 'settings'
             | 'training_split'
-            | 'favorite_exercise';
+            | 'favorite_exercise'
+            | 'fitness_goal';
           local_id: string;
           payload: Json;
           updated_at?: string;

@@ -11,7 +11,8 @@ type CloudRecordType =
   | 'progress_photo'
   | 'settings'
   | 'training_split'
-  | 'favorite_exercise';
+  | 'favorite_exercise'
+  | 'fitness_goal';
 
 interface CloudBackupRecord {
   user_id: string;
@@ -87,6 +88,9 @@ export async function backupLocalDataToCloud(): Promise<CloudBackupResult> {
       'favorite_exercise_ids',
       exportPayload.favoriteExerciseIds,
       now
+    ),
+    ...exportPayload.fitnessGoals.map((goal) =>
+      buildRecord(user.id, 'fitness_goal', goal.id, goal, goal.createdAt || now)
     ),
     ...exportPayload.workouts.map((workout) =>
       buildRecord(

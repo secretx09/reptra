@@ -28,7 +28,8 @@ create table if not exists public.cloud_records (
       'progress_photo',
       'settings',
       'training_split',
-      'favorite_exercise'
+      'favorite_exercise',
+      'fitness_goal'
     )
   ),
   local_id text not null,
@@ -36,6 +37,24 @@ create table if not exists public.cloud_records (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   unique (user_id, record_type, local_id)
+);
+
+alter table public.cloud_records
+drop constraint if exists cloud_records_record_type_check;
+
+alter table public.cloud_records
+add constraint cloud_records_record_type_check
+check (
+  record_type in (
+    'workout',
+    'routine',
+    'custom_exercise',
+    'progress_photo',
+    'settings',
+    'training_split',
+    'favorite_exercise',
+    'fitness_goal'
+  )
 );
 
 alter table public.profiles enable row level security;

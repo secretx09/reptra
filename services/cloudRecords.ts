@@ -50,6 +50,10 @@ function getRecordTitle(record: CloudRecord) {
     return 'Favorite exercises';
   }
 
+  if (record.record_type === 'fitness_goal') {
+    return getStringField(payload, 'title') || 'Training goal';
+  }
+
   if (record.record_type === 'settings') {
     return 'App settings';
   }
@@ -73,6 +77,8 @@ function getRecordTypeLabel(recordType: CloudRecord['record_type']) {
       return 'Custom Exercise';
     case 'favorite_exercise':
       return 'Favorites';
+    case 'fitness_goal':
+      return 'Fitness Goal';
     case 'progress_photo':
       return 'Progress Photo';
     case 'routine':

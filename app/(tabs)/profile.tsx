@@ -4,16 +4,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
+import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { loadWorkouts } from '../../storage/workouts';
 import { Exercise } from '../../types/exercise';
+import { FitnessGoal } from '../../types/fitnessGoal';
 import { ProgressPhoto } from '../../types/progressPhoto';
-import { AppTheme } from '../../types/settings';
+import { AppTheme, WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
 import { calculateAdvancedProfileStats } from '../../utils/calculateAdvancedProfileStats';
 import { calculateProfileMilestones } from '../../utils/calculateProfileMilestones';
+import {
+  calculateFitnessGoalProgress,
+  formatGoalValue,
+} from '../../utils/fitnessGoals';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { calculateWeeklyChart } from '../../utils/calculateWeeklyChart';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
@@ -23,6 +29,8 @@ export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
+  const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [theme, setTheme] = useState<AppTheme>('graphite');
   const palette = getThemePalette(theme);
 
@@ -41,14 +49,21 @@ export default function ProfileScreen() {
     setExerciseLibrary(loadedExercises);
   };
 
+  const fetchFitnessGoals = async () => {
+    const savedGoals = await loadFitnessGoals();
+    setFitnessGoals(savedGoals);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
       fetchProgressPhotos();
       fetchExerciseLibrary();
+      fetchFitnessGoals();
       const fetchSettings = async () => {
         const settings = await loadSettings();
         setTheme(settings.theme);
+        setWeightUnit(settings.weightUnit);
       };
 
       fetchSettings();
@@ -84,6 +99,15 @@ export default function ProfileScreen() {
       advancedStats.currentStreak
     );
   }, [advancedStats.currentStreak, exercisePRs, workouts]);
+
+  const goalProgress = useMemo(() => {
+    return calculateFitnessGoalProgress(
+      fitnessGoals,
+      workouts,
+      exercisePRs,
+      weightUnit
+    ).filter((progress) => progress.goal.status === 'active');
+  }, [exercisePRs, fitnessGoals, weightUnit, workouts]);
 
   const totalTrainingTime = formatWorkoutDuration(
     profileStats.totalDurationMinutes
@@ -201,6 +225,83 @@ export default function ProfileScreen() {
 
                 <Text style={styles.secondaryActionMeta}>{totalWorkouts}</Text>
               </Pressable>
+
+              <Pressable
+                style={styles.secondaryActionButton}
+                onPress={() => router.push('/profile/goals' as never)}
+              >
+                <View style={styles.secondaryActionTextWrap}>
+                  <Text style={styles.secondaryActionTitle}>Training Goals</Text>
+                  <Text style={styles.secondaryActionSubtitle}>
+                    Create targets for workouts, PRs, volume, reps, and sets
+                  </Text>
+                </View>
+
+                <Text style={styles.secondaryActionMeta}>
+                  {goalProgress.length}
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Active Goals</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Your current training targets
+                  </Text>
+                </View>
+
+                <Pressable onPress={() => router.push('/profile/goals' as never)}>
+                  <Text style={styles.profileInsightAction}>Manage</Text>
+                </Pressable>
+              </View>
+
+              {goalProgress.length > 0 ? (
+                <View style={styles.goalPreviewList}>
+                  {goalProgress.slice(0, 3).map((progress) => (
+                    <View key={progress.goal.id} style={styles.goalPreviewItem}>
+                      <View style={styles.goalPreviewHeader}>
+                        <View style={styles.goalPreviewTextWrap}>
+                          <Text style={styles.goalPreviewTitle}>
+                            {progress.goal.title}
+                          </Text>
+                          <Text style={styles.goalPreviewMeta}>
+                            {formatGoalValue(
+                              progress.displayedCurrentValue,
+                              progress.goal.metric,
+                              weightUnit
+                            )}{' '}
+                            /{' '}
+                            {formatGoalValue(
+                              progress.displayedTargetValue,
+                              progress.goal.metric,
+                              weightUnit
+                            )}
+                          </Text>
+                        </View>
+
+                        <Text style={styles.goalPreviewPercent}>
+                          {progress.progressPercent}%
+                        </Text>
+                      </View>
+
+                      <View style={styles.goalPreviewTrack}>
+                        <View
+                          style={[
+                            styles.goalPreviewFill,
+                            { width: `${progress.progressRatio * 100}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.progressPhotosEmptyText}>
+                  No active goals yet. Add one to give your training a target.
+                </Text>
+              )}
             </View>
 
             <View style={styles.profileInsightCard}>
@@ -632,6 +733,57 @@ const styles = StyleSheet.create({
   profileInsightSubtitle: {
     color: '#aaaaaa',
     fontSize: 12,
+  },
+  profileInsightAction: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  goalPreviewList: {
+    gap: 10,
+  },
+  goalPreviewItem: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+  },
+  goalPreviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+  },
+  goalPreviewTextWrap: {
+    flex: 1,
+  },
+  goalPreviewTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  goalPreviewMeta: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  goalPreviewPercent: {
+    color: '#4da6ff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  goalPreviewTrack: {
+    height: 8,
+    backgroundColor: '#101010',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  goalPreviewFill: {
+    height: '100%',
+    backgroundColor: '#4da6ff',
+    borderRadius: 999,
   },
   profileInsightGrid: {
     flexDirection: 'row',
