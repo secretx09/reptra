@@ -10,6 +10,10 @@ const RESET_KEYS = [
   'trainingSplitPlan',
   'fitnessGoals',
   'bodyMeasurements',
+  'wellnessCheckIns',
+  'nutritionTargets',
+  'dailyNutritionLogs',
+  'savedMealPresets',
 ];
 
 export async function resetAppData() {

@@ -30,7 +30,11 @@ create table if not exists public.cloud_records (
       'training_split',
       'favorite_exercise',
       'fitness_goal',
-      'body_measurement'
+      'body_measurement',
+      'wellness_check_in',
+      'nutrition_targets',
+      'daily_nutrition_log',
+      'saved_meal_preset'
     )
   ),
   local_id text not null,
@@ -55,7 +59,11 @@ check (
     'training_split',
     'favorite_exercise',
     'fitness_goal',
-    'body_measurement'
+    'body_measurement',
+    'wellness_check_in',
+    'nutrition_targets',
+    'daily_nutrition_log',
+    'saved_meal_preset'
   )
 );
 

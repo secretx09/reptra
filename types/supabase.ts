@@ -50,7 +50,11 @@ export interface Database {
             | 'training_split'
             | 'favorite_exercise'
             | 'fitness_goal'
-            | 'body_measurement';
+            | 'body_measurement'
+            | 'wellness_check_in'
+            | 'nutrition_targets'
+            | 'daily_nutrition_log'
+            | 'saved_meal_preset';
           local_id: string;
           payload: Json;
           updated_at: string;
@@ -68,7 +72,11 @@ export interface Database {
             | 'training_split'
             | 'favorite_exercise'
             | 'fitness_goal'
-            | 'body_measurement';
+            | 'body_measurement'
+            | 'wellness_check_in'
+            | 'nutrition_targets'
+            | 'daily_nutrition_log'
+            | 'saved_meal_preset';
           local_id: string;
           payload: Json;
           updated_at?: string;

@@ -58,6 +58,22 @@ function getRecordTitle(record: CloudRecord) {
     return 'Body check-in';
   }
 
+  if (record.record_type === 'wellness_check_in') {
+    return 'Wellness check-in';
+  }
+
+  if (record.record_type === 'nutrition_targets') {
+    return 'Nutrition targets';
+  }
+
+  if (record.record_type === 'daily_nutrition_log') {
+    return 'Nutrition entry';
+  }
+
+  if (record.record_type === 'saved_meal_preset') {
+    return getStringField(payload, 'name') || 'Saved meal';
+  }
+
   if (record.record_type === 'settings') {
     return 'App settings';
   }
@@ -85,6 +101,14 @@ function getRecordTypeLabel(recordType: CloudRecord['record_type']) {
       return 'Fitness Goal';
     case 'body_measurement':
       return 'Body Measurement';
+    case 'wellness_check_in':
+      return 'Wellness';
+    case 'nutrition_targets':
+      return 'Nutrition Targets';
+    case 'daily_nutrition_log':
+      return 'Nutrition Log';
+    case 'saved_meal_preset':
+      return 'Saved Meal';
     case 'progress_photo':
       return 'Progress Photo';
     case 'routine':

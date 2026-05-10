@@ -47,7 +47,13 @@ import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
+import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+  loadSavedMealPresets,
+} from '../../storage/nutrition';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -59,6 +65,10 @@ interface LocalCloudPreview {
   favoriteExercises: number;
   fitnessGoals: number;
   bodyMeasurements: number;
+  wellnessCheckIns: number;
+  nutritionTargets: number;
+  dailyNutritionLogs: number;
+  savedMealPresets: number;
   settings: number;
   totalRecords: number;
 }
@@ -71,6 +81,10 @@ const emptyLocalPreview: LocalCloudPreview = {
   favoriteExercises: 0,
   fitnessGoals: 0,
   bodyMeasurements: 0,
+  wellnessCheckIns: 0,
+  nutritionTargets: 0,
+  dailyNutritionLogs: 0,
+  savedMealPresets: 0,
   settings: 1,
   totalRecords: 1,
 };
@@ -210,6 +224,10 @@ export default function AccountScreen() {
       favoriteExerciseIds,
       fitnessGoals,
       bodyMeasurements,
+      wellnessCheckIns,
+      nutritionTargets,
+      dailyNutritionLogs,
+      savedMealPresets,
     ] = await Promise.all([
       loadSettings(),
       loadWorkouts(),
@@ -219,6 +237,10 @@ export default function AccountScreen() {
       loadFavoriteExerciseIds(),
       loadFitnessGoals(),
       loadBodyMeasurements(),
+      loadWellnessCheckIns(),
+      loadNutritionTargets(),
+      loadDailyNutritionLogs(),
+      loadSavedMealPresets(),
     ]);
 
     setLocalPreview({
@@ -229,6 +251,10 @@ export default function AccountScreen() {
       favoriteExercises: favoriteExerciseIds.length,
       fitnessGoals: fitnessGoals.length,
       bodyMeasurements: bodyMeasurements.length,
+      wellnessCheckIns: wellnessCheckIns.length,
+      nutritionTargets: nutritionTargets.updatedAt ? 1 : 0,
+      dailyNutritionLogs: dailyNutritionLogs.length,
+      savedMealPresets: savedMealPresets.length,
       settings: settings ? 1 : 0,
       totalRecords:
         workouts.length +
@@ -237,6 +263,10 @@ export default function AccountScreen() {
         progressPhotos.length +
         fitnessGoals.length +
         bodyMeasurements.length +
+        wellnessCheckIns.length +
+        (nutritionTargets.updatedAt ? 1 : 0) +
+        dailyNutritionLogs.length +
+        savedMealPresets.length +
         2,
     });
   }, []);
@@ -895,7 +925,10 @@ export default function AccountScreen() {
                 <Text style={styles.backupStatus}>
                   Favorites: {localPreview.favoriteExercises} | Goals:{' '}
                   {localPreview.fitnessGoals} | Body:{' '}
-                  {localPreview.bodyMeasurements} | Settings:{' '}
+                  {localPreview.bodyMeasurements} | Wellness:{' '}
+                  {localPreview.wellnessCheckIns} | Nutrition:{' '}
+                  {localPreview.dailyNutritionLogs} | Meals:{' '}
+                  {localPreview.savedMealPresets} | Settings:{' '}
                   {localPreview.settings} | Total records:{' '}
                   {localPreview.totalRecords}
                 </Text>

@@ -6,7 +6,16 @@ import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadProgressPhotos, saveProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines, saveRoutines } from '../storage/routines';
 import { saveSettings } from '../storage/settings';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+  loadSavedMealPresets,
+  saveDailyNutritionLogs,
+  saveNutritionTargets,
+  saveSavedMealPresets,
+} from '../storage/nutrition';
 import { saveTrainingSplitPlan } from '../storage/trainingSplit';
+import { loadWellnessCheckIns, saveWellnessCheckIns } from '../storage/wellnessCheckIns';
 import { loadWorkouts, saveWorkouts } from '../storage/workouts';
 import {
   markCloudMergeComplete,
@@ -15,11 +24,17 @@ import {
 import { Exercise } from '../types/exercise';
 import { BodyMeasurement } from '../types/bodyMeasurement';
 import { FitnessGoal } from '../types/fitnessGoal';
+import {
+  DailyNutritionLog,
+  NutritionTargets,
+  SavedMealPreset,
+} from '../types/nutrition';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
 import { AppSettings } from '../types/settings';
 import { TrainingSplitPlan } from '../types/trainingSplit';
 import { SavedWorkoutSession } from '../types/workout';
+import { WellnessCheckIn } from '../types/wellnessCheckIn';
 import { Database, Json } from '../types/supabase';
 import { getCurrentUser } from './auth';
 import { getSupabaseClient } from './supabase';
@@ -41,6 +56,10 @@ export interface CloudBackupSummary {
     favoriteExercises: number;
     fitnessGoals: number;
     bodyMeasurements: number;
+    wellnessCheckIns: number;
+    nutritionTargets: number;
+    dailyNutritionLogs: number;
+    savedMealPresets: number;
   };
 }
 
@@ -61,6 +80,9 @@ export interface CloudMergeResult {
     favoriteExercises: number;
     fitnessGoals: number;
     bodyMeasurements: number;
+    wellnessCheckIns: number;
+    dailyNutritionLogs: number;
+    savedMealPresets: number;
   };
 }
 
@@ -130,6 +152,10 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
         favoriteExercises: 0,
         fitnessGoals: 0,
         bodyMeasurements: 0,
+        wellnessCheckIns: 0,
+        nutritionTargets: 0,
+        dailyNutritionLogs: 0,
+        savedMealPresets: 0,
       },
     };
   }
@@ -167,6 +193,18 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
       bodyMeasurements: records.filter(
         (record) => record.record_type === 'body_measurement'
       ).length,
+      wellnessCheckIns: records.filter(
+        (record) => record.record_type === 'wellness_check_in'
+      ).length,
+      nutritionTargets: records.filter(
+        (record) => record.record_type === 'nutrition_targets'
+      ).length,
+      dailyNutritionLogs: records.filter(
+        (record) => record.record_type === 'daily_nutrition_log'
+      ).length,
+      savedMealPresets: records.filter(
+        (record) => record.record_type === 'saved_meal_preset'
+      ).length,
     },
   };
 }
@@ -201,6 +239,9 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
   const trainingSplitRecord = records.find(
     (record) => record.record_type === 'training_split'
   );
+  const nutritionTargetsRecord = records.find(
+    (record) => record.record_type === 'nutrition_targets'
+  );
 
   await saveWorkouts(
     records
@@ -232,6 +273,21 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
       .filter((record) => record.record_type === 'body_measurement')
       .map((record) => fromJson<BodyMeasurement>(record.payload))
   );
+  await saveWellnessCheckIns(
+    records
+      .filter((record) => record.record_type === 'wellness_check_in')
+      .map((record) => fromJson<WellnessCheckIn>(record.payload))
+  );
+  await saveDailyNutritionLogs(
+    records
+      .filter((record) => record.record_type === 'daily_nutrition_log')
+      .map((record) => fromJson<DailyNutritionLog>(record.payload))
+  );
+  await saveSavedMealPresets(
+    records
+      .filter((record) => record.record_type === 'saved_meal_preset')
+      .map((record) => fromJson<SavedMealPreset>(record.payload))
+  );
 
   if (settingsRecord) {
     await saveSettings(fromJson<AppSettings>(settingsRecord.payload));
@@ -244,6 +300,12 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
   if (trainingSplitRecord) {
     await saveTrainingSplitPlan(
       fromJson<TrainingSplitPlan>(trainingSplitRecord.payload)
+    );
+  }
+
+  if (nutritionTargetsRecord) {
+    await saveNutritionTargets(
+      fromJson<NutritionTargets>(nutritionTargetsRecord.payload)
     );
   }
 
@@ -285,6 +347,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         favoriteExercises: 0,
         fitnessGoals: 0,
         bodyMeasurements: 0,
+        wellnessCheckIns: 0,
+        dailyNutritionLogs: 0,
+        savedMealPresets: 0,
       },
     };
   }
@@ -303,6 +368,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         favoriteExercises: 0,
         fitnessGoals: 0,
         bodyMeasurements: 0,
+        wellnessCheckIns: 0,
+        dailyNutritionLogs: 0,
+        savedMealPresets: 0,
       },
     };
   }
@@ -315,6 +383,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     localFavoriteExerciseIds,
     localFitnessGoals,
     localBodyMeasurements,
+    localWellnessCheckIns,
+    localDailyNutritionLogs,
+    localSavedMealPresets,
   ] = await Promise.all([
     loadWorkouts(),
     loadRoutines(),
@@ -323,7 +394,14 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     loadFavoriteExerciseIds(),
     loadFitnessGoals(),
     loadBodyMeasurements(),
+    loadWellnessCheckIns(),
+    loadDailyNutritionLogs(),
+    loadSavedMealPresets(),
   ]);
+
+  const nutritionTargetsRecord = records.find(
+    (record) => record.record_type === 'nutrition_targets'
+  );
 
   const cloudWorkouts = records
     .filter((record) => record.record_type === 'workout')
@@ -349,6 +427,15 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
   const cloudBodyMeasurements = records
     .filter((record) => record.record_type === 'body_measurement')
     .map((record) => fromJson<BodyMeasurement>(record.payload));
+  const cloudWellnessCheckIns = records
+    .filter((record) => record.record_type === 'wellness_check_in')
+    .map((record) => fromJson<WellnessCheckIn>(record.payload));
+  const cloudDailyNutritionLogs = records
+    .filter((record) => record.record_type === 'daily_nutrition_log')
+    .map((record) => fromJson<DailyNutritionLog>(record.payload));
+  const cloudSavedMealPresets = records
+    .filter((record) => record.record_type === 'saved_meal_preset')
+    .map((record) => fromJson<SavedMealPreset>(record.payload));
 
   const workoutMerge = mergeById(localWorkouts, cloudWorkouts);
   const routineMerge = mergeById(localRoutines, cloudRoutines);
@@ -361,6 +448,18 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
   const bodyMeasurementMerge = mergeById(
     localBodyMeasurements,
     cloudBodyMeasurements
+  );
+  const wellnessCheckInMerge = mergeById(
+    localWellnessCheckIns,
+    cloudWellnessCheckIns
+  );
+  const dailyNutritionLogMerge = mergeById(
+    localDailyNutritionLogs,
+    cloudDailyNutritionLogs
+  );
+  const savedMealPresetMerge = mergeById(
+    localSavedMealPresets,
+    cloudSavedMealPresets
   );
   const mergedFavoriteExerciseIds = Array.from(
     new Set([...localFavoriteExerciseIds, ...cloudFavoriteExerciseIds])
@@ -376,7 +475,21 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     saveFavoriteExerciseIds(mergedFavoriteExerciseIds),
     saveFitnessGoals(fitnessGoalMerge.mergedItems),
     saveBodyMeasurements(bodyMeasurementMerge.mergedItems),
+    saveWellnessCheckIns(wellnessCheckInMerge.mergedItems),
+    saveDailyNutritionLogs(dailyNutritionLogMerge.mergedItems),
+    saveSavedMealPresets(savedMealPresetMerge.mergedItems),
   ]);
+
+  if (nutritionTargetsRecord) {
+    const localNutritionTargets = await loadNutritionTargets();
+    const cloudNutritionTargets = fromJson<NutritionTargets>(
+      nutritionTargetsRecord.payload
+    );
+
+    if (!localNutritionTargets.updatedAt && cloudNutritionTargets.updatedAt) {
+      await saveNutritionTargets(cloudNutritionTargets);
+    }
+  }
 
   const addedTotal =
     workoutMerge.addedCount +
@@ -385,6 +498,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     progressPhotoMerge.addedCount +
     fitnessGoalMerge.addedCount +
     bodyMeasurementMerge.addedCount +
+    wellnessCheckInMerge.addedCount +
+    dailyNutritionLogMerge.addedCount +
+    savedMealPresetMerge.addedCount +
     addedFavoriteCount;
   const message =
     addedTotal === 0
@@ -406,6 +522,9 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
       favoriteExercises: addedFavoriteCount,
       fitnessGoals: fitnessGoalMerge.addedCount,
       bodyMeasurements: bodyMeasurementMerge.addedCount,
+      wellnessCheckIns: wellnessCheckInMerge.addedCount,
+      dailyNutritionLogs: dailyNutritionLogMerge.addedCount,
+      savedMealPresets: savedMealPresetMerge.addedCount,
     },
   };
 }

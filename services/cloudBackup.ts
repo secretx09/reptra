@@ -13,7 +13,11 @@ type CloudRecordType =
   | 'training_split'
   | 'favorite_exercise'
   | 'fitness_goal'
-  | 'body_measurement';
+  | 'body_measurement'
+  | 'wellness_check_in'
+  | 'nutrition_targets'
+  | 'daily_nutrition_log'
+  | 'saved_meal_preset';
 
 interface CloudBackupRecord {
   user_id: string;
@@ -100,6 +104,40 @@ export async function backupLocalDataToCloud(): Promise<CloudBackupResult> {
         measurement.id,
         measurement,
         measurement.measuredAt || now
+      )
+    ),
+    ...exportPayload.wellnessCheckIns.map((checkIn) =>
+      buildRecord(
+        user.id,
+        'wellness_check_in',
+        checkIn.id,
+        checkIn,
+        checkIn.checkedInAt || now
+      )
+    ),
+    buildRecord(
+      user.id,
+      'nutrition_targets',
+      'nutrition_targets',
+      exportPayload.nutritionTargets,
+      exportPayload.nutritionTargets.updatedAt || now
+    ),
+    ...exportPayload.dailyNutritionLogs.map((log) =>
+      buildRecord(
+        user.id,
+        'daily_nutrition_log',
+        log.id,
+        log,
+        log.loggedAt || now
+      )
+    ),
+    ...exportPayload.savedMealPresets.map((meal) =>
+      buildRecord(
+        user.id,
+        'saved_meal_preset',
+        meal.id,
+        meal,
+        meal.createdAt || now
       )
     ),
     ...exportPayload.workouts.map((workout) =>

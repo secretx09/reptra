@@ -3,16 +3,23 @@ import { Text, StyleSheet, FlatList, View, Pressable, Image } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { loadSettings } from '../../storage/settings';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+} from '../../storage/nutrition';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
+import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
 import { BodyMeasurement } from '../../types/bodyMeasurement';
 import { Exercise } from '../../types/exercise';
 import { FitnessGoal } from '../../types/fitnessGoal';
+import { DailyNutritionLog, NutritionTargets } from '../../types/nutrition';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { AppTheme, WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession } from '../../types/workout';
+import { WellnessCheckIn } from '../../types/wellnessCheckIn';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateProfileStats } from '../../utils/calculateProfileStats';
@@ -30,6 +37,15 @@ import {
   formatBodyWeight,
   getBodyWeightTrend,
 } from '../../utils/bodyMeasurements';
+import {
+  getReadinessLabel,
+  getReadinessScore,
+} from '../../utils/wellnessCheckIns';
+import {
+  calculateNutritionTotals,
+  getNutritionProgress,
+  getTodayNutritionLogs,
+} from '../../utils/nutrition';
 
 export default function ProfileScreen() {
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
@@ -37,6 +53,16 @@ export default function ProfileScreen() {
   const [exerciseLibrary, setExerciseLibrary] = useState<Exercise[]>([]);
   const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
+  const [wellnessCheckIns, setWellnessCheckIns] = useState<WellnessCheckIn[]>([]);
+  const [nutritionTargets, setNutritionTargets] = useState<NutritionTargets>({
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    water: '',
+    updatedAt: '',
+  });
+  const [nutritionLogs, setNutritionLogs] = useState<DailyNutritionLog[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [theme, setTheme] = useState<AppTheme>('graphite');
   const palette = getThemePalette(theme);
@@ -66,6 +92,20 @@ export default function ProfileScreen() {
     setBodyMeasurements(savedMeasurements);
   };
 
+  const fetchWellnessCheckIns = async () => {
+    const savedCheckIns = await loadWellnessCheckIns();
+    setWellnessCheckIns(savedCheckIns);
+  };
+
+  const fetchNutrition = async () => {
+    const [savedTargets, savedLogs] = await Promise.all([
+      loadNutritionTargets(),
+      loadDailyNutritionLogs(),
+    ]);
+    setNutritionTargets(savedTargets);
+    setNutritionLogs(savedLogs);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
@@ -73,6 +113,8 @@ export default function ProfileScreen() {
       fetchExerciseLibrary();
       fetchFitnessGoals();
       fetchBodyMeasurements();
+      fetchWellnessCheckIns();
+      fetchNutrition();
       const fetchSettings = async () => {
         const settings = await loadSettings();
         setTheme(settings.theme);
@@ -130,6 +172,14 @@ export default function ProfileScreen() {
   );
   const recentProgressPhotos = progressPhotos.slice(0, 3);
   const latestBodyMeasurement = bodyMeasurements[0];
+  const latestWellnessCheckIn = wellnessCheckIns[0];
+  const latestReadiness = getReadinessScore(latestWellnessCheckIn);
+  const todayNutritionLogs = getTodayNutritionLogs(nutritionLogs);
+  const todayNutritionTotals = calculateNutritionTotals(todayNutritionLogs);
+  const calorieProgress = getNutritionProgress(
+    todayNutritionTotals.calories,
+    nutritionTargets.calories
+  );
 
   return (
     <SafeAreaView
@@ -269,6 +319,38 @@ export default function ProfileScreen() {
 
                 <Text style={styles.secondaryActionMeta}>
                   {bodyMeasurements.length}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryActionButton}
+                onPress={() => router.push('/profile/wellness' as never)}
+              >
+                <View style={styles.secondaryActionTextWrap}>
+                  <Text style={styles.secondaryActionTitle}>Wellness</Text>
+                  <Text style={styles.secondaryActionSubtitle}>
+                    Track energy, soreness, sleep, and mood
+                  </Text>
+                </View>
+
+                <Text style={styles.secondaryActionMeta}>
+                  {wellnessCheckIns.length}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryActionButton}
+                onPress={() => router.push('/profile/nutrition' as never)}
+              >
+                <View style={styles.secondaryActionTextWrap}>
+                  <Text style={styles.secondaryActionTitle}>Nutrition</Text>
+                  <Text style={styles.secondaryActionSubtitle}>
+                    Set macro targets and log today&apos;s intake
+                  </Text>
+                </View>
+
+                <Text style={styles.secondaryActionMeta}>
+                  {todayNutritionLogs.length}
                 </Text>
               </Pressable>
             </View>
@@ -514,6 +596,73 @@ export default function ProfileScreen() {
                 </Text>
                 <Text style={styles.bodyProgressText}>
                   {getBodyWeightTrend(bodyMeasurements, weightUnit)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Readiness</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Latest wellness check-in
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() => router.push('/profile/wellness' as never)}
+                >
+                  <Text style={styles.profileInsightAction}>Open</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.readinessPreviewCard}>
+                <Text style={styles.readinessPreviewLabel}>Readiness Score</Text>
+                <Text style={styles.readinessPreviewValue}>
+                  {latestReadiness}%
+                </Text>
+                <Text style={styles.readinessPreviewText}>
+                  {getReadinessLabel(latestReadiness)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.profileInsightCard}>
+              <View style={styles.profileInsightHeader}>
+                <View>
+                  <Text style={styles.profileInsightTitle}>Nutrition</Text>
+                  <Text style={styles.profileInsightSubtitle}>
+                    Today&apos;s calorie target progress
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() => router.push('/profile/nutrition' as never)}
+                >
+                  <Text style={styles.profileInsightAction}>Open</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.nutritionPreviewCard}>
+                <View style={styles.nutritionPreviewTopRow}>
+                  <Text style={styles.nutritionPreviewValue}>
+                    {Math.round(todayNutritionTotals.calories)}
+                  </Text>
+                  <Text style={styles.nutritionPreviewTarget}>
+                    / {nutritionTargets.calories || '--'} cal
+                  </Text>
+                </View>
+                <View style={styles.nutritionPreviewTrack}>
+                  <View
+                    style={[
+                      styles.nutritionPreviewFill,
+                      { width: `${calorieProgress * 100}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.nutritionPreviewText}>
+                  Protein {Math.round(todayNutritionTotals.protein)}g |{' '}
+                  {todayNutritionLogs.length} entries today
                 </Text>
               </View>
             </View>
@@ -870,6 +1019,71 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bodyProgressText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  readinessPreviewCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 14,
+  },
+  readinessPreviewLabel: {
+    color: '#9dbbda',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  readinessPreviewValue: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  readinessPreviewText: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  nutritionPreviewCard: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 14,
+  },
+  nutritionPreviewTopRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  nutritionPreviewValue: {
+    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: '900',
+  },
+  nutritionPreviewTarget: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingBottom: 4,
+  },
+  nutritionPreviewTrack: {
+    height: 9,
+    backgroundColor: '#171717',
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  nutritionPreviewFill: {
+    height: '100%',
+    backgroundColor: '#4da6ff',
+    borderRadius: 999,
+  },
+  nutritionPreviewText: {
     color: '#aaaaaa',
     fontSize: 12,
     lineHeight: 18,

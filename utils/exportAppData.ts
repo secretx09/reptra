@@ -1,10 +1,16 @@
 import { loadCustomExercises } from '../storage/customExercises';
 import { loadBodyMeasurements } from '../storage/bodyMeasurements';
+import { loadWellnessCheckIns } from '../storage/wellnessCheckIns';
 import { loadFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { loadFitnessGoals } from '../storage/fitnessGoals';
 import { loadProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines } from '../storage/routines';
 import { loadSettings } from '../storage/settings';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+  loadSavedMealPresets,
+} from '../storage/nutrition';
 import { loadTrainingSplitPlan } from '../storage/trainingSplit';
 import { loadWorkouts } from '../storage/workouts';
 
@@ -19,6 +25,10 @@ export async function buildAppDataExport() {
     trainingSplitPlan,
     fitnessGoals,
     bodyMeasurements,
+    wellnessCheckIns,
+    nutritionTargets,
+    dailyNutritionLogs,
+    savedMealPresets,
   ] =
     await Promise.all([
       loadSettings(),
@@ -30,6 +40,10 @@ export async function buildAppDataExport() {
       loadTrainingSplitPlan(),
       loadFitnessGoals(),
       loadBodyMeasurements(),
+      loadWellnessCheckIns(),
+      loadNutritionTargets(),
+      loadDailyNutritionLogs(),
+      loadSavedMealPresets(),
     ]);
 
   return {
@@ -45,5 +59,9 @@ export async function buildAppDataExport() {
     trainingSplitPlan,
     fitnessGoals,
     bodyMeasurements,
+    wellnessCheckIns,
+    nutritionTargets,
+    dailyNutritionLogs,
+    savedMealPresets,
   };
 }

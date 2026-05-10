@@ -1,15 +1,28 @@
 import { saveCustomExercises } from '../storage/customExercises';
 import { saveBodyMeasurements } from '../storage/bodyMeasurements';
+import { saveWellnessCheckIns } from '../storage/wellnessCheckIns';
 import { saveFavoriteExerciseIds } from '../storage/favoriteExercises';
 import { saveFitnessGoals } from '../storage/fitnessGoals';
 import { saveProgressPhotos } from '../storage/progressPhotos';
 import { saveRoutines } from '../storage/routines';
 import { defaultSettings, saveSettings } from '../storage/settings';
+import {
+  defaultNutritionTargets,
+  saveDailyNutritionLogs,
+  saveNutritionTargets,
+  saveSavedMealPresets,
+} from '../storage/nutrition';
 import { saveTrainingSplitPlan } from '../storage/trainingSplit';
 import { saveWorkouts } from '../storage/workouts';
 import { Exercise } from '../types/exercise';
 import { BodyMeasurement } from '../types/bodyMeasurement';
+import { WellnessCheckIn } from '../types/wellnessCheckIn';
 import { FitnessGoal } from '../types/fitnessGoal';
+import {
+  DailyNutritionLog,
+  NutritionTargets,
+  SavedMealPreset,
+} from '../types/nutrition';
 import { ProgressPhoto } from '../types/progressPhoto';
 import { RoutineWithExercises } from '../types/routine';
 import { AppSettings } from '../types/settings';
@@ -32,6 +45,10 @@ type AppDataImportPayload = {
   trainingSplitPlan?: TrainingSplitPlan;
   fitnessGoals?: FitnessGoal[];
   bodyMeasurements?: BodyMeasurement[];
+  wellnessCheckIns?: WellnessCheckIn[];
+  nutritionTargets?: NutritionTargets;
+  dailyNutritionLogs?: DailyNutritionLog[];
+  savedMealPresets?: SavedMealPreset[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -99,6 +116,16 @@ export function parseAppDataImport(jsonInput: string) {
     bodyMeasurements: Array.isArray(payload.bodyMeasurements)
       ? payload.bodyMeasurements
       : [],
+    wellnessCheckIns: Array.isArray(payload.wellnessCheckIns)
+      ? payload.wellnessCheckIns
+      : [],
+    nutritionTargets: payload.nutritionTargets ?? defaultNutritionTargets,
+    dailyNutritionLogs: Array.isArray(payload.dailyNutritionLogs)
+      ? payload.dailyNutritionLogs
+      : [],
+    savedMealPresets: Array.isArray(payload.savedMealPresets)
+      ? payload.savedMealPresets
+      : [],
   };
 }
 
@@ -114,4 +141,8 @@ export async function importAppData(jsonInput: string) {
   await saveTrainingSplitPlan(parsed.trainingSplitPlan);
   await saveFitnessGoals(parsed.fitnessGoals);
   await saveBodyMeasurements(parsed.bodyMeasurements);
+  await saveWellnessCheckIns(parsed.wellnessCheckIns);
+  await saveNutritionTargets(parsed.nutritionTargets);
+  await saveDailyNutritionLogs(parsed.dailyNutritionLogs);
+  await saveSavedMealPresets(parsed.savedMealPresets);
 }

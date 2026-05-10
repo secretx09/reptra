@@ -13,16 +13,23 @@ import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
 import { loadWorkouts } from '../../storage/workouts';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+} from '../../storage/nutrition';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
 import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
+import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { Exercise } from '../../types/exercise';
 import { BodyMeasurement } from '../../types/bodyMeasurement';
 import { FitnessGoal } from '../../types/fitnessGoal';
+import { DailyNutritionLog, NutritionTargets } from '../../types/nutrition';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme, WeightUnit } from '../../types/settings';
 import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
+import { WellnessCheckIn } from '../../types/wellnessCheckIn';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
@@ -34,6 +41,15 @@ import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
 import { getThemePalette } from '../../utils/appTheme';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import { formatBodyWeight } from '../../utils/bodyMeasurements';
+import {
+  getReadinessLabel,
+  getReadinessScore,
+} from '../../utils/wellnessCheckIns';
+import {
+  calculateNutritionTotals,
+  getNutritionProgress,
+  getTodayNutritionLogs,
+} from '../../utils/nutrition';
 
 type FeedFilter = 'all' | WorkoutVisibility;
 
@@ -54,6 +70,16 @@ export default function HomeScreen() {
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
   const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
+  const [wellnessCheckIns, setWellnessCheckIns] = useState<WellnessCheckIn[]>([]);
+  const [nutritionTargets, setNutritionTargets] = useState<NutritionTargets>({
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    water: '',
+    updatedAt: '',
+  });
+  const [nutritionLogs, setNutritionLogs] = useState<DailyNutritionLog[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const palette = getThemePalette(theme);
 
@@ -69,6 +95,9 @@ export default function HomeScreen() {
           savedFavoriteIds,
           savedGoals,
           savedMeasurements,
+          savedWellnessCheckIns,
+          savedNutritionTargets,
+          savedNutritionLogs,
         ] =
           await Promise.all([
             loadSettings(),
@@ -79,6 +108,9 @@ export default function HomeScreen() {
             loadFavoriteExerciseIds(),
             loadFitnessGoals(),
             loadBodyMeasurements(),
+            loadWellnessCheckIns(),
+            loadNutritionTargets(),
+            loadDailyNutritionLogs(),
           ]);
 
         setTheme(settings.theme);
@@ -90,6 +122,9 @@ export default function HomeScreen() {
         setFavoriteExerciseIds(savedFavoriteIds);
         setFitnessGoals(savedGoals);
         setBodyMeasurements(savedMeasurements);
+        setWellnessCheckIns(savedWellnessCheckIns);
+        setNutritionTargets(savedNutritionTargets);
+        setNutritionLogs(savedNutritionLogs);
       };
 
       fetchData();
@@ -138,6 +173,14 @@ export default function HomeScreen() {
   }, [fitnessGoals, prs, weightUnit, workouts]);
   const nextGoal = activeGoalProgress[0];
   const latestBodyMeasurement = bodyMeasurements[0];
+  const latestWellnessCheckIn = wellnessCheckIns[0];
+  const readinessScore = getReadinessScore(latestWellnessCheckIn);
+  const todayNutritionLogs = getTodayNutritionLogs(nutritionLogs);
+  const todayNutritionTotals = calculateNutritionTotals(todayNutritionLogs);
+  const calorieProgress = getNutritionProgress(
+    todayNutritionTotals.calories,
+    nutritionTargets.calories
+  );
 
   return (
     <SafeAreaView
@@ -214,6 +257,76 @@ export default function HomeScreen() {
               No workouts yet. Start an empty workout or try a routine template.
             </Text>
           )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Nutrition</Text>
+              <Text style={styles.cardSubtitle}>
+                Today&apos;s lightweight macro progress
+              </Text>
+            </View>
+
+            <Pressable onPress={() => router.push('/profile/nutrition' as never)}>
+              <Text style={styles.linkText}>Open</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={styles.nutritionPanel}
+            onPress={() => router.push('/profile/nutrition' as never)}
+          >
+            <View style={styles.nutritionTopRow}>
+              <Text style={styles.nutritionCalories}>
+                {Math.round(todayNutritionTotals.calories)}
+              </Text>
+              <Text style={styles.nutritionTarget}>
+                / {nutritionTargets.calories || '--'} cal
+              </Text>
+            </View>
+            <View style={styles.nutritionTrack}>
+              <View
+                style={[
+                  styles.nutritionFill,
+                  { width: `${calorieProgress * 100}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.activityMeta}>
+              Protein {Math.round(todayNutritionTotals.protein)}g |{' '}
+              {todayNutritionLogs.length} entries today
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>Readiness</Text>
+              <Text style={styles.cardSubtitle}>
+                Latest energy, soreness, sleep, and mood
+              </Text>
+            </View>
+
+            <Pressable onPress={() => router.push('/profile/wellness' as never)}>
+              <Text style={styles.linkText}>Open</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={styles.readinessPanel}
+            onPress={() => router.push('/profile/wellness' as never)}
+          >
+            <View style={styles.readinessPanelTextWrap}>
+              <Text style={styles.activityTitle}>
+                {readinessScore > 0 ? `${readinessScore}% readiness` : 'Add wellness check-in'}
+              </Text>
+              <Text style={styles.activityMeta}>
+                {getReadinessLabel(readinessScore)}
+              </Text>
+            </View>
+          </Pressable>
         </View>
 
         <View style={styles.card}>
@@ -770,6 +883,52 @@ const styles = StyleSheet.create({
     borderColor: '#252525',
     borderRadius: 12,
     padding: 12,
+  },
+  readinessPanel: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+  },
+  readinessPanelTextWrap: {
+    flex: 1,
+  },
+  nutritionPanel: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    padding: 12,
+  },
+  nutritionTopRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  nutritionCalories: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  nutritionTarget: {
+    color: '#aaaaaa',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingBottom: 4,
+  },
+  nutritionTrack: {
+    height: 9,
+    backgroundColor: '#171717',
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  nutritionFill: {
+    height: '100%',
+    backgroundColor: '#4da6ff',
+    borderRadius: 999,
   },
   goalPanel: {
     backgroundColor: '#101c29',
