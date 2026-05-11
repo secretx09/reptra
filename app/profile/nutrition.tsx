@@ -55,6 +55,7 @@ const advancedTargetFields: {
 ];
 
 const mealCategories = ['Meal', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Drink'];
+const mealCategoryFilters = ['All', ...mealCategories];
 
 function getDateFromOffset(offset: number) {
   const date = new Date();
@@ -110,6 +111,7 @@ export default function NutritionScreen() {
   const [logs, setLogs] = useState<DailyNutritionLog[]>([]);
   const [mealPresets, setMealPresets] = useState<SavedMealPreset[]>([]);
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
+  const [selectedMealCategory, setSelectedMealCategory] = useState('All');
   const [showAdvancedMacros, setShowAdvancedMacros] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
@@ -147,9 +149,22 @@ export default function NutritionScreen() {
     [selectedLogs]
   );
   const weeklyChart = useMemo(() => getWeeklyNutritionChart(logs), [logs]);
+  const filteredMealPresets = useMemo(() => {
+    if (selectedMealCategory === 'All') {
+      return mealPresets;
+    }
+
+    return mealPresets.filter(
+      (meal) => (meal.category || 'Meal') === selectedMealCategory
+    );
+  }, [mealPresets, selectedMealCategory]);
   const primaryFields = showAdvancedMacros
     ? [...primaryTargetFields, ...advancedTargetFields]
     : primaryTargetFields;
+  const calorieTarget = Number(targets.calories) || 0;
+  const proteinTarget = Number(targets.protein) || 0;
+  const caloriesRemaining = calorieTarget - selectedTotals.calories;
+  const proteinRemaining = proteinTarget - selectedTotals.protein;
 
   const updateForm = (key: keyof ReturnType<typeof blankLogFields>, value: string) => {
     setForm((current) => ({
@@ -251,6 +266,46 @@ export default function NutritionScreen() {
       water: log.water,
       note: log.note,
     });
+  };
+
+  const handleDuplicateLog = async (log: DailyNutritionLog) => {
+    const duplicatedLog: DailyNutritionLog = {
+      ...log,
+      id: `nutrition-${Date.now()}`,
+      loggedAt: getLogDateTime(selectedDate),
+    };
+
+    await saveDailyNutritionLogs([duplicatedLog, ...logs]);
+    await fetchNutrition();
+  };
+
+  const handleCopyPreviousDay = async () => {
+    const previousDate = new Date(selectedDate);
+    previousDate.setDate(selectedDate.getDate() - 1);
+    const previousLogs = getNutritionLogsForDate(logs, previousDate);
+
+    if (previousLogs.length === 0) {
+      Alert.alert(
+        'Nothing to copy',
+        'The previous day does not have any nutrition entries yet.'
+      );
+      return;
+    }
+
+    const copiedLogs = previousLogs.map((log, index) => ({
+      ...log,
+      id: `nutrition-copy-${Date.now()}-${index}`,
+      loggedAt: getLogDateTime(selectedDate),
+    }));
+
+    await saveDailyNutritionLogs([...copiedLogs, ...logs]);
+    await fetchNutrition();
+    Alert.alert(
+      'Day copied',
+      `${previousLogs.length} entr${
+        previousLogs.length === 1 ? 'y was' : 'ies were'
+      } copied.`
+    );
   };
 
   const handleSaveMealPreset = async () => {
@@ -428,6 +483,38 @@ export default function NutritionScreen() {
               <View style={styles.sectionCard}>
                 <Text style={styles.sectionTitle}>Day Summary</Text>
 
+                <View style={styles.remainingRow}>
+                  <View style={styles.remainingCard}>
+                    <Text style={styles.remainingLabel}>Calories Left</Text>
+                    <Text
+                      style={[
+                        styles.remainingValue,
+                        caloriesRemaining < 0 && styles.remainingValueOver,
+                      ]}
+                    >
+                      {calorieTarget ? Math.round(caloriesRemaining) : '--'}
+                    </Text>
+                    <Text style={styles.remainingMeta}>
+                      {caloriesRemaining < 0 ? 'over target' : 'remaining'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.remainingCard}>
+                    <Text style={styles.remainingLabel}>Protein Left</Text>
+                    <Text
+                      style={[
+                        styles.remainingValue,
+                        proteinRemaining < 0 && styles.remainingValueOver,
+                      ]}
+                    >
+                      {proteinTarget ? `${Math.round(proteinRemaining)}g` : '--'}
+                    </Text>
+                    <Text style={styles.remainingMeta}>
+                      {proteinRemaining < 0 ? 'over target' : 'remaining'}
+                    </Text>
+                  </View>
+                </View>
+
                 <View style={styles.progressGrid}>
                   {primaryFields.map((field) => {
                     const currentValue = selectedTotals[field.key];
@@ -507,6 +594,16 @@ export default function NutritionScreen() {
                     );
                   })}
                 </View>
+
+                <Pressable
+                  style={styles.copyDayButton}
+                  onPress={handleCopyPreviousDay}
+                >
+                  <Text style={styles.copyDayButtonText}>
+                    Copy Previous Day Into{' '}
+                    {formatSelectedDate(selectedDateOffset, selectedDate)}
+                  </Text>
+                </Pressable>
               </View>
 
               <View style={styles.sectionCard}>
@@ -653,13 +750,43 @@ export default function NutritionScreen() {
                   </View>
                 </View>
 
-                {mealPresets.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryRow}
+                >
+                  {mealCategoryFilters.map((category) => {
+                    const isSelected = selectedMealCategory === category;
+
+                    return (
+                      <Pressable
+                        key={category}
+                        style={[
+                          styles.categoryChip,
+                          isSelected && styles.categoryChipSelected,
+                        ]}
+                        onPress={() => setSelectedMealCategory(category)}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            isSelected && styles.categoryChipTextSelected,
+                          ]}
+                        >
+                          {category}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                {filteredMealPresets.length > 0 ? (
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.mealPresetRow}
                   >
-                    {mealPresets.map((meal) => (
+                    {filteredMealPresets.map((meal) => (
                       <View key={meal.id} style={styles.mealPresetCard}>
                         <Text style={styles.mealCategoryLabel}>
                           {meal.category || 'Meal'}
@@ -689,8 +816,7 @@ export default function NutritionScreen() {
                   </ScrollView>
                 ) : (
                   <Text style={styles.emptyText}>
-                    No saved meals yet. Type calories/protein above, name the
-                    meal, then save it as a preset.
+                    No saved meals match this filter yet.
                   </Text>
                 )}
               </View>
@@ -716,6 +842,9 @@ export default function NutritionScreen() {
                 <View style={styles.logActionRow}>
                   <Pressable onPress={() => handleEditLog(item)}>
                     <Text style={styles.editText}>Edit</Text>
+                  </Pressable>
+                  <Pressable onPress={() => handleDuplicateLog(item)}>
+                    <Text style={styles.editText}>Duplicate</Text>
                   </Pressable>
                   <Pressable onPress={() => handleDeleteLog(item)}>
                     <Text style={styles.deleteText}>Delete</Text>
@@ -856,17 +985,56 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   smallToggle: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
     backgroundColor: '#101010',
     borderWidth: 1,
     borderColor: '#333333',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    minHeight: 30,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   smallToggleText: {
     color: '#4da6ff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
+    lineHeight: 14,
+  },
+  remainingRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  remainingCard: {
+    flex: 1,
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 14,
+    padding: 12,
+  },
+  remainingLabel: {
+    color: '#9dbbda',
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: 5,
+    textTransform: 'uppercase',
+  },
+  remainingValue: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 3,
+  },
+  remainingValueOver: {
+    color: '#ff8a8a',
+  },
+  remainingMeta: {
+    color: '#aaaaaa',
+    fontSize: 11,
+    fontWeight: '800',
   },
   progressGrid: {
     gap: 10,
@@ -945,6 +1113,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     marginTop: 7,
+  },
+  copyDayButton: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 12,
+    marginTop: 14,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  copyDayButtonText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '900',
   },
   inputGrid: {
     flexDirection: 'row',
