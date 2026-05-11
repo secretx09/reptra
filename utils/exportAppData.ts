@@ -7,6 +7,7 @@ import { loadProgressPhotos } from '../storage/progressPhotos';
 import { loadRoutines } from '../storage/routines';
 import { loadSettings } from '../storage/settings';
 import {
+  loadCustomNutritionFoods,
   loadDailyNutritionLogs,
   loadNutritionTargets,
   loadSavedMealPresets,
@@ -29,6 +30,7 @@ export async function buildAppDataExport() {
     nutritionTargets,
     dailyNutritionLogs,
     savedMealPresets,
+    customNutritionFoods,
   ] =
     await Promise.all([
       loadSettings(),
@@ -44,6 +46,7 @@ export async function buildAppDataExport() {
       loadNutritionTargets(),
       loadDailyNutritionLogs(),
       loadSavedMealPresets(),
+      loadCustomNutritionFoods(),
     ]);
 
   return {
@@ -63,5 +66,6 @@ export async function buildAppDataExport() {
     nutritionTargets,
     dailyNutritionLogs,
     savedMealPresets,
+    customNutritionFoods,
   };
 }

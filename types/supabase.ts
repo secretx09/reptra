@@ -54,7 +54,8 @@ export interface Database {
             | 'wellness_check_in'
             | 'nutrition_targets'
             | 'daily_nutrition_log'
-            | 'saved_meal_preset';
+            | 'saved_meal_preset'
+            | 'custom_nutrition_food';
           local_id: string;
           payload: Json;
           updated_at: string;
@@ -76,7 +77,8 @@ export interface Database {
             | 'wellness_check_in'
             | 'nutrition_targets'
             | 'daily_nutrition_log'
-            | 'saved_meal_preset';
+            | 'saved_meal_preset'
+            | 'custom_nutrition_food';
           local_id: string;
           payload: Json;
           updated_at?: string;

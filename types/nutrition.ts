@@ -30,3 +30,15 @@ export interface SavedMealPreset {
   note: string;
   createdAt: string;
 }
+
+export interface NutritionFood {
+  id: string;
+  name: string;
+  brand: string;
+  serving: string;
+  calories: string;
+  protein: string;
+  category: string;
+  isCustom: boolean;
+  createdAt: string;
+}

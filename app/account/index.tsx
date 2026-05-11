@@ -51,6 +51,7 @@ import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
 import {
   loadDailyNutritionLogs,
+  loadCustomNutritionFoods,
   loadNutritionTargets,
   loadSavedMealPresets,
 } from '../../storage/nutrition';
@@ -69,6 +70,7 @@ interface LocalCloudPreview {
   nutritionTargets: number;
   dailyNutritionLogs: number;
   savedMealPresets: number;
+  customNutritionFoods: number;
   settings: number;
   totalRecords: number;
 }
@@ -85,6 +87,7 @@ const emptyLocalPreview: LocalCloudPreview = {
   nutritionTargets: 0,
   dailyNutritionLogs: 0,
   savedMealPresets: 0,
+  customNutritionFoods: 0,
   settings: 1,
   totalRecords: 1,
 };
@@ -228,6 +231,7 @@ export default function AccountScreen() {
       nutritionTargets,
       dailyNutritionLogs,
       savedMealPresets,
+      customNutritionFoods,
     ] = await Promise.all([
       loadSettings(),
       loadWorkouts(),
@@ -241,6 +245,7 @@ export default function AccountScreen() {
       loadNutritionTargets(),
       loadDailyNutritionLogs(),
       loadSavedMealPresets(),
+      loadCustomNutritionFoods(),
     ]);
 
     setLocalPreview({
@@ -255,6 +260,7 @@ export default function AccountScreen() {
       nutritionTargets: nutritionTargets.updatedAt ? 1 : 0,
       dailyNutritionLogs: dailyNutritionLogs.length,
       savedMealPresets: savedMealPresets.length,
+      customNutritionFoods: customNutritionFoods.length,
       settings: settings ? 1 : 0,
       totalRecords:
         workouts.length +
@@ -267,6 +273,7 @@ export default function AccountScreen() {
         (nutritionTargets.updatedAt ? 1 : 0) +
         dailyNutritionLogs.length +
         savedMealPresets.length +
+        customNutritionFoods.length +
         2,
     });
   }, []);
@@ -928,7 +935,8 @@ export default function AccountScreen() {
                   {localPreview.bodyMeasurements} | Wellness:{' '}
                   {localPreview.wellnessCheckIns} | Nutrition:{' '}
                   {localPreview.dailyNutritionLogs} | Meals:{' '}
-                  {localPreview.savedMealPresets} | Settings:{' '}
+                  {localPreview.savedMealPresets} | Foods:{' '}
+                  {localPreview.customNutritionFoods} | Settings:{' '}
                   {localPreview.settings} | Total records:{' '}
                   {localPreview.totalRecords}
                 </Text>

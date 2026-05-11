@@ -8,6 +8,7 @@ import { saveRoutines } from '../storage/routines';
 import { defaultSettings, saveSettings } from '../storage/settings';
 import {
   defaultNutritionTargets,
+  saveCustomNutritionFoods,
   saveDailyNutritionLogs,
   saveNutritionTargets,
   saveSavedMealPresets,
@@ -20,6 +21,7 @@ import { WellnessCheckIn } from '../types/wellnessCheckIn';
 import { FitnessGoal } from '../types/fitnessGoal';
 import {
   DailyNutritionLog,
+  NutritionFood,
   NutritionTargets,
   SavedMealPreset,
 } from '../types/nutrition';
@@ -49,6 +51,7 @@ type AppDataImportPayload = {
   nutritionTargets?: NutritionTargets;
   dailyNutritionLogs?: DailyNutritionLog[];
   savedMealPresets?: SavedMealPreset[];
+  customNutritionFoods?: NutritionFood[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -126,6 +129,9 @@ export function parseAppDataImport(jsonInput: string) {
     savedMealPresets: Array.isArray(payload.savedMealPresets)
       ? payload.savedMealPresets
       : [],
+    customNutritionFoods: Array.isArray(payload.customNutritionFoods)
+      ? payload.customNutritionFoods
+      : [],
   };
 }
 
@@ -145,4 +151,5 @@ export async function importAppData(jsonInput: string) {
   await saveNutritionTargets(parsed.nutritionTargets);
   await saveDailyNutritionLogs(parsed.dailyNutritionLogs);
   await saveSavedMealPresets(parsed.savedMealPresets);
+  await saveCustomNutritionFoods(parsed.customNutritionFoods);
 }

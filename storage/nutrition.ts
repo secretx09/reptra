@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DailyNutritionLog,
+  NutritionFood,
   NutritionTargets,
   SavedMealPreset,
 } from '../types/nutrition';
@@ -8,6 +9,7 @@ import {
 const NUTRITION_TARGETS_KEY = 'nutritionTargets';
 const DAILY_NUTRITION_LOGS_KEY = 'dailyNutritionLogs';
 const SAVED_MEAL_PRESETS_KEY = 'savedMealPresets';
+const CUSTOM_NUTRITION_FOODS_KEY = 'customNutritionFoods';
 
 export const defaultNutritionTargets: NutritionTargets = {
   calories: '',
@@ -109,4 +111,36 @@ export async function loadSavedMealPresets(): Promise<SavedMealPreset[]> {
 export async function deleteSavedMealPresetById(mealId: string) {
   const meals = await loadSavedMealPresets();
   await saveSavedMealPresets(meals.filter((meal) => meal.id !== mealId));
+}
+
+export async function saveCustomNutritionFoods(foods: NutritionFood[]) {
+  try {
+    await AsyncStorage.setItem(CUSTOM_NUTRITION_FOODS_KEY, JSON.stringify(foods));
+  } catch (error) {
+    console.error('Failed to save custom nutrition foods:', error);
+  }
+}
+
+export async function loadCustomNutritionFoods(): Promise<NutritionFood[]> {
+  try {
+    const data = await AsyncStorage.getItem(CUSTOM_NUTRITION_FOODS_KEY);
+
+    if (!data) {
+      return [];
+    }
+
+    const foods = JSON.parse(data) as NutritionFood[];
+
+    return foods.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  } catch (error) {
+    console.error('Failed to load custom nutrition foods:', error);
+    return [];
+  }
+}
+
+export async function deleteCustomNutritionFoodById(foodId: string) {
+  const foods = await loadCustomNutritionFoods();
+  await saveCustomNutritionFoods(foods.filter((food) => food.id !== foodId));
 }

@@ -13,16 +13,21 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   deleteDailyNutritionLogById,
+  deleteCustomNutritionFoodById,
   deleteSavedMealPresetById,
+  loadCustomNutritionFoods,
   loadDailyNutritionLogs,
   loadNutritionTargets,
   loadSavedMealPresets,
+  saveCustomNutritionFoods,
   saveDailyNutritionLogs,
   saveNutritionTargets,
   saveSavedMealPresets,
 } from '../../storage/nutrition';
+import { commonFoods } from '../../data/commonFoods';
 import {
   DailyNutritionLog,
+  NutritionFood,
   NutritionTargets,
   SavedMealPreset,
 } from '../../types/nutrition';
@@ -110,8 +115,11 @@ export default function NutritionScreen() {
   });
   const [logs, setLogs] = useState<DailyNutritionLog[]>([]);
   const [mealPresets, setMealPresets] = useState<SavedMealPreset[]>([]);
+  const [customFoods, setCustomFoods] = useState<NutritionFood[]>([]);
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
   const [selectedMealCategory, setSelectedMealCategory] = useState('All');
+  const [foodSearch, setFoodSearch] = useState('');
+  const [servingMultiplier, setServingMultiplier] = useState('1');
   const [showAdvancedMacros, setShowAdvancedMacros] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
@@ -123,15 +131,18 @@ export default function NutritionScreen() {
   );
 
   const fetchNutrition = useCallback(async () => {
-    const [savedTargets, savedLogs, savedMeals] = await Promise.all([
+    const [savedTargets, savedLogs, savedMeals, savedCustomFoods] =
+      await Promise.all([
       loadNutritionTargets(),
       loadDailyNutritionLogs(),
       loadSavedMealPresets(),
+      loadCustomNutritionFoods(),
     ]);
 
     setTargets(savedTargets);
     setLogs(savedLogs);
     setMealPresets(savedMeals);
+    setCustomFoods(savedCustomFoods);
   }, []);
 
   useFocusEffect(
@@ -158,6 +169,25 @@ export default function NutritionScreen() {
       (meal) => (meal.category || 'Meal') === selectedMealCategory
     );
   }, [mealPresets, selectedMealCategory]);
+  const searchableFoods = useMemo(
+    () => [...customFoods, ...commonFoods],
+    [customFoods]
+  );
+  const filteredFoods = useMemo(() => {
+    const normalizedSearch = foodSearch.trim().toLowerCase();
+
+    return searchableFoods
+      .filter((food) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return `${food.name} ${food.brand} ${food.category}`
+          .toLowerCase()
+          .includes(normalizedSearch);
+      })
+      .slice(0, 12);
+  }, [foodSearch, searchableFoods]);
   const primaryFields = showAdvancedMacros
     ? [...primaryTargetFields, ...advancedTargetFields]
     : primaryTargetFields;
@@ -165,6 +195,7 @@ export default function NutritionScreen() {
   const proteinTarget = Number(targets.protein) || 0;
   const caloriesRemaining = calorieTarget - selectedTotals.calories;
   const proteinRemaining = proteinTarget - selectedTotals.protein;
+  const multiplier = Math.max(Number(servingMultiplier) || 1, 0.25);
 
   const updateForm = (key: keyof ReturnType<typeof blankLogFields>, value: string) => {
     setForm((current) => ({
@@ -398,6 +429,75 @@ export default function NutritionScreen() {
 
     await saveDailyNutritionLogs([newLog, ...logs]);
     await fetchNutrition();
+  };
+
+  const handleQuickAddFood = async (food: NutritionFood) => {
+    const newLog: DailyNutritionLog = {
+      id: `nutrition-${Date.now()}`,
+      loggedAt: getLogDateTime(selectedDate),
+      calories: String(Math.round((Number(food.calories) || 0) * multiplier)),
+      protein: String(Math.round((Number(food.protein) || 0) * multiplier)),
+      carbs: '',
+      fat: '',
+      water: '',
+      note: `${food.name} (${servingMultiplier || '1'} x ${food.serving})`,
+    };
+
+    await saveDailyNutritionLogs([newLog, ...logs]);
+    await fetchNutrition();
+  };
+
+  const handleUseFoodInForm = (food: NutritionFood) => {
+    setForm((current) => ({
+      ...current,
+      mealName: food.name,
+      calories: String(Math.round((Number(food.calories) || 0) * multiplier)),
+      protein: String(Math.round((Number(food.protein) || 0) * multiplier)),
+      note: `${food.brand} - ${servingMultiplier || '1'} x ${food.serving}`,
+    }));
+  };
+
+  const handleSaveCustomFood = async () => {
+    const trimmedName = form.mealName.trim();
+
+    if (!trimmedName || (!form.calories.trim() && !form.protein.trim())) {
+      Alert.alert(
+        'Missing food',
+        'Enter a food name plus calories or protein before saving it.'
+      );
+      return;
+    }
+
+    const newFood: NutritionFood = {
+      id: `custom-food-${Date.now()}`,
+      name: trimmedName,
+      brand: form.note.trim() || 'Custom',
+      serving: '1 serving',
+      calories: form.calories.trim(),
+      protein: form.protein.trim(),
+      category: form.mealCategory,
+      isCustom: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    await saveCustomNutritionFoods([newFood, ...customFoods]);
+    setFoodSearch(trimmedName);
+    await fetchNutrition();
+    Alert.alert('Food saved', `${newFood.name} was added to your food lookup.`);
+  };
+
+  const handleDeleteCustomFood = (food: NutritionFood) => {
+    Alert.alert('Delete custom food', `Remove "${food.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteCustomNutritionFoodById(food.id);
+          await fetchNutrition();
+        },
+      },
+    ]);
   };
 
   const handleDeleteMealPreset = (meal: SavedMealPreset) => {
@@ -649,6 +749,75 @@ export default function NutritionScreen() {
               </View>
 
               <View style={styles.sectionCard}>
+                <View style={styles.sectionHeaderRow}>
+                  <View style={styles.sectionHeaderText}>
+                    <Text style={styles.sectionTitle}>Food Lookup</Text>
+                    <Text style={styles.helperText}>
+                      Search common foods or your custom foods, then quick add
+                      calories and protein.
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.foodSearchRow}>
+                  <TextInput
+                    style={styles.foodSearchInput}
+                    placeholder="Search chicken, oats, protein..."
+                    placeholderTextColor="#777777"
+                    value={foodSearch}
+                    onChangeText={setFoodSearch}
+                  />
+
+                  <TextInput
+                    style={styles.servingInput}
+                    placeholder="1"
+                    placeholderTextColor="#777777"
+                    keyboardType="numeric"
+                    value={servingMultiplier}
+                    onChangeText={setServingMultiplier}
+                  />
+                </View>
+
+                <Text style={styles.lookupHint}>
+                  Serving multiplier: {servingMultiplier || '1'}x
+                </Text>
+
+                <View style={styles.foodList}>
+                  {filteredFoods.map((food) => (
+                    <View key={food.id} style={styles.foodCard}>
+                      <View style={styles.foodTextWrap}>
+                        <Text style={styles.foodTitle}>{food.name}</Text>
+                        <Text style={styles.foodMeta}>
+                          {food.brand} | {food.serving} | {food.calories} cal |{' '}
+                          {food.protein}g protein
+                        </Text>
+                        <Text style={styles.foodCategory}>
+                          {food.isCustom ? 'Custom' : food.category}
+                        </Text>
+                      </View>
+
+                      <View style={styles.foodActionColumn}>
+                        <Pressable
+                          style={styles.foodSmallButton}
+                          onPress={() => handleQuickAddFood(food)}
+                        >
+                          <Text style={styles.foodSmallButtonText}>Add</Text>
+                        </Pressable>
+                        <Pressable onPress={() => handleUseFoodInForm(food)}>
+                          <Text style={styles.foodFillText}>Fill</Text>
+                        </Pressable>
+                        {food.isCustom ? (
+                          <Pressable onPress={() => handleDeleteCustomFood(food)}>
+                            <Text style={styles.foodDeleteText}>Delete</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.sectionCard}>
                 <Text style={styles.sectionTitle}>
                   {editingLogId
                     ? 'Edit Entry'
@@ -730,6 +899,15 @@ export default function NutritionScreen() {
                 >
                   <Text style={styles.saveMealButtonText}>
                     {editingMealId ? 'Update Saved Meal' : 'Save As Meal'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.customFoodButton}
+                  onPress={handleSaveCustomFood}
+                >
+                  <Text style={styles.customFoodButtonText}>
+                    Save As Custom Food
                   </Text>
                 </Pressable>
 
@@ -1216,6 +1394,115 @@ const styles = StyleSheet.create({
   saveMealButtonText: {
     color: '#4da6ff',
     fontSize: 14,
+    fontWeight: '800',
+  },
+  customFoodButton: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  customFoodButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  foodSearchRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  foodSearchInput: {
+    flex: 1,
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 15,
+  },
+  servingInput: {
+    width: 72,
+    backgroundColor: '#101010',
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  lookupHint: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  foodList: {
+    gap: 10,
+  },
+  foodCard: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  foodTextWrap: {
+    flex: 1,
+  },
+  foodTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  foodMeta: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginBottom: 5,
+  },
+  foodCategory: {
+    color: '#4da6ff',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  foodActionColumn: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  foodSmallButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  foodSmallButtonText: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  foodFillText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  foodDeleteText: {
+    color: '#ff8a8a',
+    fontSize: 12,
     fontWeight: '800',
   },
   cancelButton: {

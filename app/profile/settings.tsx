@@ -21,6 +21,7 @@ import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
 import {
   loadDailyNutritionLogs,
+  loadCustomNutritionFoods,
   loadNutritionTargets,
   loadSavedMealPresets,
 } from '../../storage/nutrition';
@@ -59,6 +60,7 @@ export default function ProfileSettingsScreen() {
     nutritionTargets: 0,
     dailyNutritionLogs: 0,
     savedMealPresets: 0,
+    customNutritionFoods: 0,
     lastWorkoutLabel: 'No workouts yet',
   });
   const [defaultRestTimerInput, setDefaultRestTimerInput] = useState(
@@ -80,6 +82,7 @@ export default function ProfileSettingsScreen() {
           savedNutritionTargets,
           savedNutritionLogs,
           savedMealPresets,
+          customNutritionFoods,
         ] = await Promise.all([
           loadWorkouts(),
           loadRoutines(),
@@ -91,6 +94,7 @@ export default function ProfileSettingsScreen() {
           loadNutritionTargets(),
           loadDailyNutritionLogs(),
           loadSavedMealPresets(),
+          loadCustomNutritionFoods(),
         ]);
         const latestWorkout = savedWorkouts[0];
         const currentUser = await getCurrentUser();
@@ -113,6 +117,7 @@ export default function ProfileSettingsScreen() {
           nutritionTargets: savedNutritionTargets.updatedAt ? 1 : 0,
           dailyNutritionLogs: savedNutritionLogs.length,
           savedMealPresets: savedMealPresets.length,
+          customNutritionFoods: customNutritionFoods.length,
           lastWorkoutLabel: latestWorkout
             ? new Date(latestWorkout.completedAt).toLocaleDateString([], {
                 month: 'short',
@@ -510,7 +515,8 @@ export default function ProfileSettingsScreen() {
                 {dataSnapshot.bodyMeasurements} | Wellness:{' '}
                 {dataSnapshot.wellnessCheckIns} | Nutrition:{' '}
                 {dataSnapshot.dailyNutritionLogs} | Meals:{' '}
-                {dataSnapshot.savedMealPresets} | Last workout:{' '}
+                {dataSnapshot.savedMealPresets} | Foods:{' '}
+                {dataSnapshot.customNutritionFoods} | Last workout:{' '}
                 {dataSnapshot.lastWorkoutLabel}
               </Text>
             </View>
