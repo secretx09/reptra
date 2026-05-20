@@ -1,55 +1,35 @@
-import { useCallback, useMemo, useState } from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
+import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
+import { loadFitnessGoals } from '../../storage/fitnessGoals';
+import { loadDailyNutritionLogs, loadNutritionTargets, } from '../../storage/nutrition';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
-import { loadWorkouts } from '../../storage/workouts';
-import {
-  loadDailyNutritionLogs,
-  loadNutritionTargets,
-} from '../../storage/nutrition';
-import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
-import { loadFitnessGoals } from '../../storage/fitnessGoals';
-import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
-import { Exercise } from '../../types/exercise';
+import { loadWorkouts } from '../../storage/workouts';
 import { BodyMeasurement } from '../../types/bodyMeasurement';
+import { Exercise } from '../../types/exercise';
 import { FitnessGoal } from '../../types/fitnessGoal';
 import { DailyNutritionLog, NutritionTargets } from '../../types/nutrition';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme, WeightUnit } from '../../types/settings';
-import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
 import { WellnessCheckIn } from '../../types/wellnessCheckIn';
+import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
+import { getThemePalette } from '../../utils/appTheme';
+import { formatBodyWeight } from '../../utils/bodyMeasurements';
 import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
-import {
-  calculateFitnessGoalProgress,
-  formatGoalValue,
-} from '../../utils/fitnessGoals';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
-import { getThemePalette } from '../../utils/appTheme';
+import { calculateFitnessGoalProgress, formatGoalValue, } from '../../utils/fitnessGoals';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
-import { formatBodyWeight } from '../../utils/bodyMeasurements';
-import {
-  getReadinessLabel,
-  getReadinessScore,
-} from '../../utils/wellnessCheckIns';
-import {
-  calculateNutritionTotals,
-  getNutritionProgress,
-  getTodayNutritionLogs,
-} from '../../utils/nutrition';
+import { calculateNutritionTotals, getNutritionProgress, getTodayNutritionLogs, } from '../../utils/nutrition';
+import { getReadinessLabel, getReadinessScore, } from '../../utils/wellnessCheckIns';
 
 type FeedFilter = 'all' | WorkoutVisibility;
 
