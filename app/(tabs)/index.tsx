@@ -1,11 +1,21 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
-import { loadDailyNutritionLogs, loadNutritionTargets, } from '../../storage/nutrition';
+import {
+  loadDailyNutritionLogs,
+  loadNutritionTargets,
+} from '../../storage/nutrition';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
@@ -26,10 +36,20 @@ import { calculateExercisePRs } from '../../utils/calculatePRs';
 import { calculateWeeklyStats } from '../../utils/calculateWeeklyStats';
 import { calculateWorkoutSummary } from '../../utils/calculateWorkoutSummary';
 import { loadExerciseLibrary } from '../../utils/exerciseLibrary';
-import { calculateFitnessGoalProgress, formatGoalValue, } from '../../utils/fitnessGoals';
+import {
+  calculateFitnessGoalProgress,
+  formatGoalValue,
+} from '../../utils/fitnessGoals';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
-import { calculateNutritionTotals, getNutritionProgress, getTodayNutritionLogs, } from '../../utils/nutrition';
-import { getReadinessLabel, getReadinessScore, } from '../../utils/wellnessCheckIns';
+import {
+  calculateNutritionTotals,
+  getNutritionProgress,
+  getTodayNutritionLogs,
+} from '../../utils/nutrition';
+import {
+  getReadinessLabel,
+  getReadinessScore,
+} from '../../utils/wellnessCheckIns';
 
 type FeedFilter = 'all' | WorkoutVisibility;
 
