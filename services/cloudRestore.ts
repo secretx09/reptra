@@ -9,11 +9,15 @@ import { saveSettings } from '../storage/settings';
 import {
   loadCustomNutritionFoods,
   loadDailyNutritionLogs,
+  loadFavoriteNutritionFoodIds,
   loadNutritionTargets,
+  loadRecentNutritionFoodIds,
   loadSavedMealPresets,
   saveCustomNutritionFoods,
   saveDailyNutritionLogs,
+  saveFavoriteNutritionFoodIds,
   saveNutritionTargets,
+  saveRecentNutritionFoodIds,
   saveSavedMealPresets,
 } from '../storage/nutrition';
 import { saveTrainingSplitPlan } from '../storage/trainingSplit';
@@ -64,6 +68,7 @@ export interface CloudBackupSummary {
     dailyNutritionLogs: number;
     savedMealPresets: number;
     customNutritionFoods: number;
+    nutritionFoodPreferences: number;
   };
 }
 
@@ -88,6 +93,7 @@ export interface CloudMergeResult {
     dailyNutritionLogs: number;
     savedMealPresets: number;
     customNutritionFoods: number;
+    nutritionFoodPreferences: number;
   };
 }
 
@@ -162,6 +168,7 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
         dailyNutritionLogs: 0,
         savedMealPresets: 0,
         customNutritionFoods: 0,
+        nutritionFoodPreferences: 0,
       },
     };
   }
@@ -214,6 +221,9 @@ export async function getCloudBackupSummary(): Promise<CloudBackupSummary> {
       customNutritionFoods: records.filter(
         (record) => record.record_type === 'custom_nutrition_food'
       ).length,
+      nutritionFoodPreferences: records.filter(
+        (record) => record.record_type === 'nutrition_food_preferences'
+      ).length,
     },
   };
 }
@@ -250,6 +260,9 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
   );
   const nutritionTargetsRecord = records.find(
     (record) => record.record_type === 'nutrition_targets'
+  );
+  const nutritionFoodPreferencesRecord = records.find(
+    (record) => record.record_type === 'nutrition_food_preferences'
   );
 
   await saveWorkouts(
@@ -323,6 +336,18 @@ export async function restoreCloudDataToLocal(): Promise<CloudRestoreResult> {
     );
   }
 
+  if (nutritionFoodPreferencesRecord) {
+    const preferences = fromJson<{
+      favoriteNutritionFoodIds?: string[];
+      recentNutritionFoodIds?: string[];
+    }>(nutritionFoodPreferencesRecord.payload);
+
+    await saveFavoriteNutritionFoodIds(
+      preferences.favoriteNutritionFoodIds ?? []
+    );
+    await saveRecentNutritionFoodIds(preferences.recentNutritionFoodIds ?? []);
+  }
+
   const message = `Restored ${records.length} cloud record${
     records.length === 1 ? '' : 's'
   } to local storage.`;
@@ -365,6 +390,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         dailyNutritionLogs: 0,
         savedMealPresets: 0,
         customNutritionFoods: 0,
+        nutritionFoodPreferences: 0,
       },
     };
   }
@@ -387,6 +413,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
         dailyNutritionLogs: 0,
         savedMealPresets: 0,
         customNutritionFoods: 0,
+        nutritionFoodPreferences: 0,
       },
     };
   }
@@ -403,6 +430,8 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     localDailyNutritionLogs,
     localSavedMealPresets,
     localCustomNutritionFoods,
+    localFavoriteNutritionFoodIds,
+    localRecentNutritionFoodIds,
   ] = await Promise.all([
     loadWorkouts(),
     loadRoutines(),
@@ -415,10 +444,15 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     loadDailyNutritionLogs(),
     loadSavedMealPresets(),
     loadCustomNutritionFoods(),
+    loadFavoriteNutritionFoodIds(),
+    loadRecentNutritionFoodIds(),
   ]);
 
   const nutritionTargetsRecord = records.find(
     (record) => record.record_type === 'nutrition_targets'
+  );
+  const nutritionFoodPreferencesRecord = records.find(
+    (record) => record.record_type === 'nutrition_food_preferences'
   );
 
   const cloudWorkouts = records
@@ -486,6 +520,29 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     localCustomNutritionFoods,
     cloudCustomNutritionFoods
   );
+  const cloudNutritionFoodPreferences = nutritionFoodPreferencesRecord
+    ? fromJson<{
+        favoriteNutritionFoodIds?: string[];
+        recentNutritionFoodIds?: string[];
+      }>(nutritionFoodPreferencesRecord.payload)
+    : {};
+  const mergedFavoriteNutritionFoodIds = Array.from(
+    new Set([
+      ...localFavoriteNutritionFoodIds,
+      ...(cloudNutritionFoodPreferences.favoriteNutritionFoodIds ?? []),
+    ])
+  );
+  const mergedRecentNutritionFoodIds = Array.from(
+    new Set([
+      ...localRecentNutritionFoodIds,
+      ...(cloudNutritionFoodPreferences.recentNutritionFoodIds ?? []),
+    ])
+  ).slice(0, 12);
+  const addedNutritionFoodPreferenceCount =
+    mergedFavoriteNutritionFoodIds.length -
+      localFavoriteNutritionFoodIds.length +
+    mergedRecentNutritionFoodIds.length -
+      localRecentNutritionFoodIds.length;
   const mergedFavoriteExerciseIds = Array.from(
     new Set([...localFavoriteExerciseIds, ...cloudFavoriteExerciseIds])
   );
@@ -504,6 +561,8 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     saveDailyNutritionLogs(dailyNutritionLogMerge.mergedItems),
     saveSavedMealPresets(savedMealPresetMerge.mergedItems),
     saveCustomNutritionFoods(customNutritionFoodMerge.mergedItems),
+    saveFavoriteNutritionFoodIds(mergedFavoriteNutritionFoodIds),
+    saveRecentNutritionFoodIds(mergedRecentNutritionFoodIds),
   ]);
 
   if (nutritionTargetsRecord) {
@@ -528,6 +587,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
     dailyNutritionLogMerge.addedCount +
     savedMealPresetMerge.addedCount +
     customNutritionFoodMerge.addedCount +
+    Math.max(addedNutritionFoodPreferenceCount, 0) +
     addedFavoriteCount;
   const message =
     addedTotal === 0
@@ -553,6 +613,7 @@ export async function mergeCloudDataIntoLocal(): Promise<CloudMergeResult> {
       dailyNutritionLogs: dailyNutritionLogMerge.addedCount,
       savedMealPresets: savedMealPresetMerge.addedCount,
       customNutritionFoods: customNutritionFoodMerge.addedCount,
+      nutritionFoodPreferences: Math.max(addedNutritionFoodPreferenceCount, 0),
     },
   };
 }

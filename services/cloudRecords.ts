@@ -78,6 +78,10 @@ function getRecordTitle(record: CloudRecord) {
     return getStringField(payload, 'name') || 'Custom food';
   }
 
+  if (record.record_type === 'nutrition_food_preferences') {
+    return 'Nutrition food preferences';
+  }
+
   if (record.record_type === 'settings') {
     return 'App settings';
   }
@@ -115,6 +119,8 @@ function getRecordTypeLabel(recordType: CloudRecord['record_type']) {
       return 'Saved Meal';
     case 'custom_nutrition_food':
       return 'Custom Food';
+    case 'nutrition_food_preferences':
+      return 'Food Preferences';
     case 'progress_photo':
       return 'Progress Photo';
     case 'routine':

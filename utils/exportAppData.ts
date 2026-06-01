@@ -9,7 +9,9 @@ import { loadSettings } from '../storage/settings';
 import {
   loadCustomNutritionFoods,
   loadDailyNutritionLogs,
+  loadFavoriteNutritionFoodIds,
   loadNutritionTargets,
+  loadRecentNutritionFoodIds,
   loadSavedMealPresets,
 } from '../storage/nutrition';
 import { loadTrainingSplitPlan } from '../storage/trainingSplit';
@@ -31,6 +33,8 @@ export async function buildAppDataExport() {
     dailyNutritionLogs,
     savedMealPresets,
     customNutritionFoods,
+    favoriteNutritionFoodIds,
+    recentNutritionFoodIds,
   ] =
     await Promise.all([
       loadSettings(),
@@ -47,6 +51,8 @@ export async function buildAppDataExport() {
       loadDailyNutritionLogs(),
       loadSavedMealPresets(),
       loadCustomNutritionFoods(),
+      loadFavoriteNutritionFoodIds(),
+      loadRecentNutritionFoodIds(),
     ]);
 
   return {
@@ -67,5 +73,7 @@ export async function buildAppDataExport() {
     dailyNutritionLogs,
     savedMealPresets,
     customNutritionFoods,
+    favoriteNutritionFoodIds,
+    recentNutritionFoodIds,
   };
 }

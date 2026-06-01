@@ -49,12 +49,6 @@ import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
 import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
-import {
-  loadDailyNutritionLogs,
-  loadCustomNutritionFoods,
-  loadNutritionTargets,
-  loadSavedMealPresets,
-} from '../../storage/nutrition';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -67,10 +61,6 @@ interface LocalCloudPreview {
   fitnessGoals: number;
   bodyMeasurements: number;
   wellnessCheckIns: number;
-  nutritionTargets: number;
-  dailyNutritionLogs: number;
-  savedMealPresets: number;
-  customNutritionFoods: number;
   settings: number;
   totalRecords: number;
 }
@@ -84,10 +74,6 @@ const emptyLocalPreview: LocalCloudPreview = {
   fitnessGoals: 0,
   bodyMeasurements: 0,
   wellnessCheckIns: 0,
-  nutritionTargets: 0,
-  dailyNutritionLogs: 0,
-  savedMealPresets: 0,
-  customNutritionFoods: 0,
   settings: 1,
   totalRecords: 1,
 };
@@ -228,10 +214,6 @@ export default function AccountScreen() {
       fitnessGoals,
       bodyMeasurements,
       wellnessCheckIns,
-      nutritionTargets,
-      dailyNutritionLogs,
-      savedMealPresets,
-      customNutritionFoods,
     ] = await Promise.all([
       loadSettings(),
       loadWorkouts(),
@@ -242,10 +224,6 @@ export default function AccountScreen() {
       loadFitnessGoals(),
       loadBodyMeasurements(),
       loadWellnessCheckIns(),
-      loadNutritionTargets(),
-      loadDailyNutritionLogs(),
-      loadSavedMealPresets(),
-      loadCustomNutritionFoods(),
     ]);
 
     setLocalPreview({
@@ -257,10 +235,6 @@ export default function AccountScreen() {
       fitnessGoals: fitnessGoals.length,
       bodyMeasurements: bodyMeasurements.length,
       wellnessCheckIns: wellnessCheckIns.length,
-      nutritionTargets: nutritionTargets.updatedAt ? 1 : 0,
-      dailyNutritionLogs: dailyNutritionLogs.length,
-      savedMealPresets: savedMealPresets.length,
-      customNutritionFoods: customNutritionFoods.length,
       settings: settings ? 1 : 0,
       totalRecords:
         workouts.length +
@@ -270,10 +244,6 @@ export default function AccountScreen() {
         fitnessGoals.length +
         bodyMeasurements.length +
         wellnessCheckIns.length +
-        (nutritionTargets.updatedAt ? 1 : 0) +
-        dailyNutritionLogs.length +
-        savedMealPresets.length +
-        customNutritionFoods.length +
         2,
     });
   }, []);
@@ -933,10 +903,7 @@ export default function AccountScreen() {
                   Favorites: {localPreview.favoriteExercises} | Goals:{' '}
                   {localPreview.fitnessGoals} | Body:{' '}
                   {localPreview.bodyMeasurements} | Wellness:{' '}
-                  {localPreview.wellnessCheckIns} | Nutrition:{' '}
-                  {localPreview.dailyNutritionLogs} | Meals:{' '}
-                  {localPreview.savedMealPresets} | Foods:{' '}
-                  {localPreview.customNutritionFoods} | Settings:{' '}
+                  {localPreview.wellnessCheckIns} | Settings:{' '}
                   {localPreview.settings} | Total records:{' '}
                   {localPreview.totalRecords}
                 </Text>

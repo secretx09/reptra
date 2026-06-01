@@ -55,7 +55,8 @@ export interface Database {
             | 'nutrition_targets'
             | 'daily_nutrition_log'
             | 'saved_meal_preset'
-            | 'custom_nutrition_food';
+            | 'custom_nutrition_food'
+            | 'nutrition_food_preferences';
           local_id: string;
           payload: Json;
           updated_at: string;
@@ -78,7 +79,8 @@ export interface Database {
             | 'nutrition_targets'
             | 'daily_nutrition_log'
             | 'saved_meal_preset'
-            | 'custom_nutrition_food';
+            | 'custom_nutrition_food'
+            | 'nutrition_food_preferences';
           local_id: string;
           payload: Json;
           updated_at?: string;

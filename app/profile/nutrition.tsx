@@ -17,11 +17,15 @@ import {
   deleteSavedMealPresetById,
   loadCustomNutritionFoods,
   loadDailyNutritionLogs,
+  loadFavoriteNutritionFoodIds,
   loadNutritionTargets,
+  loadRecentNutritionFoodIds,
   loadSavedMealPresets,
   saveCustomNutritionFoods,
   saveDailyNutritionLogs,
+  saveFavoriteNutritionFoodIds,
   saveNutritionTargets,
+  saveRecentNutritionFoodIds,
   saveSavedMealPresets,
 } from '../../storage/nutrition';
 import { commonFoods } from '../../data/commonFoods';
@@ -61,6 +65,16 @@ const advancedTargetFields: {
 
 const mealCategories = ['Meal', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Drink'];
 const mealCategoryFilters = ['All', ...mealCategories];
+const foodCategoryFilters = [
+  'All',
+  'Favorites',
+  'Recent',
+  'Protein',
+  'Carb',
+  'Dairy',
+  'Drink',
+  'Custom',
+];
 
 function getDateFromOffset(offset: number) {
   const date = new Date();
@@ -104,6 +118,13 @@ function blankLogFields() {
   };
 }
 
+interface MealBuilderItem {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+}
+
 export default function NutritionScreen() {
   const [targets, setTargets] = useState<NutritionTargets>({
     calories: '',
@@ -116,10 +137,15 @@ export default function NutritionScreen() {
   const [logs, setLogs] = useState<DailyNutritionLog[]>([]);
   const [mealPresets, setMealPresets] = useState<SavedMealPreset[]>([]);
   const [customFoods, setCustomFoods] = useState<NutritionFood[]>([]);
+  const [favoriteFoodIds, setFavoriteFoodIds] = useState<string[]>([]);
+  const [recentFoodIds, setRecentFoodIds] = useState<string[]>([]);
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
   const [selectedMealCategory, setSelectedMealCategory] = useState('All');
+  const [selectedFoodCategory, setSelectedFoodCategory] = useState('All');
   const [foodSearch, setFoodSearch] = useState('');
   const [servingMultiplier, setServingMultiplier] = useState('1');
+  const [mealBuilderItems, setMealBuilderItems] = useState<MealBuilderItem[]>([]);
+  const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
   const [showAdvancedMacros, setShowAdvancedMacros] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
@@ -131,18 +157,29 @@ export default function NutritionScreen() {
   );
 
   const fetchNutrition = useCallback(async () => {
-    const [savedTargets, savedLogs, savedMeals, savedCustomFoods] =
+    const [
+      savedTargets,
+      savedLogs,
+      savedMeals,
+      savedCustomFoods,
+      savedFavoriteFoodIds,
+      savedRecentFoodIds,
+    ] =
       await Promise.all([
-      loadNutritionTargets(),
-      loadDailyNutritionLogs(),
-      loadSavedMealPresets(),
-      loadCustomNutritionFoods(),
-    ]);
+        loadNutritionTargets(),
+        loadDailyNutritionLogs(),
+        loadSavedMealPresets(),
+        loadCustomNutritionFoods(),
+        loadFavoriteNutritionFoodIds(),
+        loadRecentNutritionFoodIds(),
+      ]);
 
     setTargets(savedTargets);
     setLogs(savedLogs);
     setMealPresets(savedMeals);
     setCustomFoods(savedCustomFoods);
+    setFavoriteFoodIds(savedFavoriteFoodIds);
+    setRecentFoodIds(savedRecentFoodIds);
   }, []);
 
   useFocusEffect(
@@ -173,11 +210,47 @@ export default function NutritionScreen() {
     () => [...customFoods, ...commonFoods],
     [customFoods]
   );
+  const recentFoods = useMemo(
+    () =>
+      recentFoodIds
+        .map((foodId) => searchableFoods.find((food) => food.id === foodId))
+        .filter((food): food is NutritionFood => Boolean(food)),
+    [recentFoodIds, searchableFoods]
+  );
+  const favoriteFoods = useMemo(
+    () => searchableFoods.filter((food) => favoriteFoodIds.includes(food.id)),
+    [favoriteFoodIds, searchableFoods]
+  );
   const filteredFoods = useMemo(() => {
     const normalizedSearch = foodSearch.trim().toLowerCase();
 
     return searchableFoods
       .filter((food) => {
+        if (
+          selectedFoodCategory === 'Favorites' &&
+          !favoriteFoodIds.includes(food.id)
+        ) {
+          return false;
+        }
+
+        if (
+          selectedFoodCategory === 'Recent' &&
+          !recentFoodIds.includes(food.id)
+        ) {
+          return false;
+        }
+
+        if (selectedFoodCategory === 'Custom' && !food.isCustom) {
+          return false;
+        }
+
+        if (
+          !['All', 'Favorites', 'Recent', 'Custom'].includes(selectedFoodCategory) &&
+          food.category !== selectedFoodCategory
+        ) {
+          return false;
+        }
+
         if (!normalizedSearch) {
           return true;
         }
@@ -187,7 +260,13 @@ export default function NutritionScreen() {
           .includes(normalizedSearch);
       })
       .slice(0, 12);
-  }, [foodSearch, searchableFoods]);
+  }, [
+    favoriteFoodIds,
+    foodSearch,
+    recentFoodIds,
+    searchableFoods,
+    selectedFoodCategory,
+  ]);
   const primaryFields = showAdvancedMacros
     ? [...primaryTargetFields, ...advancedTargetFields]
     : primaryTargetFields;
@@ -196,6 +275,13 @@ export default function NutritionScreen() {
   const caloriesRemaining = calorieTarget - selectedTotals.calories;
   const proteinRemaining = proteinTarget - selectedTotals.protein;
   const multiplier = Math.max(Number(servingMultiplier) || 1, 0.25);
+  const mealBuilderTotals = mealBuilderItems.reduce(
+    (totals, item) => ({
+      calories: totals.calories + item.calories,
+      protein: totals.protein + item.protein,
+    }),
+    { calories: 0, protein: 0 }
+  );
 
   const updateForm = (key: keyof ReturnType<typeof blankLogFields>, value: string) => {
     setForm((current) => ({
@@ -208,6 +294,17 @@ export default function NutritionScreen() {
     setForm(blankLogFields());
     setEditingLogId(null);
     setEditingMealId(null);
+    setEditingFoodId(null);
+  };
+
+  const rememberFood = async (foodId: string) => {
+    const updatedRecentIds = [
+      foodId,
+      ...recentFoodIds.filter((recentFoodId) => recentFoodId !== foodId),
+    ].slice(0, 12);
+
+    setRecentFoodIds(updatedRecentIds);
+    await saveRecentNutritionFoodIds(updatedRecentIds);
   };
 
   const handleUpdateTarget = (
@@ -444,16 +541,103 @@ export default function NutritionScreen() {
     };
 
     await saveDailyNutritionLogs([newLog, ...logs]);
+    await rememberFood(food.id);
     await fetchNutrition();
   };
 
   const handleUseFoodInForm = (food: NutritionFood) => {
+    setEditingFoodId(food.isCustom ? food.id : null);
     setForm((current) => ({
       ...current,
       mealName: food.name,
+      mealCategory: food.category || current.mealCategory,
       calories: String(Math.round((Number(food.calories) || 0) * multiplier)),
       protein: String(Math.round((Number(food.protein) || 0) * multiplier)),
       note: `${food.brand} - ${servingMultiplier || '1'} x ${food.serving}`,
+    }));
+  };
+
+  const handleToggleFavoriteFood = async (food: NutritionFood) => {
+    const isFavorite = favoriteFoodIds.includes(food.id);
+    const updatedFavoriteIds = isFavorite
+      ? favoriteFoodIds.filter((foodId) => foodId !== food.id)
+      : [food.id, ...favoriteFoodIds];
+
+    setFavoriteFoodIds(updatedFavoriteIds);
+    await saveFavoriteNutritionFoodIds(updatedFavoriteIds);
+  };
+
+  const handleAddFoodToBuilder = async (food: NutritionFood) => {
+    const calories = Math.round((Number(food.calories) || 0) * multiplier);
+    const protein = Math.round((Number(food.protein) || 0) * multiplier);
+
+    setMealBuilderItems((current) => [
+      ...current,
+      {
+        id: `${food.id}-${Date.now()}`,
+        name: `${food.name} (${servingMultiplier || '1'}x)`,
+        calories,
+        protein,
+      },
+    ]);
+    await rememberFood(food.id);
+  };
+
+  const handleRemoveBuilderItem = (builderItemId: string) => {
+    setMealBuilderItems((current) =>
+      current.filter((item) => item.id !== builderItemId)
+    );
+  };
+
+  const buildMealLog = () => {
+    if (mealBuilderItems.length === 0) {
+      Alert.alert('Empty meal builder', 'Add at least one food first.');
+      return null;
+    }
+
+    return {
+      calories: String(Math.round(mealBuilderTotals.calories)),
+      protein: String(Math.round(mealBuilderTotals.protein)),
+      note: mealBuilderItems.map((item) => item.name).join(', '),
+    };
+  };
+
+  const handleLogBuiltMeal = async () => {
+    const builtMeal = buildMealLog();
+
+    if (!builtMeal) {
+      return;
+    }
+
+    const newLog: DailyNutritionLog = {
+      id: `nutrition-${Date.now()}`,
+      loggedAt: getLogDateTime(selectedDate),
+      calories: builtMeal.calories,
+      protein: builtMeal.protein,
+      carbs: '',
+      fat: '',
+      water: '',
+      note: builtMeal.note,
+    };
+
+    await saveDailyNutritionLogs([newLog, ...logs]);
+    setMealBuilderItems([]);
+    await fetchNutrition();
+  };
+
+  const handleFillBuiltMeal = () => {
+    const builtMeal = buildMealLog();
+
+    if (!builtMeal) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      mealName: 'Built meal',
+      calories: builtMeal.calories,
+      protein: builtMeal.protein,
+      note: builtMeal.note,
     }));
   };
 
@@ -465,6 +649,27 @@ export default function NutritionScreen() {
         'Missing food',
         'Enter a food name plus calories or protein before saving it.'
       );
+      return;
+    }
+
+    if (editingFoodId) {
+      const updatedFoods = customFoods.map((food) =>
+        food.id === editingFoodId
+          ? {
+              ...food,
+              name: trimmedName,
+              brand: form.note.trim() || 'Custom',
+              calories: form.calories.trim(),
+              protein: form.protein.trim(),
+              category: form.mealCategory,
+            }
+          : food
+      );
+
+      await saveCustomNutritionFoods(updatedFoods);
+      resetForm();
+      await fetchNutrition();
+      Alert.alert('Food updated', `${trimmedName} was updated.`);
       return;
     }
 
@@ -782,6 +987,84 @@ export default function NutritionScreen() {
                   Serving multiplier: {servingMultiplier || '1'}x
                 </Text>
 
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryRow}
+                >
+                  {foodCategoryFilters.map((category) => {
+                    const isSelected = selectedFoodCategory === category;
+
+                    return (
+                      <Pressable
+                        key={category}
+                        style={[
+                          styles.categoryChip,
+                          isSelected && styles.categoryChipSelected,
+                        ]}
+                        onPress={() => setSelectedFoodCategory(category)}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            isSelected && styles.categoryChipTextSelected,
+                          ]}
+                        >
+                          {category}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                {favoriteFoods.length > 0 || recentFoods.length > 0 ? (
+                  <View style={styles.foodShortcutRow}>
+                    <Text style={styles.foodShortcutText}>
+                      {favoriteFoods.length} favorites | {recentFoods.length} recent
+                    </Text>
+                  </View>
+                ) : null}
+
+                {mealBuilderItems.length > 0 ? (
+                  <View style={styles.builderCard}>
+                    <View style={styles.builderHeader}>
+                      <View>
+                        <Text style={styles.builderTitle}>Meal Builder</Text>
+                        <Text style={styles.builderMeta}>
+                          {Math.round(mealBuilderTotals.calories)} cal |{' '}
+                          {Math.round(mealBuilderTotals.protein)}g protein
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => setMealBuilderItems([])}>
+                        <Text style={styles.foodDeleteText}>Clear</Text>
+                      </Pressable>
+                    </View>
+
+                    {mealBuilderItems.map((item) => (
+                      <View key={item.id} style={styles.builderItemRow}>
+                        <Text style={styles.builderItemText}>
+                          {item.name} - {item.calories} cal | {item.protein}g
+                        </Text>
+                        <Pressable onPress={() => handleRemoveBuilderItem(item.id)}>
+                          <Text style={styles.foodDeleteText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    ))}
+
+                    <View style={styles.builderActionRow}>
+                      <Pressable
+                        style={styles.foodSmallButton}
+                        onPress={handleLogBuiltMeal}
+                      >
+                        <Text style={styles.foodSmallButtonText}>Log Meal</Text>
+                      </Pressable>
+                      <Pressable onPress={handleFillBuiltMeal}>
+                        <Text style={styles.foodFillText}>Fill Form</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : null}
+
                 <View style={styles.foodList}>
                   {filteredFoods.map((food) => (
                     <View key={food.id} style={styles.foodCard}>
@@ -803,8 +1086,16 @@ export default function NutritionScreen() {
                         >
                           <Text style={styles.foodSmallButtonText}>Add</Text>
                         </Pressable>
+                        <Pressable onPress={() => handleAddFoodToBuilder(food)}>
+                          <Text style={styles.foodFillText}>Build</Text>
+                        </Pressable>
                         <Pressable onPress={() => handleUseFoodInForm(food)}>
                           <Text style={styles.foodFillText}>Fill</Text>
+                        </Pressable>
+                        <Pressable onPress={() => handleToggleFavoriteFood(food)}>
+                          <Text style={styles.foodFillText}>
+                            {favoriteFoodIds.includes(food.id) ? 'Unfav' : 'Fav'}
+                          </Text>
                         </Pressable>
                         {food.isCustom ? (
                           <Pressable onPress={() => handleDeleteCustomFood(food)}>
@@ -907,11 +1198,11 @@ export default function NutritionScreen() {
                   onPress={handleSaveCustomFood}
                 >
                   <Text style={styles.customFoodButtonText}>
-                    Save As Custom Food
+                    {editingFoodId ? 'Update Custom Food' : 'Save As Custom Food'}
                   </Text>
                 </Pressable>
 
-                {(editingLogId || editingMealId) && (
+                {(editingLogId || editingMealId || editingFoodId) && (
                   <Pressable style={styles.cancelButton} onPress={resetForm}>
                     <Text style={styles.cancelButtonText}>Cancel Editing</Text>
                   </Pressable>
@@ -1443,6 +1734,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  foodShortcutRow: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+  },
+  foodShortcutText: {
+    color: '#9dbbda',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  builderCard: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  builderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  builderTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+    marginBottom: 3,
+  },
+  builderMeta: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  builderItemRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#252525',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  builderItemText: {
+    color: '#dddddd',
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  builderActionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 8,
   },
   foodList: {
     gap: 10,

@@ -18,7 +18,8 @@ type CloudRecordType =
   | 'nutrition_targets'
   | 'daily_nutrition_log'
   | 'saved_meal_preset'
-  | 'custom_nutrition_food';
+  | 'custom_nutrition_food'
+  | 'nutrition_food_preferences';
 
 interface CloudBackupRecord {
   user_id: string;
@@ -149,6 +150,16 @@ export async function backupLocalDataToCloud(): Promise<CloudBackupResult> {
         food,
         food.createdAt || now
       )
+    ),
+    buildRecord(
+      user.id,
+      'nutrition_food_preferences',
+      'nutrition_food_preferences',
+      {
+        favoriteNutritionFoodIds: exportPayload.favoriteNutritionFoodIds,
+        recentNutritionFoodIds: exportPayload.recentNutritionFoodIds,
+      },
+      now
     ),
     ...exportPayload.workouts.map((workout) =>
       buildRecord(

@@ -15,6 +15,8 @@ const RESET_KEYS = [
   'dailyNutritionLogs',
   'savedMealPresets',
   'customNutritionFoods',
+  'favoriteNutritionFoodIds',
+  'recentNutritionFoodIds',
 ];
 
 export async function resetAppData() {

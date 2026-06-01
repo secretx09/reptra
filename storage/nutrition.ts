@@ -10,6 +10,8 @@ const NUTRITION_TARGETS_KEY = 'nutritionTargets';
 const DAILY_NUTRITION_LOGS_KEY = 'dailyNutritionLogs';
 const SAVED_MEAL_PRESETS_KEY = 'savedMealPresets';
 const CUSTOM_NUTRITION_FOODS_KEY = 'customNutritionFoods';
+const FAVORITE_NUTRITION_FOOD_IDS_KEY = 'favoriteNutritionFoodIds';
+const RECENT_NUTRITION_FOOD_IDS_KEY = 'recentNutritionFoodIds';
 
 export const defaultNutritionTargets: NutritionTargets = {
   calories: '',
@@ -143,4 +145,46 @@ export async function loadCustomNutritionFoods(): Promise<NutritionFood[]> {
 export async function deleteCustomNutritionFoodById(foodId: string) {
   const foods = await loadCustomNutritionFoods();
   await saveCustomNutritionFoods(foods.filter((food) => food.id !== foodId));
+}
+
+export async function saveFavoriteNutritionFoodIds(foodIds: string[]) {
+  try {
+    await AsyncStorage.setItem(
+      FAVORITE_NUTRITION_FOOD_IDS_KEY,
+      JSON.stringify(Array.from(new Set(foodIds)))
+    );
+  } catch (error) {
+    console.error('Failed to save favorite nutrition foods:', error);
+  }
+}
+
+export async function loadFavoriteNutritionFoodIds(): Promise<string[]> {
+  try {
+    const data = await AsyncStorage.getItem(FAVORITE_NUTRITION_FOOD_IDS_KEY);
+    return data ? (JSON.parse(data) as string[]) : [];
+  } catch (error) {
+    console.error('Failed to load favorite nutrition foods:', error);
+    return [];
+  }
+}
+
+export async function saveRecentNutritionFoodIds(foodIds: string[]) {
+  try {
+    await AsyncStorage.setItem(
+      RECENT_NUTRITION_FOOD_IDS_KEY,
+      JSON.stringify(Array.from(new Set(foodIds)).slice(0, 12))
+    );
+  } catch (error) {
+    console.error('Failed to save recent nutrition foods:', error);
+  }
+}
+
+export async function loadRecentNutritionFoodIds(): Promise<string[]> {
+  try {
+    const data = await AsyncStorage.getItem(RECENT_NUTRITION_FOOD_IDS_KEY);
+    return data ? (JSON.parse(data) as string[]) : [];
+  } catch (error) {
+    console.error('Failed to load recent nutrition foods:', error);
+    return [];
+  }
 }

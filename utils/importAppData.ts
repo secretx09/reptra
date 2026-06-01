@@ -10,7 +10,9 @@ import {
   defaultNutritionTargets,
   saveCustomNutritionFoods,
   saveDailyNutritionLogs,
+  saveFavoriteNutritionFoodIds,
   saveNutritionTargets,
+  saveRecentNutritionFoodIds,
   saveSavedMealPresets,
 } from '../storage/nutrition';
 import { saveTrainingSplitPlan } from '../storage/trainingSplit';
@@ -52,6 +54,8 @@ type AppDataImportPayload = {
   dailyNutritionLogs?: DailyNutritionLog[];
   savedMealPresets?: SavedMealPreset[];
   customNutritionFoods?: NutritionFood[];
+  favoriteNutritionFoodIds?: string[];
+  recentNutritionFoodIds?: string[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -132,6 +136,12 @@ export function parseAppDataImport(jsonInput: string) {
     customNutritionFoods: Array.isArray(payload.customNutritionFoods)
       ? payload.customNutritionFoods
       : [],
+    favoriteNutritionFoodIds: Array.isArray(payload.favoriteNutritionFoodIds)
+      ? payload.favoriteNutritionFoodIds.filter((id) => typeof id === 'string')
+      : [],
+    recentNutritionFoodIds: Array.isArray(payload.recentNutritionFoodIds)
+      ? payload.recentNutritionFoodIds.filter((id) => typeof id === 'string')
+      : [],
   };
 }
 
@@ -152,4 +162,6 @@ export async function importAppData(jsonInput: string) {
   await saveDailyNutritionLogs(parsed.dailyNutritionLogs);
   await saveSavedMealPresets(parsed.savedMealPresets);
   await saveCustomNutritionFoods(parsed.customNutritionFoods);
+  await saveFavoriteNutritionFoodIds(parsed.favoriteNutritionFoodIds);
+  await saveRecentNutritionFoodIds(parsed.recentNutritionFoodIds);
 }

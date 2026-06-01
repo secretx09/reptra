@@ -23,16 +23,38 @@ import {
   formatMeasurementDate,
   getBodyWeightTrend,
 } from '../../utils/bodyMeasurements';
+import { convertWeightValue, formatWeightNumber } from '../../utils/weightUnits';
+
+function getDisplayBodyWeightInput(value: string, weightUnit: WeightUnit) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return '';
+  }
+
+  return formatWeightNumber(convertWeightValue(parsedValue, 'lb', weightUnit));
+}
+
+function getSavedBodyWeightInput(value: string, weightUnit: WeightUnit) {
+  const parsedValue = Number(value);
+
+  if (!value.trim() || !Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return '';
+  }
+
+  return weightUnit === 'kg'
+    ? String(Math.round((parsedValue / 0.45359237) * 10) / 10)
+    : value.trim();
+}
 
 export default function BodyMeasurementsScreen() {
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const [bodyWeight, setBodyWeight] = useState('');
-  const [waist, setWaist] = useState('');
-  const [chest, setChest] = useState('');
-  const [arms, setArms] = useState('');
-  const [thighs, setThighs] = useState('');
   const [note, setNote] = useState('');
+  const [editingMeasurementId, setEditingMeasurementId] = useState<string | null>(
+    null
+  );
 
   const fetchData = useCallback(async () => {
     const [savedMeasurements, settings] = await Promise.all([
@@ -51,40 +73,70 @@ export default function BodyMeasurementsScreen() {
   );
 
   const handleSaveMeasurement = async () => {
-    if (!bodyWeight.trim() && !waist.trim() && !chest.trim() && !note.trim()) {
+    if (!bodyWeight.trim() && !note.trim()) {
       Alert.alert(
         'Missing check-in',
-        'Add at least body weight, a measurement, or a note.'
+        'Add at least body weight or a note.'
       );
       return;
     }
 
-    const parsedBodyWeight = Number(bodyWeight);
-    const savedBodyWeight =
-      bodyWeight.trim() && Number.isFinite(parsedBodyWeight)
-        ? weightUnit === 'kg'
-          ? String(Math.round((parsedBodyWeight / 0.45359237) * 10) / 10)
-          : bodyWeight.trim()
-        : '';
-    const newMeasurement: BodyMeasurement = {
-      id: `measurement-${Date.now()}`,
-      measuredAt: new Date().toISOString(),
-      bodyWeight: savedBodyWeight,
-      waist: waist.trim(),
-      chest: chest.trim(),
-      arms: arms.trim(),
-      thighs: thighs.trim(),
-      note: note.trim(),
-    };
+    const savedBodyWeight = getSavedBodyWeightInput(bodyWeight, weightUnit);
 
-    await saveBodyMeasurements([newMeasurement, ...measurements]);
-    setBodyWeight('');
-    setWaist('');
-    setChest('');
-    setArms('');
-    setThighs('');
-    setNote('');
+    if (bodyWeight.trim() && !savedBodyWeight) {
+      Alert.alert('Invalid weight', 'Enter a valid body weight first.');
+      return;
+    }
+
+    if (editingMeasurementId) {
+      const updatedMeasurements = measurements.map((measurement) =>
+        measurement.id === editingMeasurementId
+          ? {
+              ...measurement,
+              bodyWeight: savedBodyWeight,
+              note: note.trim(),
+            }
+          : measurement
+      );
+
+      await saveBodyMeasurements(updatedMeasurements);
+    } else {
+      const newMeasurement: BodyMeasurement = {
+        id: `measurement-${Date.now()}`,
+        measuredAt: new Date().toISOString(),
+        bodyWeight: savedBodyWeight,
+        waist: '',
+        chest: '',
+        arms: '',
+        thighs: '',
+        note: note.trim(),
+      };
+
+      await saveBodyMeasurements([newMeasurement, ...measurements]);
+    }
+
+    clearForm();
     await fetchData();
+  };
+
+  const clearForm = () => {
+    setBodyWeight('');
+    setNote('');
+    setEditingMeasurementId(null);
+  };
+
+  const handleUseLatestWeight = () => {
+    if (!latestMeasurement?.bodyWeight) {
+      return;
+    }
+
+    setBodyWeight(getDisplayBodyWeightInput(latestMeasurement.bodyWeight, weightUnit));
+  };
+
+  const handleEditMeasurement = (measurement: BodyMeasurement) => {
+    setEditingMeasurementId(measurement.id);
+    setBodyWeight(getDisplayBodyWeightInput(measurement.bodyWeight, weightUnit));
+    setNote(measurement.note);
   };
 
   const handleDeleteMeasurement = (measurement: BodyMeasurement) => {
@@ -102,6 +154,39 @@ export default function BodyMeasurementsScreen() {
   };
 
   const latestMeasurement = measurements[0];
+  const previousMeasurement = measurements[1];
+  const bodyWeightMeasurements = measurements.filter((measurement) => {
+    const parsedWeight = Number(measurement.bodyWeight);
+    return Number.isFinite(parsedWeight) && parsedWeight > 0;
+  });
+  const oldestWeightMeasurement =
+    bodyWeightMeasurements[bodyWeightMeasurements.length - 1];
+  const latestWeightValue = Number(latestMeasurement?.bodyWeight);
+  const previousWeightValue = Number(previousMeasurement?.bodyWeight);
+  const oldestWeightValue = Number(oldestWeightMeasurement?.bodyWeight);
+  const latestChange =
+    Number.isFinite(latestWeightValue) && Number.isFinite(previousWeightValue)
+      ? convertWeightValue(latestWeightValue - previousWeightValue, 'lb', weightUnit)
+      : null;
+  const totalChange =
+    Number.isFinite(latestWeightValue) && Number.isFinite(oldestWeightValue)
+      ? convertWeightValue(latestWeightValue - oldestWeightValue, 'lb', weightUnit)
+      : null;
+  const chartPoints = [...bodyWeightMeasurements]
+    .reverse()
+    .slice(-8)
+    .map((measurement) => ({
+      ...measurement,
+      displayWeight: convertWeightValue(
+        Number(measurement.bodyWeight),
+        'lb',
+        weightUnit
+      ),
+    }));
+  const chartWeights = chartPoints.map((point) => point.displayWeight);
+  const minChartWeight = Math.min(...chartWeights);
+  const maxChartWeight = Math.max(...chartWeights);
+  const chartRange = Math.max(maxChartWeight - minChartWeight, 1);
 
   return (
     <>
@@ -117,8 +202,7 @@ export default function BodyMeasurementsScreen() {
                 <Text style={styles.kicker}>Reptra</Text>
                 <Text style={styles.title}>Body Check-Ins</Text>
                 <Text style={styles.subtitle}>
-                  Track body weight and simple measurements alongside your
-                  training.
+                  Track body weight and quick notes alongside your training.
                 </Text>
 
                 <View style={styles.trendCard}>
@@ -136,10 +220,90 @@ export default function BodyMeasurementsScreen() {
                     {getBodyWeightTrend(measurements, weightUnit)}
                   </Text>
                 </View>
+
+                <View style={styles.summaryGrid}>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryValue}>{measurements.length}</Text>
+                    <Text style={styles.summaryLabel}>Check-ins</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryValue}>
+                      {latestChange === null
+                        ? '--'
+                        : `${latestChange > 0 ? '+' : ''}${formatWeightNumber(
+                            latestChange
+                          )}`}
+                    </Text>
+                    <Text style={styles.summaryLabel}>Last Change</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryValue}>
+                      {totalChange === null
+                        ? '--'
+                        : `${totalChange > 0 ? '+' : ''}${formatWeightNumber(
+                            totalChange
+                          )}`}
+                    </Text>
+                    <Text style={styles.summaryLabel}>Total Change</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.chartCard}>
+                <View style={styles.chartHeader}>
+                  <View>
+                    <Text style={styles.sectionTitle}>Body Weight Trend</Text>
+                    <Text style={styles.chartSubtitle}>
+                      Last {chartPoints.length || 0} weight check-ins
+                    </Text>
+                  </View>
+                </View>
+
+                {chartPoints.length >= 2 ? (
+                  <View style={styles.chartRow}>
+                    {chartPoints.map((point) => {
+                      const heightPercent =
+                        30 + ((point.displayWeight - minChartWeight) / chartRange) * 70;
+
+                      return (
+                        <View key={point.id} style={styles.chartColumn}>
+                          <View style={styles.chartBarTrack}>
+                            <View
+                              style={[
+                                styles.chartBarFill,
+                                { height: `${heightPercent}%` },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.chartLabel}>
+                            {new Date(point.measuredAt).toLocaleDateString([], {
+                              month: 'numeric',
+                              day: 'numeric',
+                            })}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>
+                    Add two body-weight check-ins to see your trend chart.
+                  </Text>
+                )}
               </View>
 
               <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>New Check-In</Text>
+                <View style={styles.formHeader}>
+                  <Text style={styles.sectionTitle}>
+                    {editingMeasurementId ? 'Edit Check-In' : 'New Check-In'}
+                  </Text>
+
+                  {latestMeasurement && !editingMeasurementId ? (
+                    <Pressable onPress={handleUseLatestWeight}>
+                      <Text style={styles.inlineAction}>Use Latest</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
 
                 <TextInput
                   style={styles.input}
@@ -149,41 +313,6 @@ export default function BodyMeasurementsScreen() {
                   value={bodyWeight}
                   onChangeText={setBodyWeight}
                 />
-
-                <View style={styles.grid}>
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="Waist"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={waist}
-                    onChangeText={setWaist}
-                  />
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="Chest"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={chest}
-                    onChangeText={setChest}
-                  />
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="Arms"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={arms}
-                    onChangeText={setArms}
-                  />
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="Thighs"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={thighs}
-                    onChangeText={setThighs}
-                  />
-                </View>
 
                 <TextInput
                   style={[styles.input, styles.noteInput]}
@@ -200,6 +329,12 @@ export default function BodyMeasurementsScreen() {
                 >
                   <Text style={styles.primaryButtonText}>Save Check-In</Text>
                 </Pressable>
+
+                {editingMeasurementId ? (
+                  <Pressable style={styles.cancelButton} onPress={clearForm}>
+                    <Text style={styles.cancelButtonText}>Cancel Edit</Text>
+                  </Pressable>
+                ) : null}
               </View>
 
               <Text style={styles.sectionTitle}>History</Text>
@@ -217,18 +352,15 @@ export default function BodyMeasurementsScreen() {
                   </Text>
                 </View>
 
-                <Pressable onPress={() => handleDeleteMeasurement(item)}>
-                  <Text style={styles.deleteText}>Delete</Text>
-                </Pressable>
-              </View>
+                <View style={styles.measurementActions}>
+                  <Pressable onPress={() => handleEditMeasurement(item)}>
+                    <Text style={styles.editText}>Edit</Text>
+                  </Pressable>
 
-              <View style={styles.measurementGrid}>
-                <Text style={styles.measurementPill}>Waist: {item.waist || '--'}</Text>
-                <Text style={styles.measurementPill}>Chest: {item.chest || '--'}</Text>
-                <Text style={styles.measurementPill}>Arms: {item.arms || '--'}</Text>
-                <Text style={styles.measurementPill}>
-                  Thighs: {item.thighs || '--'}
-                </Text>
+                  <Pressable onPress={() => handleDeleteMeasurement(item)}>
+                    <Text style={styles.deleteText}>Delete</Text>
+                  </Pressable>
+                </View>
               </View>
 
               {item.note ? <Text style={styles.noteText}>{item.note}</Text> : null}
@@ -308,6 +440,77 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  summaryGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  summaryItem: {
+    flex: 1,
+    backgroundColor: '#0d1722',
+    borderWidth: 1,
+    borderColor: '#1f3c58',
+    borderRadius: 12,
+    padding: 10,
+  },
+  summaryValue: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '900',
+    marginBottom: 3,
+  },
+  summaryLabel: {
+    color: '#9dbbda',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  chartCard: {
+    backgroundColor: '#171717',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  chartHeader: {
+    marginBottom: 12,
+  },
+  chartSubtitle: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  chartRow: {
+    height: 150,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  chartColumn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 7,
+  },
+  chartBarTrack: {
+    width: '100%',
+    height: 110,
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 999,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  chartBarFill: {
+    width: '100%',
+    backgroundColor: '#4da6ff',
+    borderRadius: 999,
+  },
+  chartLabel: {
+    color: '#888888',
+    fontSize: 10,
+    fontWeight: '800',
+  },
   formCard: {
     backgroundColor: '#171717',
     borderWidth: 1,
@@ -316,30 +519,25 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '800',
     marginBottom: 10,
   },
+  inlineAction: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '900',
+  },
   input: {
-    backgroundColor: '#101010',
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#252525',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 15,
-    marginBottom: 10,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  gridInput: {
-    width: '48%',
     backgroundColor: '#101010',
     color: '#ffffff',
     borderWidth: 1,
@@ -363,6 +561,19 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#111111',
     fontSize: 15,
+    fontWeight: '900',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: '#dddddd',
+    fontSize: 14,
     fontWeight: '900',
   },
   measurementCard: {
@@ -395,21 +606,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  measurementGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  measurementPill: {
-    backgroundColor: '#101010',
-    borderWidth: 1,
-    borderColor: '#252525',
-    borderRadius: 999,
-    color: '#aaaaaa',
+  editText: {
+    color: '#4da6ff',
     fontSize: 12,
     fontWeight: '800',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+  },
+  measurementActions: {
+    flexDirection: 'row',
+    gap: 14,
   },
   noteText: {
     color: '#dddddd',

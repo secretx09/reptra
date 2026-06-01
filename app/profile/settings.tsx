@@ -19,12 +19,6 @@ import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
-import {
-  loadDailyNutritionLogs,
-  loadCustomNutritionFoods,
-  loadNutritionTargets,
-  loadSavedMealPresets,
-} from '../../storage/nutrition';
 import { AppSettings, AppTheme, WeightUnit } from '../../types/settings';
 import { buildAppDataExport } from '../../utils/exportAppData';
 import { resetAppData } from '../../utils/resetAppData';
@@ -57,10 +51,6 @@ export default function ProfileSettingsScreen() {
     favoriteExercises: 0,
     bodyMeasurements: 0,
     wellnessCheckIns: 0,
-    nutritionTargets: 0,
-    dailyNutritionLogs: 0,
-    savedMealPresets: 0,
-    customNutritionFoods: 0,
     lastWorkoutLabel: 'No workouts yet',
   });
   const [defaultRestTimerInput, setDefaultRestTimerInput] = useState(
@@ -79,10 +69,6 @@ export default function ProfileSettingsScreen() {
           savedFavoriteIds,
           savedBodyMeasurements,
           savedWellnessCheckIns,
-          savedNutritionTargets,
-          savedNutritionLogs,
-          savedMealPresets,
-          customNutritionFoods,
         ] = await Promise.all([
           loadWorkouts(),
           loadRoutines(),
@@ -91,10 +77,6 @@ export default function ProfileSettingsScreen() {
           loadFavoriteExerciseIds(),
           loadBodyMeasurements(),
           loadWellnessCheckIns(),
-          loadNutritionTargets(),
-          loadDailyNutritionLogs(),
-          loadSavedMealPresets(),
-          loadCustomNutritionFoods(),
         ]);
         const latestWorkout = savedWorkouts[0];
         const currentUser = await getCurrentUser();
@@ -114,10 +96,6 @@ export default function ProfileSettingsScreen() {
           favoriteExercises: savedFavoriteIds.length,
           bodyMeasurements: savedBodyMeasurements.length,
           wellnessCheckIns: savedWellnessCheckIns.length,
-          nutritionTargets: savedNutritionTargets.updatedAt ? 1 : 0,
-          dailyNutritionLogs: savedNutritionLogs.length,
-          savedMealPresets: savedMealPresets.length,
-          customNutritionFoods: customNutritionFoods.length,
           lastWorkoutLabel: latestWorkout
             ? new Date(latestWorkout.completedAt).toLocaleDateString([], {
                 month: 'short',
@@ -513,10 +491,7 @@ export default function ProfileSettingsScreen() {
               <Text style={styles.dataSnapshotFooter}>
                 Favorites: {dataSnapshot.favoriteExercises} | Body:{' '}
                 {dataSnapshot.bodyMeasurements} | Wellness:{' '}
-                {dataSnapshot.wellnessCheckIns} | Nutrition:{' '}
-                {dataSnapshot.dailyNutritionLogs} | Meals:{' '}
-                {dataSnapshot.savedMealPresets} | Foods:{' '}
-                {dataSnapshot.customNutritionFoods} | Last workout:{' '}
+                {dataSnapshot.wellnessCheckIns} | Last workout:{' '}
                 {dataSnapshot.lastWorkoutLabel}
               </Text>
             </View>

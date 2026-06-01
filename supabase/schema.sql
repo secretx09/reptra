@@ -35,7 +35,8 @@ create table if not exists public.cloud_records (
       'nutrition_targets',
       'daily_nutrition_log',
       'saved_meal_preset',
-      'custom_nutrition_food'
+      'custom_nutrition_food',
+      'nutrition_food_preferences'
     )
   ),
   local_id text not null,
@@ -65,7 +66,8 @@ check (
     'nutrition_targets',
     'daily_nutrition_log',
     'saved_meal_preset',
-    'custom_nutrition_food'
+    'custom_nutrition_food',
+    'nutrition_food_preferences'
   )
 );
 
