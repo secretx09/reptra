@@ -487,11 +487,11 @@ export default function EditRoutineScreen() {
                       />
                     </View>
 
-                    <View style={styles.defaultField}>
-                      <Text style={styles.defaultLabel}>Rest</Text>
+                    <View style={[styles.defaultField, styles.restDefaultField]}>
+                      <Text style={styles.defaultLabel}>Rest Timer</Text>
                       <TextInput
                         style={styles.smallInput}
-                        placeholder="90 / 1:30"
+                        placeholder="90s"
                         placeholderTextColor="#777777"
                         value={item.defaultRestSeconds}
                         onChangeText={(value) =>
@@ -950,6 +950,9 @@ const styles = StyleSheet.create({
   defaultField: {
     flex: 1,
     minWidth: 72,
+  },
+  restDefaultField: {
+    minWidth: 118,
   },
   defaultLabel: {
     color: '#aaaaaa',

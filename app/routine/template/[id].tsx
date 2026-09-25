@@ -289,57 +289,74 @@ export default function RoutineTemplatePreviewScreen() {
                 </View>
 
                 <View style={styles.defaultsRow}>
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder="Sets"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={exercise.defaultSets}
-                    onChangeText={(value) =>
-                      handleUpdateExerciseDefault(
-                        exercise.id,
-                        'defaultSets',
-                        value
-                      )
-                    }
-                  />
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder={getWeightFieldLabel(weightUnit)}
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={exercise.defaultWeight}
-                    onChangeText={(value) =>
-                      handleUpdateExerciseDefault(
-                        exercise.id,
-                        'defaultWeight',
-                        value
-                      )
-                    }
-                  />
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder="Reps"
-                    placeholderTextColor="#777777"
-                    keyboardType="numeric"
-                    value={exercise.defaultReps}
-                    onChangeText={(value) =>
-                      handleUpdateExerciseDefault(exercise.id, 'defaultReps', value)
-                    }
-                  />
-                  <TextInput
-                    style={styles.smallInput}
-                    placeholder="90 / 1:30"
-                    placeholderTextColor="#777777"
-                    value={exercise.defaultRestSeconds}
-                    onChangeText={(value) =>
-                      handleUpdateExerciseDefault(
-                        exercise.id,
-                        'defaultRestSeconds',
-                        value
-                      )
-                    }
-                  />
+                  <View style={styles.defaultField}>
+                    <Text style={styles.defaultLabel}>Sets</Text>
+                    <TextInput
+                      style={styles.smallInput}
+                      placeholder="0"
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={exercise.defaultSets}
+                      onChangeText={(value) =>
+                        handleUpdateExerciseDefault(
+                          exercise.id,
+                          'defaultSets',
+                          value
+                        )
+                      }
+                    />
+                  </View>
+
+                  <View style={styles.defaultField}>
+                    <Text style={styles.defaultLabel}>
+                      {getWeightFieldLabel(weightUnit)}
+                    </Text>
+                    <TextInput
+                      style={styles.smallInput}
+                      placeholder="0"
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={exercise.defaultWeight}
+                      onChangeText={(value) =>
+                        handleUpdateExerciseDefault(
+                          exercise.id,
+                          'defaultWeight',
+                          value
+                        )
+                      }
+                    />
+                  </View>
+
+                  <View style={styles.defaultField}>
+                    <Text style={styles.defaultLabel}>Reps</Text>
+                    <TextInput
+                      style={styles.smallInput}
+                      placeholder="0"
+                      placeholderTextColor="#777777"
+                      keyboardType="numeric"
+                      value={exercise.defaultReps}
+                      onChangeText={(value) =>
+                        handleUpdateExerciseDefault(exercise.id, 'defaultReps', value)
+                      }
+                    />
+                  </View>
+
+                  <View style={[styles.defaultField, styles.restDefaultField]}>
+                    <Text style={styles.defaultLabel}>Rest Timer</Text>
+                    <TextInput
+                      style={styles.smallInput}
+                      placeholder="90s"
+                      placeholderTextColor="#777777"
+                      value={exercise.defaultRestSeconds}
+                      onChangeText={(value) =>
+                        handleUpdateExerciseDefault(
+                          exercise.id,
+                          'defaultRestSeconds',
+                          value
+                        )
+                      }
+                    />
+                  </View>
                 </View>
 
                 <TextInput
@@ -591,8 +608,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  defaultField: {
+    flex: 1,
+    minWidth: 72,
+  },
+  restDefaultField: {
+    minWidth: 118,
+  },
+  defaultLabel: {
+    color: '#aaaaaa',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
   smallInput: {
-    width: '48%',
     backgroundColor: '#121212',
     borderWidth: 1,
     borderColor: '#252525',

@@ -734,14 +734,17 @@ export default function WorkoutHistoryDetailScreen() {
                 </Pressable>
               </View>
 
-              {linkedPhotos.length > 0 && (
-                <View style={styles.linkedPhotosCard}>
-                  <Text style={styles.linkedPhotosTitle}>Progress Photos</Text>
-                  <Text style={styles.linkedPhotosSubtitle}>
-                    {linkedPhotos.length} photo
-                    {linkedPhotos.length === 1 ? '' : 's'} attached to this workout.
-                  </Text>
+              <View style={styles.linkedPhotosCard}>
+                <Text style={styles.linkedPhotosTitle}>Progress Photos</Text>
+                <Text style={styles.linkedPhotosSubtitle}>
+                  {linkedPhotos.length > 0
+                    ? `${linkedPhotos.length} photo${
+                        linkedPhotos.length === 1 ? '' : 's'
+                      } attached to this workout.`
+                    : 'Attach a progress photo to keep the visual check-in with this workout.'}
+                </Text>
 
+                {linkedPhotos.length > 0 ? (
                   <View style={styles.linkedPhotoGrid}>
                     {linkedPhotos.slice(0, 4).map((photo) => (
                       <View key={photo.id} style={styles.linkedPhotoTile}>
@@ -758,8 +761,22 @@ export default function WorkoutHistoryDetailScreen() {
                       </View>
                     ))}
                   </View>
-                </View>
-              )}
+                ) : null}
+
+                <Pressable
+                  style={styles.attachPhotoButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/profile/progress-photos',
+                      params: { workoutId: workout.id },
+                    })
+                  }
+                >
+                  <Text style={styles.attachPhotoButtonText}>
+                    {linkedPhotos.length > 0 ? 'Manage Photos' : 'Attach Photo'}
+                  </Text>
+                </Pressable>
+              </View>
 
               <View style={styles.summaryStatsRow}>
                 <View style={styles.summaryStatPill}>
@@ -1350,6 +1367,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     padding: 8,
+  },
+  attachPhotoButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  attachPhotoButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   summaryStatPill: {
     flex: 1,

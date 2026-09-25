@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { loadWorkouts } from '../../storage/workouts';
 import {
   deleteProgressPhotoById,
@@ -29,6 +29,7 @@ function formatPhotoDate(dateString: string) {
 }
 
 export default function ProgressPhotosScreen() {
+  const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [workouts, setWorkouts] = useState<SavedWorkoutSession[]>([]);
   const [imageUri, setImageUri] = useState('');
@@ -37,19 +38,25 @@ export default function ProgressPhotosScreen() {
     useState<NonNullable<ProgressPhoto['sourceType']>>('uri');
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = useCallback(async () => {
     const [savedPhotos, savedWorkouts] = await Promise.all([
       loadProgressPhotos(),
       loadWorkouts(),
     ]);
     setPhotos(savedPhotos);
     setWorkouts(savedWorkouts);
-  };
+
+    const linkedWorkout = savedWorkouts.find((workout) => workout.id === workoutId);
+
+    if (linkedWorkout) {
+      setSelectedWorkoutId(linkedWorkout.id);
+    }
+  }, [workoutId]);
 
   useFocusEffect(
     useCallback(() => {
       fetchPhotos();
-    }, [])
+    }, [fetchPhotos])
   );
 
   const handleAddPhoto = async () => {
@@ -101,6 +108,10 @@ export default function ProgressPhotosScreen() {
     );
   };
 
+  const latestWorkout = workouts[0] ?? null;
+  const selectedWorkout =
+    workouts.find((workout) => workout.id === selectedWorkoutId) ?? null;
+
   return (
     <>
       <Stack.Screen options={{ title: 'Progress Photos' }} />
@@ -116,6 +127,51 @@ export default function ProgressPhotosScreen() {
                 Save physique check-ins here. Native camera/gallery picker support
                 can plug into this same flow later.
               </Text>
+
+              {selectedWorkout ? (
+                <View style={styles.linkedWorkoutCard}>
+                  <Text style={styles.linkedWorkoutLabel}>Linked Workout</Text>
+                  <Text style={styles.linkedWorkoutTitle}>
+                    {selectedWorkout.routineName}
+                  </Text>
+                  <Text style={styles.linkedWorkoutText}>
+                    {formatPhotoDate(selectedWorkout.completedAt)}
+                  </Text>
+
+                  <View style={styles.linkedWorkoutActions}>
+                    <Pressable
+                      style={styles.linkedWorkoutButton}
+                      onPress={() =>
+                        router.push(`/workout/history/${selectedWorkout.id}`)
+                      }
+                    >
+                      <Text style={styles.linkedWorkoutButtonText}>
+                        Open Workout
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.clearWorkoutButton}
+                      onPress={() => setSelectedWorkoutId(null)}
+                    >
+                      <Text style={styles.clearWorkoutButtonText}>Clear</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : latestWorkout ? (
+                <Pressable
+                  style={styles.quickWorkoutButton}
+                  onPress={() => setSelectedWorkoutId(latestWorkout.id)}
+                >
+                  <Text style={styles.quickWorkoutButtonTitle}>
+                    Attach to latest workout
+                  </Text>
+                  <Text style={styles.quickWorkoutButtonText}>
+                    {latestWorkout.routineName} -{' '}
+                    {formatPhotoDate(latestWorkout.completedAt)}
+                  </Text>
+                </Pressable>
+              ) : null}
 
               <View style={styles.sourceRow}>
                 {[
@@ -256,12 +312,25 @@ export default function ProgressPhotosScreen() {
                   {item.imageUri}
                 </Text>
 
-                <Pressable
-                  style={styles.deleteButton}
-                  onPress={() => handleDeletePhoto(item)}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </Pressable>
+                <View style={styles.photoActionRow}>
+                  {item.workoutId ? (
+                    <Pressable
+                      style={styles.openWorkoutButton}
+                      onPress={() => router.push(`/workout/history/${item.workoutId}`)}
+                    >
+                      <Text style={styles.openWorkoutButtonText}>
+                        Open Workout
+                      </Text>
+                    </Pressable>
+                  ) : null}
+
+                  <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDeletePhoto(item)}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           )}
@@ -303,6 +372,83 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 14,
+  },
+  linkedWorkoutCard: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  linkedWorkoutLabel: {
+    color: '#4da6ff',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  linkedWorkoutTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  linkedWorkoutText: {
+    color: '#9dbbda',
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  linkedWorkoutActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  linkedWorkoutButton: {
+    flex: 1,
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  linkedWorkoutButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  clearWorkoutButton: {
+    flex: 0.6,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  clearWorkoutButtonText: {
+    color: '#dddddd',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  quickWorkoutButton: {
+    backgroundColor: '#101c29',
+    borderWidth: 1,
+    borderColor: '#294969',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  quickWorkoutButtonTitle: {
+    color: '#4da6ff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  quickWorkoutButtonText: {
+    color: '#b9d6f2',
+    fontSize: 12,
+    lineHeight: 18,
   },
   input: {
     backgroundColor: '#121212',
@@ -454,6 +600,23 @@ const styles = StyleSheet.create({
     color: '#777777',
     fontSize: 12,
     marginBottom: 12,
+  },
+  photoActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  openWorkoutButton: {
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  openWorkoutButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   deleteButton: {
     alignSelf: 'flex-start',

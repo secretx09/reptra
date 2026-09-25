@@ -220,6 +220,10 @@ export default function WorkoutScreen() {
   const todayMatchingRoutines = routines.filter(
     (routine) => (routine.trainingCategory ?? 'mixed') === todayTrainingDay.categoryId
   );
+  const suggestedRoutine =
+    todayMatchingRoutines.find((routine) => routine.isPinned) ??
+    todayMatchingRoutines[0] ??
+    null;
 
   const renderHeader = () => (
     <View style={styles.headerContent}>
@@ -242,6 +246,60 @@ export default function WorkoutScreen() {
                 todayMatchingRoutines.length === 1 ? '' : 's'
               }`}
         </Text>
+
+        {todayCategory.id === 'rest' ? (
+          <View style={styles.todayActionCard}>
+            <Text style={styles.todayActionTitle}>Recovery day</Text>
+            <Text style={styles.todayActionText}>
+              Rest is part of the plan. If you still want to move, start an
+              empty workout and keep it flexible.
+            </Text>
+            <Pressable
+              style={styles.todayStartButton}
+              onPress={() => router.push('/workout/session/empty')}
+            >
+              <Text style={styles.todayStartButtonText}>Start Anyway</Text>
+            </Pressable>
+          </View>
+        ) : suggestedRoutine ? (
+          <View style={styles.todayActionCard}>
+            <Text style={styles.todayActionTitle}>{suggestedRoutine.name}</Text>
+            <Text style={styles.todayActionText}>
+              Suggested from your {todayCategory.label.toLowerCase()} routines.
+              {suggestedRoutine.isPinned ? ' Pinned routines get priority.' : ''}
+            </Text>
+            <View style={styles.todayActionRow}>
+              <Pressable
+                style={styles.todayStartButton}
+                onPress={() => router.push(`/workout/session/${suggestedRoutine.id}`)}
+              >
+                <Text style={styles.todayStartButtonText}>Start Today&apos;s Routine</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.todayGhostButton}
+                onPress={() => setCategoryFilter('today')}
+              >
+                <Text style={styles.todayGhostButtonText}>Show Today</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.todayActionCard}>
+            <Text style={styles.todayActionTitle}>No routine matched yet</Text>
+            <Text style={styles.todayActionText}>
+              Create a routine and set its category to {todayCategory.label} to
+              make it show up here.
+            </Text>
+            <Pressable
+              style={styles.todayStartButton}
+              onPress={() => router.push('/routine/create')}
+            >
+              <Text style={styles.todayStartButtonText}>Create Matching Routine</Text>
+            </Pressable>
+          </View>
+        )}
+
         <Pressable
           style={styles.planButton}
           onPress={() => router.push('/workout/split-plan' as never)}
@@ -517,6 +575,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     marginBottom: 12,
+  },
+  todayActionCard: {
+    backgroundColor: '#0d1722',
+    borderWidth: 1,
+    borderColor: '#1f3c58',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  todayActionTitle: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 5,
+  },
+  todayActionText: {
+    color: '#9dbbda',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 11,
+  },
+  todayActionRow: {
+    flexDirection: 'row',
+    gap: 9,
+  },
+  todayStartButton: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#4da6ff',
+    borderRadius: 11,
+    paddingVertical: 11,
+  },
+  todayStartButtonText: {
+    color: '#111111',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  todayGhostButton: {
+    flex: 0.8,
+    alignItems: 'center',
+    backgroundColor: '#16324d',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 11,
+    paddingVertical: 11,
+  },
+  todayGhostButtonText: {
+    color: '#4da6ff',
+    fontSize: 13,
+    fontWeight: '900',
   },
   planButton: {
     alignItems: 'center',

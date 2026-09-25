@@ -12,13 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadBodyMeasurements } from '../../storage/bodyMeasurements';
 import { loadFavoriteExerciseIds } from '../../storage/favoriteExercises';
 import { loadFitnessGoals } from '../../storage/fitnessGoals';
-import {
-  loadDailyNutritionLogs,
-  loadNutritionTargets,
-} from '../../storage/nutrition';
 import { loadProgressPhotos } from '../../storage/progressPhotos';
 import { loadRoutines } from '../../storage/routines';
 import { loadSettings } from '../../storage/settings';
+import { loadTrainingSplitPlan } from '../../storage/trainingSplit';
 import { loadWellnessCheckIns } from '../../storage/wellnessCheckIns';
 import { loadWorkouts } from '../../storage/workouts';
 import { BodyMeasurement } from '../../types/bodyMeasurement';
@@ -27,6 +24,7 @@ import { FitnessGoal } from '../../types/fitnessGoal';
 import { ProgressPhoto } from '../../types/progressPhoto';
 import { RoutineWithExercises } from '../../types/routine';
 import { AppTheme, WeightUnit } from '../../types/settings';
+import { TrainingSplitPlan } from '../../types/trainingSplit';
 import { WellnessCheckIn } from '../../types/wellnessCheckIn';
 import { SavedWorkoutSession, WorkoutVisibility } from '../../types/workout';
 import { getThemePalette } from '../../utils/appTheme';
@@ -41,10 +39,10 @@ import {
 } from '../../utils/fitnessGoals';
 import { formatWorkoutDuration } from '../../utils/formatDuration';
 import {
-  calculateNutritionTotals,
-  getNutritionProgress,
-  getTodayNutritionLogs,
-} from '../../utils/nutrition';
+  defaultTrainingSplitPlan,
+  getTrainingCategory,
+  getTrainingDayForDate,
+} from '../../utils/trainingSplit';
 import {
   getReadinessLabel,
   getReadinessScore,
@@ -54,6 +52,14 @@ type FeedFilter = 'all' | WorkoutVisibility;
 
 function formatShortDate(dateString: string) {
   return new Date(dateString).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatTodayLabel() {
+  return new Date().toLocaleDateString([], {
+    weekday: 'long',
     month: 'short',
     day: 'numeric',
   });
@@ -70,6 +76,9 @@ export default function HomeScreen() {
   const [fitnessGoals, setFitnessGoals] = useState<FitnessGoal[]>([]);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
   const [wellnessCheckIns, setWellnessCheckIns] = useState<WellnessCheckIn[]>([]);
+  const [trainingSplitPlan, setTrainingSplitPlan] = useState<TrainingSplitPlan>(
+    defaultTrainingSplitPlan
+  );
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lb');
   const palette = getThemePalette(theme);
 
@@ -86,6 +95,7 @@ export default function HomeScreen() {
           savedGoals,
           savedMeasurements,
           savedWellnessCheckIns,
+          savedTrainingSplitPlan,
         ] =
           await Promise.all([
             loadSettings(),
@@ -97,6 +107,7 @@ export default function HomeScreen() {
             loadFitnessGoals(),
             loadBodyMeasurements(),
             loadWellnessCheckIns(),
+            loadTrainingSplitPlan(),
           ]);
 
         setTheme(settings.theme);
@@ -109,6 +120,7 @@ export default function HomeScreen() {
         setFitnessGoals(savedGoals);
         setBodyMeasurements(savedMeasurements);
         setWellnessCheckIns(savedWellnessCheckIns);
+        setTrainingSplitPlan(savedTrainingSplitPlan);
       };
 
       fetchData();
@@ -126,6 +138,15 @@ export default function HomeScreen() {
     [workouts]
   );
   const pinnedRoutine = routines.find((routine) => routine.isPinned) ?? routines[0];
+  const todayTrainingDay = getTrainingDayForDate(trainingSplitPlan);
+  const todayCategory = getTrainingCategory(todayTrainingDay.categoryId);
+  const todayMatchingRoutines = routines.filter(
+    (routine) => (routine.trainingCategory ?? 'mixed') === todayCategory.id
+  );
+  const suggestedRoutine =
+    todayMatchingRoutines.find((routine) => routine.isPinned) ??
+    todayMatchingRoutines[0] ??
+    pinnedRoutine;
   const latestPhoto = progressPhotos[0];
   const favoriteExercises = exerciseLibrary
     .filter((exercise) => favoriteExerciseIds.includes(exercise.id))
@@ -188,6 +209,87 @@ export default function HomeScreen() {
               <Text style={styles.secondaryButtonText}>Create Routine</Text>
             </Pressable>
           </View>
+        </View>
+
+        <View style={styles.todayTrainingCard}>
+          <View style={styles.todayTrainingTopRow}>
+            <View style={styles.todayTrainingTextWrap}>
+              <Text style={styles.todayTrainingEyebrow}>{formatTodayLabel()}</Text>
+              <Text style={styles.todayTrainingTitle}>
+                {todayCategory.id === 'rest'
+                  ? 'Today is a rest day'
+                  : `Today is ${todayCategory.label} Day`}
+              </Text>
+              <Text style={styles.todayTrainingText}>
+                {todayCategory.description}
+              </Text>
+            </View>
+
+            <View style={styles.todayTrainingBadge}>
+              <Text style={styles.todayTrainingBadgeValue}>
+                {todayCategory.id === 'rest' ? 'Rest' : todayMatchingRoutines.length}
+              </Text>
+              <Text style={styles.todayTrainingBadgeLabel}>
+                {todayCategory.id === 'rest' ? 'Day' : 'Matches'}
+              </Text>
+            </View>
+          </View>
+
+          {todayCategory.id === 'rest' ? (
+            <View style={styles.todayTrainingActionPanel}>
+              <Text style={styles.activityTitle}>Recover and reset</Text>
+              <Text style={styles.activityMeta}>
+                Keep it light today, or start an empty workout if plans change.
+              </Text>
+              <Pressable
+                style={[styles.todayTrainingButton, styles.todayTrainingSoloButton]}
+                onPress={() => router.push('/workout/session/empty')}
+              >
+                <Text style={styles.todayTrainingButtonText}>Start Anyway</Text>
+              </Pressable>
+            </View>
+          ) : suggestedRoutine ? (
+            <View style={styles.todayTrainingActionPanel}>
+              <Text style={styles.activityTitle}>{suggestedRoutine.name}</Text>
+              <Text style={styles.activityMeta}>
+                {suggestedRoutine.exercises.length} exercises -{' '}
+                {todayMatchingRoutines.length > 0
+                  ? 'matched to today'
+                  : 'pinned fallback'}
+              </Text>
+              <View style={styles.todayTrainingButtonRow}>
+                <Pressable
+                  style={styles.todayTrainingButton}
+                  onPress={() =>
+                    router.push(`/workout/session/${suggestedRoutine.id}`)
+                  }
+                >
+                  <Text style={styles.todayTrainingButtonText}>Start Workout</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.todayTrainingGhostButton}
+                  onPress={() => router.push('/(tabs)/workout' as never)}
+                >
+                  <Text style={styles.todayTrainingGhostButtonText}>View All</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.todayTrainingActionPanel}>
+              <Text style={styles.activityTitle}>No routine for today yet</Text>
+              <Text style={styles.activityMeta}>
+                Create one and tag it as {todayCategory.label} to make it show
+                here automatically.
+              </Text>
+              <Pressable
+                style={[styles.todayTrainingButton, styles.todayTrainingSoloButton]}
+                onPress={() => router.push('/routine/create')}
+              >
+                <Text style={styles.todayTrainingButtonText}>Create Routine</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         <View style={styles.statsRow}>
@@ -659,6 +761,106 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '700',
+  },
+  todayTrainingCard: {
+    backgroundColor: '#0f1f2f',
+    borderWidth: 1,
+    borderColor: '#315f8c',
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 14,
+  },
+  todayTrainingTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  todayTrainingTextWrap: {
+    flex: 1,
+  },
+  todayTrainingEyebrow: {
+    color: '#8fc8ff',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  todayTrainingTitle: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  todayTrainingText: {
+    color: '#b9d6f2',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  todayTrainingBadge: {
+    minWidth: 76,
+    backgroundColor: '#102c45',
+    borderWidth: 1,
+    borderColor: '#4da6ff',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todayTrainingBadgeValue: {
+    color: '#4da6ff',
+    fontSize: 19,
+    fontWeight: '900',
+    marginBottom: 2,
+  },
+  todayTrainingBadgeLabel: {
+    color: '#b9d6f2',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  todayTrainingActionPanel: {
+    backgroundColor: '#0b1723',
+    borderWidth: 1,
+    borderColor: '#254766',
+    borderRadius: 14,
+    padding: 12,
+  },
+  todayTrainingButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  todayTrainingButton: {
+    flex: 1,
+    backgroundColor: '#4da6ff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  todayTrainingSoloButton: {
+    marginTop: 12,
+  },
+  todayTrainingGhostButton: {
+    flex: 1,
+    backgroundColor: '#102c45',
+    borderWidth: 1,
+    borderColor: '#315f8c',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  todayTrainingButtonText: {
+    color: '#111111',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  todayTrainingGhostButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
   },
   card: {
     backgroundColor: '#171717',

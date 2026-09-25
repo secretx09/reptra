@@ -15,7 +15,6 @@ import { User } from '@supabase/supabase-js';
 import {
   exchangeAuthLinkForSession,
   getCurrentUser,
-  getAuthRedirectUrl,
   resendConfirmationEmail,
   sendPasswordResetEmail,
   signInWithEmail,
@@ -198,7 +197,6 @@ export default function AccountScreen() {
   const [manualAuthLink, setManualAuthLink] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
   const [mergeStatus, setMergeStatus] = useState('');
-  const authRedirectUrl = getAuthRedirectUrl();
   const syncComparison = getSyncComparison(localPreview, cloudSummary);
   const profileCompletion = getProfileCompletionItems(currentUser, cloudProfile);
   const cleanProfileUsername = profileUsername.trim().toLowerCase();
@@ -491,12 +489,12 @@ export default function AccountScreen() {
 
   const handleRestoreCloudData = () => {
     Alert.alert(
-      'Restore cloud data?',
-      'This replaces local workouts, routines, custom exercises, settings, favorites, and progress photo metadata with the current Supabase backup.',
+      'Replace this device from cloud?',
+      'This will replace this device with the current Supabase backup. Use Merge instead if you only want to add missing cloud records without overwriting local data.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Restore',
+          text: 'Replace Device',
           style: 'destructive',
           onPress: async () => {
             setIsLoading(true);
@@ -522,8 +520,8 @@ export default function AccountScreen() {
 
   const handleMergeCloudData = () => {
     Alert.alert(
-      'Merge cloud data?',
-      'This adds cloud workouts, routines, custom exercises, favorites, and progress photo metadata that are missing on this device. Existing local data will not be replaced.',
+      'Merge cloud data into this device?',
+      'This adds cloud records that are missing on this device. Existing local workouts, routines, settings, and photos will not be replaced.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -596,22 +594,6 @@ export default function AccountScreen() {
             {connectionStatus ? (
               <Text style={styles.connectionStatus}>{connectionStatus}</Text>
             ) : null}
-          </View>
-
-          <View style={styles.redirectCard}>
-            <Text style={styles.redirectTitle}>Auth Redirect</Text>
-            <Text style={styles.redirectText}>
-              Add this active URL in Supabase Authentication URL Configuration.
-              Expo Go links are only for development; installed builds use
-              reptra://auth/callback.
-            </Text>
-            <Text style={styles.redirectUrl}>{authRedirectUrl}</Text>
-            <Pressable
-              style={styles.setupButton}
-              onPress={() => router.push('/account/setup' as never)}
-            >
-              <Text style={styles.setupButtonText}>Open Setup Checklist</Text>
-            </Pressable>
           </View>
 
           {currentUser ? (
@@ -932,6 +914,21 @@ export default function AccountScreen() {
                 </View>
               </View>
 
+              <View style={styles.syncSafetyCard}>
+                <Text style={styles.syncSafetyTitle}>Cloud Sync Safety Guide</Text>
+                <Text style={styles.syncSafetyText}>
+                  Backup uploads this device to Supabase. Merge adds missing
+                  cloud records to this device without replacing local data.
+                  Replace is the risky option because it overwrites this
+                  device with the cloud copy.
+                </Text>
+                <View style={styles.syncSafetyRow}>
+                  <Text style={styles.syncSafetyPill}>1. Backup</Text>
+                  <Text style={styles.syncSafetyPill}>2. Refresh</Text>
+                  <Text style={styles.syncSafetyPill}>3. Merge first</Text>
+                </View>
+              </View>
+
               <View style={styles.backupCard}>
                 <Text style={styles.backupTitle}>Cloud Backup</Text>
                 <Text style={styles.backupText}>
@@ -946,7 +943,7 @@ export default function AccountScreen() {
                   disabled={isLoading}
                 >
                   <Text style={styles.secondaryButtonText}>
-                    Backup Local Data
+                    Backup This Device
                   </Text>
                 </Pressable>
 
@@ -1025,7 +1022,7 @@ export default function AccountScreen() {
                   disabled={isLoading || !cloudSummary?.totalRecords}
                 >
                   <Text style={styles.secondaryButtonText}>
-                    Merge Cloud Into This Device
+                    Merge Missing Cloud Data
                   </Text>
                 </Pressable>
 
@@ -1038,7 +1035,9 @@ export default function AccountScreen() {
                   onPress={handleRestoreCloudData}
                   disabled={isLoading || !cloudSummary?.totalRecords}
                 >
-                  <Text style={styles.dangerButtonText}>Restore From Cloud</Text>
+                  <Text style={styles.dangerButtonText}>
+                    Replace This Device From Cloud
+                  </Text>
                 </Pressable>
 
                 {restoreStatus ? (
@@ -1299,46 +1298,6 @@ const styles = StyleSheet.create({
     borderColor: '#2a2a2a',
     borderRadius: 14,
     padding: 14,
-  },
-  redirectCard: {
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#252525',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
-  },
-  redirectTitle: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  redirectText: {
-    color: '#aaaaaa',
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  redirectUrl: {
-    color: '#4da6ff',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  setupButton: {
-    backgroundColor: '#16324d',
-    borderWidth: 1,
-    borderColor: '#4da6ff',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  setupButtonText: {
-    color: '#4da6ff',
-    fontSize: 13,
-    fontWeight: '800',
   },
   sectionTitle: {
     color: '#ffffff',
@@ -1613,6 +1572,42 @@ const styles = StyleSheet.create({
     color: '#aaaaaa',
     fontSize: 12,
     fontWeight: '700',
+  },
+  syncSafetyCard: {
+    backgroundColor: '#1f1a10',
+    borderWidth: 1,
+    borderColor: '#5d471f',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  syncSafetyTitle: {
+    color: '#ffd27d',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  syncSafetyText: {
+    color: '#d8c6a5',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  syncSafetyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  syncSafetyPill: {
+    backgroundColor: '#2a2113',
+    borderWidth: 1,
+    borderColor: '#6e5324',
+    borderRadius: 999,
+    color: '#ffd27d',
+    fontSize: 12,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   modeRow: {
     flexDirection: 'row',

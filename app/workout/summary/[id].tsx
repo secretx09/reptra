@@ -584,6 +584,20 @@ export default function WorkoutSummaryScreen() {
                     {linkedPhotos.length === 1 ? '' : 's'} linked to this workout
                   </Text>
                 ) : null}
+
+                <Pressable
+                  style={styles.managePhotosButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/profile/progress-photos',
+                      params: { workoutId: workout.id },
+                    })
+                  }
+                >
+                  <Text style={styles.managePhotosButtonText}>
+                    Manage Workout Photos
+                  </Text>
+                </Pressable>
               </View>
 
               <View style={styles.actionRow}>
@@ -894,6 +908,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 10,
     textAlign: 'center',
+  },
+  managePhotosButton: {
+    backgroundColor: '#101010',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  managePhotosButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   noteTitle: {
     color: '#ffffff',
